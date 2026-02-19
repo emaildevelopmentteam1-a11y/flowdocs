@@ -1,0 +1,1079 @@
+<!DOCTYPE html>
+<html lang="es" class="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FlowDocs</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Sora:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script>
+tailwind.config = {
+  darkMode: 'class',
+  theme: {
+    extend: {
+      fontFamily: {
+        sans: ['Sora', 'sans-serif'],
+        mono: ['JetBrains Mono', 'monospace'],
+      },
+      colors: {
+        surface: { 950: '#0a0a0f', 900: '#0f0f17', 800: '#16161f', 700: '#1e1e2a', 600: '#252535' },
+        accent: { DEFAULT: '#6366f1', hover: '#4f46e5', muted: '#6366f120' },
+        ok:     { DEFAULT: '#22c55e', muted: '#22c55e18' },
+        warn:   { DEFAULT: '#f59e0b', muted: '#f59e0b18' },
+        err:    { DEFAULT: '#ef4444', muted: '#ef444418' },
+        border: '#ffffff0f',
+      }
+    }
+  }
+}
+</script>
+<style>
+* { box-sizing: border-box; }
+body { background: #0a0a0f; font-family: 'Sora', sans-serif; color: #e2e8f0; margin: 0; }
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #ffffff18; border-radius: 4px; }
+.nav-item { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 8px; cursor: pointer; font-size: 13px; color: #94a3b8; transition: all .15s; }
+.nav-item:hover { background: #ffffff08; color: #e2e8f0; }
+.nav-item.active { background: #6366f120; color: #818cf8; }
+.nav-item svg { width: 16px; height: 16px; flex-shrink: 0; }
+.badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 99px; font-size: 11px; font-weight: 500; font-family: 'JetBrains Mono'; }
+.badge-ok    { background: #22c55e18; color: #4ade80; border: 1px solid #22c55e28; }
+.badge-warn  { background: #f59e0b18; color: #fbbf24; border: 1px solid #f59e0b28; }
+.badge-err   { background: #ef444418; color: #f87171; border: 1px solid #ef444428; }
+.badge-blue  { background: #6366f120; color: #818cf8; border: 1px solid #6366f130; }
+.badge-gray  { background: #ffffff0a; color: #64748b; border: 1px solid #ffffff10; }
+.card { background: #16161f; border: 1px solid #ffffff0f; border-radius: 12px; }
+.flow-card { background: #16161f; border: 1px solid #ffffff0f; border-radius: 10px; padding: 14px; cursor: pointer; transition: all .15s; }
+.flow-card:hover { border-color: #6366f140; background: #1a1a25; transform: translateY(-1px); }
+.flow-card.selected { border-color: #6366f160; background: #1a1a28; }
+.stat-card { background: #16161f; border: 1px solid #ffffff0f; border-radius: 12px; padding: 20px; }
+.progress-bar { height: 4px; background: #ffffff0f; border-radius: 99px; overflow: hidden; }
+.progress-fill { height: 100%; border-radius: 99px; transition: width .6s ease; }
+.view { display: none; }
+.view.active { display: block; }
+.panel { position: fixed; top: 0; right: -520px; width: 500px; height: 100vh; background: #16161f; border-left: 1px solid #ffffff0f; z-index: 50; transition: right .25s cubic-bezier(.4,0,.2,1); overflow-y: auto; }
+.panel.open { right: 0; }
+.panel-overlay { position: fixed; inset: 0; background: #00000060; z-index: 49; display: none; }
+.panel-overlay.open { display: block; }
+table { width: 100%; border-collapse: collapse; }
+th { text-align: left; padding: 10px 14px; font-size: 11px; font-weight: 600; color: #475569; text-transform: uppercase; letter-spacing: .08em; border-bottom: 1px solid #ffffff0f; }
+td { padding: 12px 14px; font-size: 13px; border-bottom: 1px solid #ffffff07; vertical-align: middle; }
+tr:hover td { background: #ffffff04; }
+.filter-btn { padding: 6px 12px; border-radius: 6px; font-size: 12px; border: 1px solid #ffffff10; background: transparent; color: #64748b; cursor: pointer; transition: all .15s; font-family: 'Sora'; }
+.filter-btn:hover, .filter-btn.active { background: #6366f120; border-color: #6366f140; color: #818cf8; }
+.search-input { background: #0f0f17; border: 1px solid #ffffff10; border-radius: 8px; padding: 8px 14px 8px 36px; font-size: 13px; color: #e2e8f0; outline: none; font-family: 'Sora'; width: 260px; }
+.search-input:focus { border-color: #6366f140; }
+.mermaid { background: #0f0f17 !important; border-radius: 8px; padding: 16px; }
+.entity-card { background: #0f0f17; border: 1px solid #ffffff0f; border-radius: 10px; padding: 16px; }
+.state-node { display: inline-flex; align-items: center; padding: 4px 12px; border-radius: 99px; font-size: 11px; font-family: 'JetBrains Mono'; font-weight: 500; }
+.transition-arrow { display: flex; align-items: center; gap: 8px; padding: 6px 0; font-size: 12px; color: #475569; }
+.col-header { background: #0f0f17; border: 1px solid #ffffff0f; border-radius: 10px 10px 0 0; padding: 12px 16px; display: flex; align-items: center; justify-content: space-between; }
+.col-body { background: #0a0a0f; border: 1px solid #ffffff0f; border-top: none; border-radius: 0 0 10px 10px; padding: 12px; min-height: 400px; display: flex; flex-direction: column; gap: 8px; }
+</style>
+</head>
+<body>
+
+<!-- Layout -->
+<div style="display:flex; height:100vh; overflow:hidden;">
+
+  <!-- Sidebar -->
+  <aside style="width:220px; background:#0f0f17; border-right:1px solid #ffffff0f; display:flex; flex-direction:column; flex-shrink:0;">
+    <!-- Logo -->
+    <div style="padding:20px 16px 16px;">
+      <div style="display:flex; align-items:center; gap:8px;">
+        <div style="width:28px;height:28px;background:linear-gradient(135deg,#6366f1,#8b5cf6);border-radius:7px;display:flex;align-items:center;justify-content:center;">
+          <svg width="14" height="14" fill="none" stroke="white" stroke-width="2.5" viewBox="0 0 24 24"><path d="M3 6l3 1m0 0l-3 9a5 5 0 006.027 6.27M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5 5 0 01-6.027 6.27M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5"/></svg>
+        </div>
+        <span style="font-weight:700; font-size:15px; color:#e2e8f0;">FlowDocs</span>
+      </div>
+    </div>
+
+    <!-- Nav -->
+    <nav style="flex:1; padding:0 8px; display:flex; flex-direction:column; gap:2px;">
+      <div class="nav-item active" id="nav-dashboard" onclick="showView('dashboard')">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+        Dashboard
+      </div>
+      <div class="nav-item" id="nav-backlog" onclick="showView('backlog')">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2M12 12h.01M12 16h.01"/></svg>
+        Backlog
+      </div>
+      <div class="nav-item" id="nav-board" onclick="showView('board')">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="5" height="18" rx="1"/><rect x="10" y="3" width="5" height="12" rx="1"/><rect x="17" y="3" width="5" height="15" rx="1"/></svg>
+        Tablero
+      </div>
+      <div class="nav-item" id="nav-list" onclick="showView('list')">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+        Flujos
+      </div>
+      <div class="nav-item" id="nav-entities" onclick="showView('entities')">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.22 4.22l2.12 2.12M17.66 17.66l2.12 2.12M2 12h3M19 12h3M4.22 19.78l2.12-2.12M17.66 6.34l2.12-2.12"/></svg>
+        Entidades
+      </div>
+    </nav>
+
+    <!-- Project info -->
+    <div style="padding:12px 16px; border-top:1px solid #ffffff0f;">
+      <div style="font-size:11px; color:#475569; margin-bottom:4px;">PROYECTO</div>
+      <div id="sidebar-app" style="font-size:13px; font-weight:600; color:#e2e8f0;">Sarchi POS</div>
+      <div id="sidebar-version" style="font-size:11px; color:#475569; font-family:'JetBrains Mono';">v2.1.0</div>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <div style="flex:1; display:flex; flex-direction:column; overflow:hidden;">
+
+    <!-- Topbar -->
+    <header style="height:52px; border-bottom:1px solid #ffffff0f; display:flex; align-items:center; padding:0 24px; gap:16px; flex-shrink:0; background:#0a0a0f;">
+      <div id="view-title" style="font-size:14px; font-weight:600; color:#e2e8f0;">Dashboard</div>
+      <div style="flex:1;"></div>
+      <div style="font-size:11px; font-family:'JetBrains Mono'; color:#334155; background:#ffffff06; padding:4px 10px; border-radius:6px; border:1px solid #ffffff08;">flows.yaml</div>
+    </header>
+
+    <!-- Content area -->
+    <main style="flex:1; overflow-y:auto; min-height:0;">
+
+      <!-- DASHBOARD VIEW -->
+      <div id="view-dashboard" class="view active" style="padding:24px;">
+
+        <!-- Stats row -->
+        <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:20px;">
+          <div class="stat-card">
+            <div style="font-size:11px;color:#475569;text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;">Total Flujos</div>
+            <div id="stat-total" style="font-size:32px;font-weight:700;color:#e2e8f0;font-family:'JetBrains Mono';">—</div>
+            <div style="font-size:11px;color:#475569;margin-top:4px;">en el proyecto</div>
+          </div>
+          <div class="stat-card">
+            <div style="font-size:11px;color:#475569;text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;">Implementados</div>
+            <div id="stat-implemented" style="font-size:32px;font-weight:700;color:#4ade80;font-family:'JetBrains Mono';">—</div>
+            <div class="progress-bar" style="margin-top:10px;"><div id="bar-implemented" class="progress-fill" style="background:#22c55e;width:0%"></div></div>
+          </div>
+          <div class="stat-card">
+            <div style="font-size:11px;color:#475569;text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;">Sin Tests</div>
+            <div id="stat-notests" style="font-size:32px;font-weight:700;color:#f87171;font-family:'JetBrains Mono';">—</div>
+            <div class="progress-bar" style="margin-top:10px;"><div id="bar-notests" class="progress-fill" style="background:#ef4444;width:0%"></div></div>
+          </div>
+          <div class="stat-card">
+            <div style="font-size:11px;color:#475569;text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;">Cobertura</div>
+            <div id="stat-coverage" style="font-size:32px;font-weight:700;color:#fbbf24;font-family:'JetBrains Mono';">—</div>
+            <div class="progress-bar" style="margin-top:10px;"><div id="bar-coverage" class="progress-fill" style="background:#f59e0b;width:0%"></div></div>
+          </div>
+        </div>
+
+        <!-- Modules + Critical -->
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+
+          <!-- Módulos -->
+          <div class="card" style="padding:20px;">
+            <div style="font-size:13px;font-weight:600;color:#e2e8f0;margin-bottom:16px;">Estado por Módulo</div>
+            <div id="modules-list" style="display:flex;flex-direction:column;gap:12px;"></div>
+          </div>
+
+          <!-- Críticos sin tests -->
+          <div class="card" style="padding:20px;">
+            <div style="font-size:13px;font-weight:600;color:#e2e8f0;margin-bottom:4px;">Flujos Críticos sin Tests</div>
+            <div style="font-size:11px;color:#475569;margin-bottom:16px;">Prioridad inmediata</div>
+            <div id="critical-list" style="display:flex;flex-direction:column;gap:8px;"></div>
+          </div>
+        </div>
+
+        <!-- Partial flows -->
+        <div class="card" style="padding:20px; margin-top:16px;">
+          <div style="font-size:13px;font-weight:600;color:#e2e8f0;margin-bottom:4px;">Flujos Parcialmente Implementados</div>
+          <div style="font-size:11px;color:#475569;margin-bottom:16px;">Requieren atención antes del siguiente sprint</div>
+          <div id="partial-list" style="display:flex;flex-direction:column;gap:8px;"></div>
+        </div>
+
+      </div>
+
+      <!-- BOARD VIEW -->
+      <div id="view-backlog" class="view" style="padding:24px;">
+        <div id="sprint-banner" style="background:linear-gradient(135deg,#1e293b,#0f172a);border:1px solid #334155;border-radius:12px;padding:20px 24px;margin-bottom:20px;display:flex;align-items:center;gap:24px;flex-wrap:wrap;"></div>
+        <div id="backlog-content"></div>
+      </div>
+
+      <div id="view-board" class="view" style="padding:24px;">
+        <!-- Filters -->
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:20px;flex-wrap:wrap;">
+          <span style="font-size:11px;color:#475569;margin-right:4px;">MÓDULO</span>
+          <div id="board-module-filters" style="display:flex;gap:6px;flex-wrap:wrap;"></div>
+          <div style="width:1px;height:20px;background:#ffffff0f;margin:0 8px;"></div>
+          <span style="font-size:11px;color:#475569;margin-right:4px;">TIPO</span>
+          <div id="board-type-filters" style="display:flex;gap:6px;flex-wrap:wrap;"></div>
+        </div>
+
+        <!-- Columns -->
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;align-items:start;">
+          <div>
+            <div class="col-header">
+              <div style="display:flex;align-items:center;gap:8px;">
+                <div style="width:8px;height:8px;border-radius:50%;background:#475569;"></div>
+                <span style="font-size:12px;font-weight:600;color:#e2e8f0;">Por Hacer</span>
+              </div>
+              <span id="count-pending" class="badge badge-gray">0</span>
+            </div>
+            <div id="col-pending" class="col-body"></div>
+          </div>
+          <div>
+            <div class="col-header">
+              <div style="display:flex;align-items:center;gap:8px;">
+                <div style="width:8px;height:8px;border-radius:50%;background:#3b82f6;"></div>
+                <span style="font-size:12px;font-weight:600;color:#e2e8f0;">En Progreso</span>
+              </div>
+              <span id="count-partial" class="badge badge-gray">0</span>
+            </div>
+            <div id="col-partial" class="col-body"></div>
+          </div>
+          <div>
+            <div class="col-header">
+              <div style="display:flex;align-items:center;gap:8px;">
+                <div style="width:8px;height:8px;border-radius:50%;background:#22c55e;"></div>
+                <span style="font-size:12px;font-weight:600;color:#e2e8f0;">Revisión / Hecho</span>
+              </div>
+              <span id="count-implemented" class="badge badge-gray">0</span>
+            </div>
+            <div id="col-implemented" class="col-body"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- LIST VIEW -->
+      <div id="view-list" class="view" style="padding:24px;">
+        <!-- Search + filters -->
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap;">
+          <div style="position:relative;">
+            <svg style="position:absolute;left:10px;top:50%;transform:translateY(-50%);width:14px;height:14px;color:#475569;" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+            <input class="search-input" id="search-input" placeholder="Buscar flujos..." oninput="filterList()">
+          </div>
+          <div id="list-module-filters" style="display:flex;gap:6px;flex-wrap:wrap;"></div>
+          <div style="flex:1;"></div>
+          <button onclick="exportCSV()" style="display:flex;align-items:center;gap:6px;padding:7px 14px;border-radius:7px;border:1px solid #ffffff10;background:transparent;color:#64748b;font-size:12px;cursor:pointer;font-family:'Sora';">
+            <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+            Exportar CSV
+          </button>
+        </div>
+
+        <!-- Table -->
+        <div class="card" style="overflow:hidden;">
+          <div style="overflow-x:auto;">
+            <table>
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Nombre</th>
+                  <th>Módulo</th>
+                  <th>Tipo</th>
+                  <th>Estado</th>
+                  <th>Tests</th>
+                  <th>Prioridad</th>
+                </tr>
+              </thead>
+              <tbody id="list-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ENTITIES VIEW -->
+      <div id="view-entities" class="view" style="padding:24px;">
+        <div style="font-size:12px;color:#475569;margin-bottom:16px;">Ciclo de vida de entidades y sus transiciones de estado</div>
+        <div id="entities-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:16px;"></div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<!-- Panel lateral -->
+<div class="panel-overlay" id="overlay" onclick="closePanel()"></div>
+<div class="panel" id="detail-panel">
+  <div style="padding:24px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+      <div id="panel-id" style="font-family:'JetBrains Mono';font-size:12px;color:#475569;"></div>
+      <button onclick="closePanel()" style="background:none;border:none;color:#475569;cursor:pointer;padding:4px;">
+        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div id="panel-content"></div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// DATOS MOCK (simula el flows.yaml parseado)
+// ============================================================
+const MOCK_DATA = {
+  meta: {
+    app: "Sarchi POS",
+    version: "2.1.0",
+    description: "Sistema POS para pizzería con sync en la nube",
+    updated_at: "2026-02-19",
+    sprint: {
+      number: 3,
+      goal: "Completar checkout real y cubrir flujos críticos con tests",
+      start: "2026-02-17",
+      end: "2026-02-28",
+      days_left: 9
+    },
+    stats: { total: 15, implemented: 7, partial: 5, pending: 3, with_tests: 4, coverage_pct: 27 }
+  },
+  modules: [
+    { id: "pos",       name: "Punto de Venta",   actors: ["cajero"] },
+    { id: "inventory", name: "Inventario",        actors: ["admin"] },
+    { id: "orders",    name: "Pedidos",           actors: ["cajero","admin"] },
+    { id: "cash",      name: "Caja",              actors: ["cajero","admin"] },
+    { id: "customers", name: "Clientes",          actors: ["admin"] },
+  ],
+  stories: [
+    { id: "US-001", title: "Cobrar una venta al cliente", module: "pos", priority: "critical", status: "partial", flow_ids: ["FLOW-001","FLOW-002","FLOW-003"] },
+    { id: "US-002", title: "Gestionar el catálogo de productos", module: "inventory", priority: "high", status: "implemented", flow_ids: ["FLOW-005","FLOW-006"] },
+    { id: "US-003", title: "Controlar el inventario físico", module: "inventory", priority: "high", status: "partial", flow_ids: ["FLOW-007","FLOW-008"] },
+    { id: "US-004", title: "Abrir y cerrar el turno de caja", module: "cash", priority: "critical", status: "partial", flow_ids: ["FLOW-011"] },
+    { id: "US-005", title: "Seguir el estado de los pedidos", module: "orders", priority: "high", status: "partial", flow_ids: ["FLOW-012"] },
+    { id: "US-006", title: "Gestionar clientes y su historial", module: "customers", priority: "medium", status: "implemented", flow_ids: ["FLOW-010"] },
+    { id: "US-007", title: "Acceder al sistema de forma segura", module: "pos", priority: "critical", status: "implemented", flow_ids: ["FLOW-013"] },
+    { id: "US-008", title: "Anular una venta y revertir stock", module: "pos", priority: "high", status: "implemented", flow_ids: ["FLOW-014"] },
+    { id: "US-009", title: "Operar sin conexión a internet", module: "pos", priority: "high", status: "partial", flow_ids: ["FLOW-015"] },
+  ],
+  entities: [
+    {
+      id: "sale", name: "Venta",
+      states: ["draft","completed","cancelled"],
+      state_colors: { draft:"#6366f1", completed:"#22c55e", cancelled:"#ef4444" },
+      transitions: [
+        { from:"draft", to:"completed",  trigger:"FLOW-003", label:"Cobrar" },
+        { from:"draft", to:"cancelled",  trigger:"FLOW-014", label:"Cancelar" },
+      ]
+    },
+    {
+      id: "order", name: "Pedido",
+      states: ["pending","confirmed","in_progress","ready","delivered","completed","cancelled"],
+      state_colors: { pending:"#6366f1", confirmed:"#8b5cf6", in_progress:"#f59e0b", ready:"#22c55e", delivered:"#06b6d4", completed:"#4ade80", cancelled:"#ef4444" },
+      transitions: [
+        { from:"pending",     to:"confirmed",   trigger:"FLOW-021", label:"Confirmar" },
+        { from:"confirmed",   to:"in_progress", trigger:"FLOW-022", label:"Iniciar" },
+        { from:"in_progress", to:"ready",        trigger:"FLOW-023", label:"Listo" },
+        { from:"ready",       to:"delivered",    trigger:"FLOW-024", label:"Entregar" },
+        { from:"delivered",   to:"completed",    trigger:"FLOW-025", label:"Completar" },
+        { from:"pending",     to:"cancelled",    trigger:"FLOW-026", label:"Cancelar" },
+      ]
+    },
+    {
+      id: "product", name: "Producto",
+      states: ["active","inactive"],
+      state_colors: { active:"#22c55e", inactive:"#475569" },
+      transitions: [
+        { from:"active",   to:"inactive", trigger:"FLOW-009", label:"Desactivar" },
+        { from:"inactive", to:"active",   trigger:"FLOW-009", label:"Activar" },
+      ]
+    },
+    {
+      id: "cash_session", name: "Sesión de Caja",
+      states: ["open","closed"],
+      state_colors: { open:"#22c55e", closed:"#475569" },
+      transitions: [
+        { from:"open", to:"closed", trigger:"FLOW-011", label:"Cerrar caja" },
+      ]
+    }
+  ],
+  flows: [
+    { id:"FLOW-001", name:"Venta de producto simple",      type:"user_flow",     module:"pos",       actor:"cajero", priority:"critical", status:"implemented", test_status:"covered", sprint_status:"done", story:"US-001", story_points:2, test_files:["src/tests/e2e/pos.spec.ts"], entities:["sale","product"], tasks:[{id:"TASK-001",name:"Grid de productos clickeable",status:"done"},{id:"TASK-002",name:"Lógica agregar al carrito",status:"done"},{id:"TASK-003",name:"Test E2E venta simple",status:"done"}],
+      trigger:"Cajero selecciona producto simple en grid",
+      preconditions:["Producto activo en catálogo","Stock disponible si trackStock=true"],
+      steps:["Cajero busca o selecciona producto","Sistema valida tipo simple","Agrega al carrito con cantidad 1","Recalcula subtotal, IVA y total"],
+      alternatives:[{condition:"Producto sin stock",steps:["Sistema deshabilita el producto","Muestra indicador visual rojo"]}],
+      errors:[{condition:"Producto no encontrado",steps:["Muestra estado vacío en la búsqueda"]}],
+      postconditions:["Producto en carrito","Totales actualizados"],
+      diagram:`flowchart TD\n    A([Cajero selecciona producto]) --> B{¿Es variable?}\n    B -->|No| C[Agregar al carrito]\n    B -->|Sí| D[→ FLOW-002]\n    C --> E[Recalcular totales]\n    E --> F([Fin])`,
+      notes:"Flujo más frecuente. Crítico para operación diaria." },
+
+    { id:"FLOW-002", name:"Venta de producto variable",    type:"user_flow",     module:"pos",       actor:"cajero", priority:"critical", status:"implemented", test_status:"none", sprint_status:"review", story:"US-001", story_points:3, test_files:[], entities:["sale","product","variant"], tasks:[{id:"TASK-004",name:"ProductConfigModal UI",status:"done"},{id:"TASK-005",name:"Selección de variantes y precios",status:"done"},{id:"TASK-006",name:"Test E2E modal variable",status:"todo"}],
+      trigger:"Cajero selecciona producto marcado como variable",
+      preconditions:["Producto con variants configurados en DB"],
+      steps:["Selecciona producto variable","Sistema abre ProductConfigModal","Selecciona variante/tamaño","Selecciona modificadores opcionales","Sistema calcula precio dinámico","Cajero confirma","Item configurado se agrega al carrito"],
+      alternatives:[{condition:"Cajero cancela",steps:["Modal se cierra","Carrito sin cambios"]}],
+      errors:[{condition:"Producto sin variantes configuradas",steps:["Sistema muestra error de configuración"]}],
+      postconditions:["Item con variante en carrito","Precio calculado correctamente"],
+      diagram:`flowchart TD\n    A([Producto variable seleccionado]) --> B[Abrir Modal Config]\n    B --> C[Seleccionar variante]\n    C --> D[Agregar modificadores]\n    D --> E[Calcular precio]\n    E --> F{¿Confirma?}\n    F -->|Sí| G[Agregar al carrito]\n    F -->|No| H[Cerrar modal]\n    G --> I([Fin])`,
+      notes:"Sin tests E2E. Prioridad alta para siguiente sprint." },
+
+    { id:"FLOW-003", name:"Proceso de pago (Checkout)",    type:"business_flow", module:"pos",       actor:"cajero", priority:"critical", status:"partial", test_status:"partial", sprint_status:"doing", story:"US-001", story_points:5, test_files:["src/tests/e2e/pos.spec.ts"], entities:["sale","cash_session"], tasks:[{id:"TASK-007",name:"UI Modal cobrar",status:"done"},{id:"TASK-008",name:"Conectar SaleService con Supabase",status:"doing"},{id:"TASK-009",name:"Cálculo de cambio efectivo",status:"done"},{id:"TASK-010",name:"Test E2E checkout completo",status:"todo"}],
+      trigger:"Clic en botón Cobrar con carrito no vacío",
+      preconditions:["Carrito con al menos un item","Caja abierta"],
+      steps:["Clic en Cobrar","Seleccionar método de pago","Ingresar monto recibido (efectivo)","Sistema calcula cambio","Finalizar transacción","Registrar venta en DB","Emitir ticket"],
+      alternatives:[{condition:"Descuento global",steps:["Aplicar descuento antes de calcular total"]},{condition:"Propina",steps:["Agregar propina al total"]}],
+      errors:[{condition:"DB no disponible",steps:["Guardar en cola offline","Notificar al cajero"]}],
+      postconditions:["Venta registrada","Stock descontado","Ticket generado","Carrito limpio"],
+      diagram:`flowchart TD\n    A([Clic Cobrar]) --> B[Seleccionar método pago]\n    B --> C{Efectivo?}\n    C -->|Sí| D[Ingresar monto]\n    D --> E[Calcular cambio]\n    C -->|No| F[Confirmar]\n    E --> F\n    F --> G[Registrar en DB]\n    G --> H[Imprimir ticket]\n    H --> I([Fin])`,
+      notes:"SaleService mockeado en Fase 1. Migrar a Supabase en Fase 2." },
+
+    { id:"FLOW-004", name:"Reimpresión de ticket",         type:"task_flow",     module:"pos",       actor:"cajero", priority:"medium",   status:"implemented", test_status:"none",   sprint_status:"todo", story:"US-001", story_points:1, test_files:[], entities:["sale"], tasks:[{id:"TASK-011",name:"Botón reimprimir en historial",status:"done"},{id:"TASK-012",name:"Test unitario reimpresión",status:"todo"}],
+      trigger:"Clic en reimprimir desde historial de ventas",
+      preconditions:["Impresora Bluetooth conectada","Venta existente en historial"],
+      steps:["Localizar venta en historial","Clic en reimprimir","Sistema regenera formato ESC/POS","Envía a impresora Bluetooth"],
+      alternatives:[],
+      errors:[{condition:"Impresora desconectada",steps:["Muestra toast de error","No bloquea la UI"]}],
+      postconditions:["Ticket reimpreso"],
+      diagram:`flowchart TD\n    A([Clic reimprimir]) --> B{¿Impresora conectada?}\n    B -->|Sí| C[Generar ESC/POS]\n    B -->|No| D[Toast error]\n    C --> E[Enviar a impresora]\n    E --> F([Fin])`,
+      notes:"" },
+
+    { id:"FLOW-005", name:"CRUD de productos",             type:"task_flow",     module:"inventory", actor:"admin",  priority:"high",     status:"implemented", test_status:"none",   sprint_status:"todo", story:"US-002", story_points:3, test_files:[], entities:["product"], tasks:[{id:"TASK-013",name:"Formulario crear/editar producto",status:"done"},{id:"TASK-014",name:"Soft delete productos",status:"done"},{id:"TASK-015",name:"Tests CRUD productos",status:"todo"}],
+      trigger:"Navegación a /products",
+      preconditions:["Usuario con rol admin autenticado"],
+      steps:["Listar productos","Crear / Editar / Desactivar producto","Configurar stock y alertas","Guardar en Supabase"],
+      alternatives:[],
+      errors:[{condition:"Nombre duplicado",steps:["Sistema muestra validación inline"]}],
+      postconditions:["Producto actualizado en DB y visible en POS"],
+      diagram:`flowchart TD\n    A([Admin abre /products]) --> B[Listar productos]\n    B --> C{Acción}\n    C -->|Crear| D[Formulario nuevo]\n    C -->|Editar| E[Formulario existente]\n    C -->|Desactivar| F[Soft delete]\n    D --> G[Guardar en DB]\n    E --> G\n    F --> G\n    G --> H([Fin])`,
+      notes:"" },
+
+    { id:"FLOW-006", name:"Importación masiva CSV",        type:"task_flow",     module:"inventory", actor:"admin",  priority:"medium",   status:"implemented", test_status:"covered", sprint_status:"done", story:"US-002", story_points:2, test_files:["src/tests/unit/csv.test.ts"], entities:["product"], tasks:[{id:"TASK-016",name:"Parser CSV con PapaParse",status:"done"},{id:"TASK-017",name:"Validación cabeceras y filas",status:"done"},{id:"TASK-018",name:"Test unitario importación",status:"done"}],
+      trigger:"Clic en botón Importar CSV",
+      preconditions:["Archivo CSV con formato válido"],
+      steps:["Seleccionar archivo .csv","Parser valida cabeceras","Creación masiva de productos","Feedback de cantidad importada"],
+      alternatives:[],
+      errors:[{condition:"CSV malformado",steps:["Filas inválidas ignoradas","Muestra resumen de errores"]}],
+      postconditions:["Productos importados en DB"],
+      diagram:`flowchart TD\n    A([Seleccionar CSV]) --> B[Validar cabeceras]\n    B --> C{¿Válido?}\n    C -->|No| D[Mostrar error]\n    C -->|Sí| E[Crear productos]\n    E --> F[Feedback cantidad]\n    F --> G([Fin])`,
+      notes:"" },
+
+    { id:"FLOW-007", name:"Ajuste manual de inventario",   type:"data_flow",     module:"inventory", actor:"admin",  priority:"high",     status:"implemented", test_status:"none",   sprint_status:"todo", story:"US-003", story_points:2, test_files:[], entities:["product"], tasks:[{id:"TASK-019",name:"Dialog ajuste stock",status:"done"},{id:"TASK-020",name:"Registro en inventory_movements",status:"done"},{id:"TASK-021",name:"Test ajuste stock",status:"todo"}],
+      trigger:"Botón Ajustar Stock en ficha de producto",
+      preconditions:["Producto existente con trackStock=true"],
+      steps:["Seleccionar producto","Ingresar cantidad (+/-)","Seleccionar motivo","Sistema actualiza stock","Crea entrada en inventory_movements"],
+      alternatives:[],
+      errors:[],
+      postconditions:["Stock actualizado","Movimiento registrado en historial"],
+      diagram:`flowchart TD\n    A([Abrir ajuste]) --> B[Ingresar cantidad]\n    B --> C[Seleccionar motivo]\n    C --> D[Actualizar stock en DB]\n    D --> E[Crear movimiento]\n    E --> F([Fin])`,
+      notes:"" },
+
+    { id:"FLOW-008", name:"Historial de movimientos",      type:"task_flow",     module:"inventory", actor:"admin",  priority:"low",      status:"implemented", test_status:"covered", sprint_status:"done", story:"US-003", story_points:1, test_files:["src/tests/unit/inventory.test.ts"], entities:["product"], tasks:[{id:"TASK-022",name:"InventoryHistoryDialog UI",status:"done"},{id:"TASK-023",name:"Test historial movimientos",status:"done"}],
+      trigger:"Click en Ver Historial en ficha de producto",
+      preconditions:["Producto con movimientos registrados"],
+      steps:["Sistema carga inventory_movements del producto","Muestra lista cronológica","Cada entrada con tipo, cantidad, motivo y fecha"],
+      alternatives:[],
+      errors:[],
+      postconditions:["Historial visible"],
+      diagram:`flowchart TD\n    A([Ver historial]) --> B[Cargar movimientos DB]\n    B --> C[Renderizar lista]\n    C --> D([Fin])`,
+      notes:"" },
+
+    { id:"FLOW-009", name:"Gestión de categorías",         type:"task_flow",     module:"inventory", actor:"admin",  priority:"medium",   status:"partial",     test_status:"none",   sprint_status:"todo", story:"US-002", story_points:2, test_files:[], entities:["product"], tasks:[{id:"TASK-024",name:"CRUD básico categorías",status:"done"},{id:"TASK-025",name:"Colores e iconos por categoría",status:"todo"},{id:"TASK-026",name:"Ordenar drag & drop",status:"todo"}],
+      trigger:"Navegación a /categories",
+      preconditions:["Rol admin"],
+      steps:["Listar categorías","Crear nueva categoría","Asignar productos","Ordenar categorías"],
+      alternatives:[],
+      errors:[{condition:"Eliminar categoría con productos",steps:["Sistema bloquea la acción"]}],
+      postconditions:["Categoría actualizada"],
+      diagram:`flowchart TD\n    A([Admin abre categorías]) --> B[Listar]\n    B --> C{Acción}\n    C -->|Crear| D[Nueva categoría]\n    C -->|Editar| E[Editar]\n    C -->|Eliminar| F{¿Tiene productos?}\n    F -->|Sí| G[Bloquear]\n    F -->|No| H[Eliminar]\n    D --> I([Fin])\n    E --> I`,
+      notes:"CRUD básico implementado. Colores e iconos pendientes." },
+
+    { id:"FLOW-010", name:"Gestión de clientes (CRM)",     type:"task_flow",     module:"customers", actor:"admin",  priority:"medium",   status:"implemented", test_status:"covered", sprint_status:"done", story:"US-006", story_points:3, test_files:["src/tests/e2e/customers.spec.ts"], entities:["sale"], tasks:[{id:"TASK-027",name:"CRUD clientes",status:"done"},{id:"TASK-028",name:"Historial compras por cliente",status:"done"},{id:"TASK-029",name:"Test E2E clientes",status:"done"}],
+      trigger:"Navegación a /customers",
+      preconditions:["Rol admin"],
+      steps:["Listar clientes","Crear / Editar cliente","Ver historial de compras por cliente","Asociar venta a cliente"],
+      alternatives:[],
+      errors:[],
+      postconditions:["Cliente actualizado"],
+      diagram:`flowchart TD\n    A([Admin abre clientes]) --> B[Listar clientes]\n    B --> C{Acción}\n    C -->|Crear| D[Formulario]\n    C -->|Ver historial| E[Ventas del cliente]\n    D --> F([Fin])\n    E --> F`,
+      notes:"" },
+
+    { id:"FLOW-011", name:"Apertura y cierre de caja",     type:"business_flow", module:"cash",      actor:"cajero", priority:"critical", status:"partial",     test_status:"none",   sprint_status:"doing", story:"US-004", story_points:5, test_files:[], entities:["cash_session","sale"], tasks:[{id:"TASK-030",name:"UI apertura de caja con fondo inicial",status:"done"},{id:"TASK-031",name:"Migrar CashRegisterService a Supabase",status:"doing"},{id:"TASK-032",name:"Reporte X/Z de cierre",status:"todo"},{id:"TASK-033",name:"Tests cierre de caja",status:"todo"}],
+      trigger:"Inicio o fin de jornada del cajero",
+      preconditions:["Usuario autenticado con rol cajero o admin"],
+      steps:["Ingresar fondo inicial","Marcar caja como abierta","(Fin) Contar efectivo físico","Generar reporte X/Z","Cerrar sesión de caja"],
+      alternatives:[],
+      errors:[{condition:"Cierre sin cuadre",steps:["Registra diferencia (sobrante/faltante)","No bloquea el cierre"]}],
+      postconditions:["Sesión de caja cerrada","Reporte generado"],
+      diagram:`flowchart TD\n    A([Inicio jornada]) --> B[Ingresar fondo]\n    B --> C[Abrir caja]\n    C --> D[Operar ventas...]\n    D --> E[Fin jornada]\n    E --> F[Contar efectivo]\n    F --> G[Generar reporte]\n    G --> H[Cerrar sesión]\n    H --> I([Fin])`,
+      notes:"CashRegisterService mockeado. Migrar a Supabase pendiente." },
+
+    { id:"FLOW-012", name:"Seguimiento de pedidos",        type:"business_flow", module:"orders",    actor:"cajero", priority:"high",     status:"partial",     test_status:"none",   sprint_status:"todo", story:"US-005", story_points:8, test_files:[], entities:["order"], tasks:[{id:"TASK-034",name:"Vista Kanban de pedidos",status:"done"},{id:"TASK-035",name:"Drag & drop entre columnas",status:"doing"},{id:"TASK-036",name:"Persistencia estados en Supabase",status:"todo"},{id:"TASK-037",name:"Timeline de eventos por pedido",status:"todo"}],
+      trigger:"Navegación a /orders o creación de pedido",
+      preconditions:["Al menos un pedido activo"],
+      steps:["Ver tablero Kanban de pedidos","Arrastrar tarjeta para cambiar estado","Sistema registra transición y timestamp","Notificación de pedido listo"],
+      alternatives:[],
+      errors:[{condition:"Transición inválida de estado",steps:["Sistema bloquea el movimiento"]}],
+      postconditions:["Estado del pedido actualizado","Timeline registrado"],
+      diagram:`flowchart TD\n    A([Ver tablero]) --> B[Pedido en columna]\n    B --> C{Cambiar estado}\n    C --> D[Validar transición]\n    D -->|Válida| E[Actualizar DB]\n    D -->|Inválida| F[Bloquear]\n    E --> G[Registrar en timeline]\n    G --> H([Fin])`,
+      notes:"Vista Kanban implementada parcialmente. Persistencia de estados pendiente." },
+
+    { id:"FLOW-013", name:"Autenticación de usuario",      type:"user_flow",     module:"pos",       actor:"cajero", priority:"critical", status:"implemented", test_status:"none",   sprint_status:"review", story:"US-007", story_points:3, test_files:[], entities:["sale"], tasks:[{id:"TASK-038",name:"Pantalla login Supabase Auth",status:"done"},{id:"TASK-039",name:"Permisos por rol (RLS)",status:"done"},{id:"TASK-040",name:"Test E2E login y permisos",status:"todo"}],
+      trigger:"Apertura de la app sin sesión activa",
+      preconditions:["Usuario registrado en Supabase Auth"],
+      steps:["Mostrar pantalla de login","Usuario ingresa email y contraseña","Supabase valida credenciales","Sistema carga perfil y permisos por rol","Redirige a vista según rol"],
+      alternatives:[{condition:"Cajero intenta acceder a /admin",steps:["Sistema redirige a /pos"]}],
+      errors:[{condition:"Credenciales incorrectas",steps:["Muestra mensaje de error","No expone detalles técnicos"]}],
+      postconditions:["Sesión JWT activa","UI adaptada al rol del usuario"],
+      diagram:`flowchart TD\n    A([Abrir app]) --> B{¿Sesión activa?}\n    B -->|Sí| C[Cargar dashboard]\n    B -->|No| D[Pantalla login]\n    D --> E[Validar credenciales]\n    E -->|OK| F[Cargar perfil]\n    E -->|Error| G[Mostrar error]\n    F --> C`,
+      notes:"RLS configurado en Supabase. Falta test E2E de login." },
+
+    { id:"FLOW-014", name:"Cancelación de venta",          type:"task_flow",     module:"pos",       actor:"admin",  priority:"high",     status:"implemented", test_status:"none",   sprint_status:"todo", story:"US-008", story_points:2, test_files:[], entities:["sale","product"], tasks:[{id:"TASK-041",name:"Botón anular en historial",status:"done"},{id:"TASK-042",name:"Reversión automática de stock",status:"done"},{id:"TASK-043",name:"Test cancelación con reversión",status:"todo"}],
+      trigger:"Clic en Cancelar en el historial de ventas",
+      preconditions:["Venta con status=completed","Rol admin"],
+      steps:["Localizar venta en historial","Clic en anular","Confirmación modal","Sistema marca venta como cancelled","Reversión de stock de cada item"],
+      alternatives:[],
+      errors:[{condition:"Venta ya cancelada",steps:["Sistema no permite doble cancelación"]}],
+      postconditions:["Venta=cancelled","Stock revertido","Historial actualizado"],
+      diagram:`flowchart TD\n    A([Clic cancelar]) --> B[Modal confirmación]\n    B -->|Confirma| C[Marcar cancelled]\n    B -->|Cancela| D[Cerrar modal]\n    C --> E[Revertir stock]\n    E --> F([Fin])`,
+      notes:"" },
+
+    { id:"FLOW-015", name:"Sincronización offline",        type:"system_flow",   module:"pos",       actor:"system", priority:"high",     status:"partial",     test_status:"none",   sprint_status:"doing", story:"US-009", story_points:5, test_files:[], entities:["sale","product"], tasks:[{id:"TASK-044",name:"Service Worker y cola offline",status:"done"},{id:"TASK-045",name:"Auto-sync al reconectar",status:"doing"},{id:"TASK-046",name:"Resolución de conflictos LWW",status:"todo"},{id:"TASK-047",name:"Tests modo offline",status:"todo"}],
+      trigger:"App detecta pérdida de conexión a internet",
+      preconditions:["Service Worker registrado","Cola offline activa"],
+      steps:["App detecta offline","Operaciones se guardan en cola local","Al reconectar, cola se procesa en orden","Conflicts resueltos con Last Write Wins","UI muestra indicador de sync"],
+      alternatives:[],
+      errors:[{condition:"Conflicto de datos",steps:["Last Write Wins","Log del conflicto en consola"]}],
+      postconditions:["Datos sincronizados con Supabase","Cola vaciada"],
+      diagram:`flowchart TD\n    A([Detectar offline]) --> B[Modo offline]\n    B --> C[Guardar en cola local]\n    C --> D{¿Reconectó?}\n    D -->|No| C\n    D -->|Sí| E[Procesar cola]\n    E --> F[Resolver conflicts]\n    F --> G[Sync completo]\n    G --> H([Fin])`,
+      notes:"Background Sync via Service Worker implementado." },
+  ]
+};
+
+// ============================================================
+// STATE
+// ============================================================
+let data = MOCK_DATA;
+let activeView = 'dashboard';
+let boardModuleFilter = 'all';
+let boardTypeFilter = 'all';
+let listModuleFilter = 'all';
+let searchQuery = '';
+let selectedFlow = null;
+
+// ============================================================
+// UTILS
+// ============================================================
+const typeLabels = { user_flow:'User Flow', task_flow:'Task Flow', business_flow:'Business Flow', data_flow:'Data Flow', error_flow:'Error Flow', system_flow:'System Flow' };
+const priorityLabels = { critical:'Crítico', high:'Alto', medium:'Medio', low:'Bajo' };
+
+function statusBadge(s) {
+  if(s==='implemented') return '<span class="badge badge-ok">● Implementado</span>';
+  if(s==='partial')     return '<span class="badge badge-warn">◐ Parcial</span>';
+  return '<span class="badge badge-err">○ Pendiente</span>';
+}
+function testBadge(s) {
+  if(s==='covered') return '<span class="badge badge-ok">✓ Tests</span>';
+  if(s==='partial') return '<span class="badge badge-warn">~ Parcial</span>';
+  return '<span class="badge badge-err">✕ Sin tests</span>';
+}
+function priorityBadge(p) {
+  if(p==='critical') return '<span class="badge badge-err">Crítico</span>';
+  if(p==='high')     return '<span class="badge badge-warn">Alto</span>';
+  if(p==='medium')   return '<span class="badge badge-blue">Medio</span>';
+  return '<span class="badge badge-gray">Bajo</span>';
+}
+function moduleName(id) {
+  const m = data.modules.find(m=>m.id===id);
+  return m ? m.name : id;
+}
+
+// ============================================================
+// VIEW SWITCHING
+// ============================================================
+function showView(name) {
+  activeView = name;
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('view-' + name).classList.add('active');
+  document.getElementById('nav-' + name).classList.add('active');
+  const titles = { dashboard:'Dashboard', backlog:'Backlog', board:'Tablero Sprint', list:'Flujos', entities:'Entidades' };
+  document.getElementById('view-title').textContent = titles[name] || name;
+  if(name==='backlog')  renderBacklog();
+  if(name==='board')    renderBoard();
+  if(name==='list')     renderList();
+  if(name==='entities') renderEntities();
+}
+
+// ============================================================
+// DASHBOARD
+// ============================================================
+function renderDashboard() {
+  const s = data.meta.stats;
+  document.getElementById('sidebar-app').textContent = data.meta.app;
+  document.getElementById('sidebar-version').textContent = `v${data.meta.version}`;
+
+  document.getElementById('stat-total').textContent = s.total;
+  document.getElementById('stat-implemented').textContent = s.implemented;
+  document.getElementById('stat-notests').textContent = s.total - s.with_tests;
+  document.getElementById('stat-coverage').textContent = s.coverage_pct + '%';
+
+  const impPct = Math.round(s.implemented/s.total*100);
+  const noTestPct = Math.round((s.total-s.with_tests)/s.total*100);
+  document.getElementById('bar-implemented').style.width = impPct+'%';
+  document.getElementById('bar-notests').style.width = noTestPct+'%';
+  document.getElementById('bar-coverage').style.width = s.coverage_pct+'%';
+
+  // Modules
+  const ml = document.getElementById('modules-list');
+  ml.innerHTML = '';
+  data.modules.forEach(mod => {
+    const flows = data.flows.filter(f=>f.module===mod.id);
+    if(!flows.length) return;
+    const impl = flows.filter(f=>f.status==='implemented').length;
+    const part = flows.filter(f=>f.status==='partial').length;
+    const pct = Math.round(impl/flows.length*100);
+    const color = pct===100?'#22c55e':pct>50?'#f59e0b':'#ef4444';
+    ml.innerHTML += `
+      <div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+          <span style="font-size:13px;color:#cbd5e1;">${mod.name}</span>
+          <span style="font-size:11px;font-family:'JetBrains Mono';color:${color};">${impl}/${flows.length}</span>
+        </div>
+        <div class="progress-bar">
+          <div class="progress-fill" style="background:${color};width:${pct}%"></div>
+        </div>
+        <div style="display:flex;gap:6px;margin-top:6px;">
+          <span class="badge badge-ok" style="font-size:10px;">${impl} ok</span>
+          ${part?`<span class="badge badge-warn" style="font-size:10px;">${part} parcial</span>`:''}
+        </div>
+      </div>`;
+  });
+
+  // Critical sin tests
+  const cl = document.getElementById('critical-list');
+  cl.innerHTML = '';
+  const critNoTest = data.flows.filter(f=>f.priority==='critical'&&f.test_status==='none');
+  if(!critNoTest.length) {
+    cl.innerHTML = '<div style="font-size:12px;color:#22c55e;padding:8px 0;">✓ Todos los flujos críticos tienen tests</div>';
+  } else {
+    critNoTest.forEach(f=>{
+      cl.innerHTML += `
+        <div onclick="openPanel('${f.id}')" style="display:flex;align-items:center;gap:10px;padding:8px 10px;background:#0f0f17;border-radius:8px;cursor:pointer;border:1px solid #ffffff08;">
+          <span style="font-family:'JetBrains Mono';font-size:11px;color:#475569;">${f.id}</span>
+          <span style="font-size:12px;color:#cbd5e1;flex:1;">${f.name}</span>
+          <span class="badge badge-err" style="font-size:10px;">sin tests</span>
+        </div>`;
+    });
+  }
+
+  // Partial
+  const pl = document.getElementById('partial-list');
+  pl.innerHTML = '';
+  const partials = data.flows.filter(f=>f.status==='partial');
+  if(!partials.length) {
+    pl.innerHTML = '<div style="font-size:12px;color:#22c55e;padding:8px 0;">✓ Sin flujos parciales</div>';
+  } else {
+    partials.forEach(f=>{
+      pl.innerHTML += `
+        <div onclick="openPanel('${f.id}')" style="display:flex;align-items:center;gap:10px;padding:8px 10px;background:#0f0f17;border-radius:8px;cursor:pointer;border:1px solid #ffffff08;">
+          <span style="font-family:'JetBrains Mono';font-size:11px;color:#475569;">${f.id}</span>
+          <span style="font-size:12px;color:#cbd5e1;flex:1;">${f.name}</span>
+          <span class="badge badge-gray" style="font-size:10px;">${moduleName(f.module)}</span>
+          ${priorityBadge(f.priority)}
+        </div>`;
+    });
+  }
+}
+
+// ============================================================
+// BACKLOG
+// ============================================================
+function renderBacklog() {
+  const sp = data.meta.sprint;
+  // Banner sprint
+  const daysColor = sp.days_left <= 3 ? '#ef4444' : sp.days_left <= 5 ? '#f59e0b' : '#10b981';
+  document.getElementById('sprint-banner').innerHTML = `
+    <div>
+      <div style="font-size:10px;color:#64748b;font-family:'JetBrains Mono';margin-bottom:4px;">SPRINT ACTIVO</div>
+      <div style="font-size:20px;font-weight:700;color:#e2e8f0;">Sprint ${sp.number}</div>
+    </div>
+    <div style="flex:1;padding:0 16px;border-left:1px solid #1e293b;">
+      <div style="font-size:11px;color:#94a3b8;margin-bottom:4px;">Objetivo</div>
+      <div style="font-size:13px;color:#cbd5e1;">${sp.goal}</div>
+    </div>
+    <div style="text-align:center;min-width:80px;">
+      <div style="font-size:28px;font-weight:700;color:${daysColor};">${sp.days_left}</div>
+      <div style="font-size:11px;color:#64748b;">días restantes</div>
+    </div>
+    <div style="text-align:center;min-width:80px;">
+      <div style="font-size:11px;color:#64748b;margin-bottom:4px;">${sp.start} → ${sp.end}</div>
+      <div style="font-size:11px;color:#475569;">Sprint ${sp.number}</div>
+    </div>`;
+
+  // Agrupar stories con sus flujos
+  const stories = data.stories;
+  const priorityOrder = { critical:0, high:1, medium:2, low:3 };
+  const sorted = [...stories].sort((a,b) => priorityOrder[a.priority] - priorityOrder[b.priority]);
+
+  let html = '';
+  sorted.forEach(s => {
+    const flows = data.flows.filter(f => s.flow_ids.includes(f.id));
+    const totalPts = flows.reduce((a,f)=>a+(f.story_points||0),0);
+    const donePts  = flows.filter(f=>f.sprint_status==='done').reduce((a,f)=>a+(f.story_points||0),0);
+    const pct = totalPts ? Math.round(donePts/totalPts*100) : 0;
+    const storyStatusColor = { implemented:'#10b981', partial:'#f59e0b', pending:'#475569' };
+
+    html += `
+    <div style="background:#0f172a;border:1px solid #1e293b;border-radius:10px;padding:16px 20px;margin-bottom:12px;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;cursor:pointer;" onclick="this.parentElement.querySelector('.story-flows').style.display=this.parentElement.querySelector('.story-flows').style.display==='none'?'block':'none'">
+        ${priorityBadge(s.priority)}
+        <span style="font-family:'JetBrains Mono';font-size:10px;color:#475569;">${s.id}</span>
+        <span style="font-size:13px;font-weight:600;color:#e2e8f0;flex:1;">${s.title}</span>
+        <span style="font-size:11px;color:#64748b;">${moduleName(s.module)}</span>
+        <span style="font-size:11px;font-family:'JetBrains Mono';color:${storyStatusColor[s.status]||'#475569'};background:#1e293b;padding:2px 8px;border-radius:4px;">${donePts}/${totalPts} pts</span>
+      </div>
+      <div style="height:3px;background:#1e293b;border-radius:2px;margin-bottom:12px;">
+        <div style="height:100%;width:${pct}%;background:${pct===100?'#10b981':'#3b82f6'};border-radius:2px;transition:width 0.3s;"></div>
+      </div>
+      <div class="story-flows">
+        ${flows.map(f => `
+        <div onclick="openPanel('${f.id}')" style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:6px;cursor:pointer;margin-bottom:4px;background:#0a0f1e;border:1px solid #1a2540;">
+          <span style="font-family:'JetBrains Mono';font-size:10px;color:#475569;min-width:64px;">${f.id}</span>
+          <span style="font-size:12px;color:#cbd5e1;flex:1;">${f.name}</span>
+          ${sprintStatusBadge(f.sprint_status)}
+          ${testBadge(f.test_status)}
+          <span style="font-size:11px;font-family:'JetBrains Mono';color:#64748b;">${f.story_points}pts</span>
+        </div>`).join('')}
+      </div>
+    </div>`;
+  });
+  document.getElementById('backlog-content').innerHTML = html;
+}
+
+function sprintStatusBadge(s) {
+  const map = { todo:['#334155','#94a3b8','Por hacer'], doing:['#1e3a5f','#60a5fa','En progreso'], review:['#3b1f5e','#c084fc','En revisión'], done:['#14532d','#4ade80','Hecho'] };
+  const [bg,color,label] = map[s] || map.todo;
+  return `<span style="font-size:10px;background:${bg};color:${color};padding:2px 8px;border-radius:4px;font-weight:500;white-space:nowrap;">${label}</span>`;
+}
+
+// ============================================================
+// BOARD
+// ============================================================
+function renderBoardFilters() {
+  const mf = document.getElementById('board-module-filters');
+  const tf = document.getElementById('board-type-filters');
+  mf.innerHTML = `<button class="filter-btn active" onclick="setBoardModuleFilter('all',this)">Todos</button>`;
+  data.modules.forEach(m=>{
+    mf.innerHTML += `<button class="filter-btn" onclick="setBoardModuleFilter('${m.id}',this)">${m.name}</button>`;
+  });
+  const types = [...new Set(data.flows.map(f=>f.type))];
+  tf.innerHTML = `<button class="filter-btn active" onclick="setBoardTypeFilter('all',this)">Todos</button>`;
+  types.forEach(t=>{
+    tf.innerHTML += `<button class="filter-btn" onclick="setBoardTypeFilter('${t}',this)">${typeLabels[t]||t}</button>`;
+  });
+}
+
+function setBoardModuleFilter(val, el) {
+  boardModuleFilter = val;
+  document.querySelectorAll('#board-module-filters .filter-btn').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active');
+  renderBoardColumns();
+}
+
+function setBoardTypeFilter(val, el) {
+  boardTypeFilter = val;
+  document.querySelectorAll('#board-type-filters .filter-btn').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active');
+  renderBoardColumns();
+}
+
+function renderBoard() {
+  renderBoardFilters();
+  renderBoardColumns();
+}
+
+function renderBoardColumns() {
+  let flows = data.flows;
+  if(boardModuleFilter!=='all') flows = flows.filter(f=>f.module===boardModuleFilter);
+  if(boardTypeFilter!=='all')   flows = flows.filter(f=>f.type===boardTypeFilter);
+
+  const cols = { todo:[], doing:[], review:[], done:[] };
+  flows.forEach(f => cols[f.sprint_status || 'todo']?.push(f));
+
+  document.getElementById('count-pending').textContent     = cols.todo.length;
+  document.getElementById('count-partial').textContent     = cols.doing.length;
+  document.getElementById('count-implemented').textContent = cols.review.length + cols.done.length;
+
+  const colMap = { pending:'todo', partial:'doing', implemented:['review','done'] };
+
+  // renderizar col-pending = todo
+  ['todo','doing'].forEach((status, i) => {
+    const col = document.getElementById(i===0 ? 'col-pending' : 'col-partial');
+    col.innerHTML = '';
+    cols[status].forEach(f=>{
+      col.innerHTML += flowCard(f);
+    });
+    if(!cols[status].length) col.innerHTML = '<div style="text-align:center;padding:32px 16px;color:#334155;font-size:12px;">Sin flujos</div>';
+  });
+
+  // col-implemented = review + done
+  const colImpl = document.getElementById('col-implemented');
+  colImpl.innerHTML = '';
+  [...cols.review, ...cols.done].forEach(f => colImpl.innerHTML += flowCard(f));
+  if(!cols.review.length && !cols.done.length) colImpl.innerHTML = '<div style="text-align:center;padding:32px 16px;color:#334155;font-size:12px;">Sin flujos</div>';
+}
+
+function flowCard(f) {
+  const story = data.stories.find(s=>s.id===f.story);
+  return `
+    <div class="flow-card" onclick="openPanel('${f.id}')">
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
+        <span style="font-family:'JetBrains Mono';font-size:10px;color:#475569;">${f.id}</span>
+        <div style="flex:1;"></div>
+        ${sprintStatusBadge(f.sprint_status)}
+      </div>
+      <div style="font-size:13px;font-weight:500;color:#e2e8f0;margin-bottom:8px;line-height:1.4;">${f.name}</div>
+      ${story ? `<div style="font-size:10px;color:#475569;margin-bottom:6px;font-style:italic;">${story.id}: ${story.title.substring(0,40)}...</div>` : ''}
+      <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+        <span class="badge badge-gray" style="font-size:10px;">${moduleName(f.module)}</span>
+        ${priorityBadge(f.priority)}
+        ${testBadge(f.test_status)}
+        <span style="font-size:10px;font-family:'JetBrains Mono';color:#64748b;margin-left:auto;">${f.story_points}pts</span>
+      </div>
+    </div>`;
+}
+
+// ============================================================
+// LIST
+// ============================================================
+function renderListFilters() {
+  const lf = document.getElementById('list-module-filters');
+  lf.innerHTML = `<button class="filter-btn active" onclick="setListModuleFilter('all',this)">Todos</button>`;
+  data.modules.forEach(m=>{
+    lf.innerHTML += `<button class="filter-btn" onclick="setListModuleFilter('${m.id}',this)">${m.name}</button>`;
+  });
+}
+
+function setListModuleFilter(val, el) {
+  listModuleFilter = val;
+  document.querySelectorAll('#list-module-filters .filter-btn').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active');
+  renderListRows();
+}
+
+function filterList() {
+  searchQuery = document.getElementById('search-input').value.toLowerCase();
+  renderListRows();
+}
+
+function renderList() {
+  renderListFilters();
+  renderListRows();
+}
+
+function renderListRows() {
+  let flows = data.flows;
+  if(listModuleFilter!=='all') flows = flows.filter(f=>f.module===listModuleFilter);
+  if(searchQuery) flows = flows.filter(f=>
+    f.name.toLowerCase().includes(searchQuery)||
+    f.id.toLowerCase().includes(searchQuery)||
+    moduleName(f.module).toLowerCase().includes(searchQuery)
+  );
+
+  const tbody = document.getElementById('list-body');
+  tbody.innerHTML = '';
+  flows.forEach(f=>{
+    tbody.innerHTML += `
+      <tr onclick="openPanel('${f.id}')" style="cursor:pointer;">
+        <td><span style="font-family:'JetBrains Mono';font-size:11px;color:#475569;">${f.id}</span></td>
+        <td style="color:#e2e8f0;font-weight:500;max-width:260px;">${f.name}</td>
+        <td><span class="badge badge-gray">${moduleName(f.module)}</span></td>
+        <td style="color:#64748b;font-size:12px;">${typeLabels[f.type]||f.type}</td>
+        <td>${statusBadge(f.status)}</td>
+        <td>${testBadge(f.test_status)}</td>
+        <td>${priorityBadge(f.priority)}</td>
+      </tr>`;
+  });
+  if(!flows.length) {
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:32px;color:#334155;">Sin resultados</td></tr>';
+  }
+}
+
+function exportCSV() {
+  const headers = ['ID','Nombre','Módulo','Tipo','Estado','Tests','Prioridad'];
+  const rows = data.flows.map(f=>[f.id, f.name, moduleName(f.module), f.type, f.status, f.test_status, f.priority]);
+  const csv = [headers, ...rows].map(r=>r.join(',')).join('\n');
+  const a = document.createElement('a');
+  a.href = 'data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
+  a.download = `${data.meta.app}-flows.csv`;
+  a.click();
+}
+
+// ============================================================
+// ENTITIES
+// ============================================================
+function renderEntities() {
+  const grid = document.getElementById('entities-grid');
+  grid.innerHTML = '';
+  data.entities.forEach(e=>{
+    const colors = e.state_colors || {};
+    const statesHtml = e.states.map(s=>{
+      const c = colors[s] || '#6366f1';
+      return `<span class="state-node" style="background:${c}18;color:${c};border:1px solid ${c}30;">${s}</span>`;
+    }).join('');
+
+    const transHtml = e.transitions.map(t=>{
+      return `
+        <div class="transition-arrow">
+          <span style="font-family:'JetBrains Mono';font-size:11px;color:${colors[t.from]||'#6366f1'};">${t.from}</span>
+          <svg width="20" height="12" viewBox="0 0 20 12" fill="none">
+            <path d="M0 6h16M12 2l4 4-4 4" stroke="#334155" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+          <span style="font-family:'JetBrains Mono';font-size:11px;color:${colors[t.to]||'#22c55e'};">${t.to}</span>
+          <span style="flex:1;"></span>
+          <span style="font-size:11px;color:#334155;">${t.label}</span>
+          <span onclick="openPanel('${t.trigger}')" style="font-family:'JetBrains Mono';font-size:10px;color:#6366f1;background:#6366f115;padding:2px 6px;border-radius:4px;cursor:pointer;border:1px solid #6366f125;">${t.trigger}</span>
+        </div>`;
+    }).join('');
+
+    grid.innerHTML += `
+      <div class="entity-card">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+          <div>
+            <div style="font-size:14px;font-weight:600;color:#e2e8f0;">${e.name}</div>
+            <div style="font-size:11px;color:#475569;font-family:'JetBrains Mono';">${e.id}</div>
+          </div>
+          <span class="badge badge-blue">${e.states.length} estados</span>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px;">${statesHtml}</div>
+        <div style="font-size:11px;color:#334155;text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px;">Transiciones</div>
+        <div style="display:flex;flex-direction:column;gap:4px;">${transHtml}</div>
+      </div>`;
+  });
+}
+
+// ============================================================
+// DETAIL PANEL
+// ============================================================
+function openPanel(flowId) {
+  const f = data.flows.find(x=>x.id===flowId);
+  if(!f) return;
+  selectedFlow = f;
+
+  const story = data.stories.find(s=>s.id===f.story);
+
+  document.getElementById('panel-id').textContent = `${f.id} · ${typeLabels[f.type]||f.type}`;
+
+  const stepsHtml = f.steps.map((s,i)=>`
+    <div style="display:flex;gap:10px;padding:6px 0;border-bottom:1px solid #ffffff06;">
+      <span style="font-family:'JetBrains Mono';font-size:11px;color:#334155;flex-shrink:0;width:16px;">${i+1}</span>
+      <span style="font-size:13px;color:#94a3b8;">${s}</span>
+    </div>`).join('');
+
+  const altHtml = f.alternatives?.length ? f.alternatives.map(a=>`
+    <div style="padding:8px;background:#f59e0b08;border:1px solid #f59e0b18;border-radius:6px;margin-bottom:6px;">
+      <div style="font-size:11px;color:#fbbf24;margin-bottom:4px;">Si: ${a.condition}</div>
+      ${a.steps.map(s=>`<div style="font-size:12px;color:#94a3b8;padding:2px 0;">→ ${s}</div>`).join('')}
+    </div>`).join('') : '<div style="font-size:12px;color:#334155;">Ninguno</div>';
+
+  const errHtml = f.errors?.length ? f.errors.map(e=>`
+    <div style="padding:8px;background:#ef444408;border:1px solid #ef444418;border-radius:6px;margin-bottom:6px;">
+      <div style="font-size:11px;color:#f87171;margin-bottom:4px;">Si: ${e.condition}</div>
+      ${e.steps.map(s=>`<div style="font-size:12px;color:#94a3b8;padding:2px 0;">→ ${s}</div>`).join('')}
+    </div>`).join('') : '<div style="font-size:12px;color:#334155;">Ninguno</div>';
+
+  const precondHtml = f.preconditions?.map(p=>`<div style="font-size:12px;color:#94a3b8;padding:3px 0;">· ${p}</div>`).join('')||'';
+  const postcondHtml = f.postconditions?.map(p=>`<div style="font-size:12px;color:#94a3b8;padding:3px 0;">· ${p}</div>`).join('')||'';
+  const testFilesHtml = f.test_files?.length ? f.test_files.map(t=>`<div style="font-family:'JetBrains Mono';font-size:11px;color:#6366f1;padding:2px 0;">${t}</div>`).join('') : '<div style="font-size:12px;color:#334155;">Sin archivos de test</div>';
+
+  const taskIcons = { done:'✓', doing:'◎', todo:'○' };
+  const taskColors = { done:'#10b981', doing:'#60a5fa', todo:'#475569' };
+  const tasksHtml = f.tasks?.length ? f.tasks.map(t=>`
+    <div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid #ffffff06;">
+      <span style="color:${taskColors[t.status]};font-size:14px;">${taskIcons[t.status]}</span>
+      <span style="font-family:'JetBrains Mono';font-size:10px;color:#334155;">${t.id}</span>
+      <span style="font-size:12px;color:${t.status==='done'?'#475569':'#94a3b8'};${t.status==='done'?'text-decoration:line-through;':''}">${t.name}</span>
+    </div>`).join('') : '<div style="font-size:12px;color:#334155;">Sin tasks</div>';
+
+  const panelId = `mermaid-${f.id.replace('-','')}`;
+
+  document.getElementById('panel-content').innerHTML = `
+    <div style="margin-bottom:20px;">
+      <div style="font-size:18px;font-weight:700;color:#e2e8f0;margin-bottom:10px;line-height:1.3;">${f.name}</div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;">
+        ${statusBadge(f.status)}
+        ${sprintStatusBadge(f.sprint_status)}
+        ${testBadge(f.test_status)}
+        ${priorityBadge(f.priority)}
+        <span class="badge badge-gray">${moduleName(f.module)}</span>
+        <span class="badge badge-gray">${f.actor}</span>
+        <span style="font-size:10px;font-family:'JetBrains Mono';color:#64748b;background:#1e293b;padding:2px 8px;border-radius:4px;">${f.story_points} pts</span>
+      </div>
+    </div>
+
+    ${story ? `
+    <div style="background:#0f1f3d;border:1px solid #1e3a5f;border-radius:8px;padding:12px;margin-bottom:16px;">
+      <div style="font-size:10px;color:#3b82f6;margin-bottom:4px;font-family:'JetBrains Mono';">${story.id} · HISTORIA DE USUARIO</div>
+      <div style="font-size:13px;color:#93c5fd;">${story.title}</div>
+    </div>` : ''}
+
+    <div style="margin-bottom:16px;">
+      <div style="font-size:11px;color:#475569;margin-bottom:8px;text-transform:uppercase;letter-spacing:.08em;">Tasks</div>
+      ${tasksHtml}
+    </div>
+
+    <div style="background:#0f0f17;border-radius:8px;padding:12px;margin-bottom:16px;">
+      <div style="font-size:11px;color:#475569;margin-bottom:6px;text-transform:uppercase;letter-spacing:.08em;">Disparador</div>
+      <div style="font-size:13px;color:#cbd5e1;">${f.trigger}</div>
+    </div>
+
+    <div style="margin-bottom:16px;">
+      <div style="font-size:11px;color:#475569;margin-bottom:8px;text-transform:uppercase;letter-spacing:.08em;">Precondiciones</div>
+      ${precondHtml}
+    </div>
+
+    <div style="margin-bottom:16px;">
+      <div style="font-size:11px;color:#475569;margin-bottom:8px;text-transform:uppercase;letter-spacing:.08em;">Pasos</div>
+      ${stepsHtml}
+    </div>
+
+    <div style="margin-bottom:16px;">
+      <div style="font-size:11px;color:#475569;margin-bottom:8px;text-transform:uppercase;letter-spacing:.08em;">Flujos Alternativos</div>
+      ${altHtml}
+    </div>
+
+    <div style="margin-bottom:16px;">
+      <div style="font-size:11px;color:#475569;margin-bottom:8px;text-transform:uppercase;letter-spacing:.08em;">Flujos de Error</div>
+      ${errHtml}
+    </div>
+
+    <div style="margin-bottom:16px;">
+      <div style="font-size:11px;color:#475569;margin-bottom:8px;text-transform:uppercase;letter-spacing:.08em;">Postcondiciones</div>
+      ${postcondHtml}
+    </div>
+
+    <div style="margin-bottom:16px;">
+      <div style="font-size:11px;color:#475569;margin-bottom:8px;text-transform:uppercase;letter-spacing:.08em;">Diagrama</div>
+      <div class="mermaid" id="${panelId}">${f.diagram}</div>
+    </div>
+
+    <div style="margin-bottom:16px;">
+      <div style="font-size:11px;color:#475569;margin-bottom:8px;text-transform:uppercase;letter-spacing:.08em;">Archivos de Test</div>
+      ${testFilesHtml}
+    </div>
+
+    ${f.notes?`
+    <div style="background:#6366f108;border:1px solid #6366f118;border-radius:8px;padding:12px;">
+      <div style="font-size:11px;color:#6366f1;margin-bottom:4px;">NOTAS</div>
+      <div style="font-size:12px;color:#94a3b8;">${f.notes}</div>
+    </div>`:''}
+  `;
+
+  document.getElementById('detail-panel').classList.add('open');
+  document.getElementById('overlay').classList.add('open');
+
+  setTimeout(()=>{
+    try { mermaid.run({ nodes: [document.getElementById(panelId)] }); } catch(e) {}
+  }, 100);
+}
+
+
+function closePanel() {
+  document.getElementById('detail-panel').classList.remove('open');
+  document.getElementById('overlay').classList.remove('open');
+  selectedFlow = null;
+}
+
+// ============================================================
+// INIT
+// ============================================================
+document.addEventListener('DOMContentLoaded', function() {
+  mermaid.initialize({ startOnLoad: false, theme: 'dark', themeVariables: { darkMode: true, background: '#0f0f17', primaryColor: '#6366f1', primaryTextColor: '#e2e8f0', lineColor: '#334155', fontSize: '13px' } });
+  renderDashboard();
+});
+</script>
+</body>
+</html>
