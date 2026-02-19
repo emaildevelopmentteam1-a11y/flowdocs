@@ -22,7 +22,7 @@ flowdocs/                      ← raíz del repo en Bitbucket
 
 ## Lo que descarga `flowdocs init`
 
-El CLI descarga desde `bitbucket.org/iu-soft/flowdocs/raw/main/`:
+El CLI descarga desde `raw.githubusercontent.com/emaildevelopmentteam1-a11y/flowdocs/main/`:
 
 - `viewer.html` → `.flowdocs/viewer.html`
 - `.cursorrules` → `.flowdocs/.cursorrules` y raíz del proyecto
@@ -33,7 +33,7 @@ El CLI descarga desde `bitbucket.org/iu-soft/flowdocs/raw/main/`:
 ## Uso en cualquier proyecto
 
 ```bash
-npx flowdocs init
+curl -fsSL https://raw.githubusercontent.com/emaildevelopmentteam1-a11y/flowdocs/main/install.sh | bash
 ```
 
 Requiere Node 16+. Sin dependencias externas.
@@ -42,14 +42,14 @@ Requiere Node 16+. Sin dependencias externas.
 
 Cuando hagas cambios al viewer o los prompts:
 
-1. Commitea y pushea al repo de Bitbucket
-2. Los devs corren `npx flowdocs update` en sus proyectos
+1. Commitea y pushea al repo de GitHub
+2. Los devs corren el comando de instalación en sus proyectos
 3. Se actualiza viewer y prompts sin tocar `flows.yaml`
 
 ## Desarrollo local
 
 ```bash
-git clone https://MyDevelopmentTeam1@bitbucket.org/iu-soft/flowdocs.git
+git clone https://github.com/emaildevelopmentteam1-a11y/flowdocs.git
 cd flowdocs
 node bin/flowdocs.js init     # prueba init en el directorio actual
 node bin/flowdocs.js status   # prueba status

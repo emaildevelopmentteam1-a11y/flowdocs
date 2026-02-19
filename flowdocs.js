@@ -10,7 +10,7 @@ const { execSync } = require('child_process');
 
 // ─── Configuración ────────────────────────────────────────────────────────────
 
-const REPO_BASE = 'https://bitbucket.org/iu-soft/flowdocs/raw/main';
+const REPO_BASE = 'https://raw.githubusercontent.com/emaildevelopmentteam1-a11y/flowdocs/main';
 
 const FILES = {
   viewer:   'viewer.html',
