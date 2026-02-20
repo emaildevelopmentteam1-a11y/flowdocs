@@ -20,10 +20,10 @@ Dime qué cambió. Ejemplos de cómo invocarlo:
 @update.md — El sprint 3 terminó, actualiza todos los done y abre sprint 4
 ```
 
-**Migrar a la nueva estructura (criterios de aceptación):** Si el proyecto ya tiene `flows.yaml` pero las stories no tienen `acceptance_criteria`, el usuario puede pedirte que los añadas. Ejemplo de invocación para el usuario:
+**Migrar a la nueva estructura (criterios de aceptación):** Si el proyecto ya tiene `flows.yaml` pero las stories no tienen `acceptance_criteria`, el usuario puede pedirte que los añadas. Ejemplo de invocación:
 
 ```
-@update.md — Añade acceptance_criteria a todas las stories: mínimo 8 criterios por historia, formato { text: "...", validated_by: "ruta/spec.ts" } donde el flujo ya tenga ese archivo en test_files. Genera criterios comprobables a partir de los steps de los flujos de cada story.
+@update.md — Añade acceptance_criteria a todas las stories: mínimo 8 por historia (string o { text, validated_by } donde el flujo tenga ese spec en test_files). Opcional: formato extendido { id, description, validated, flow_ids }.
 ```
 
 Para un rellenado guiado de todas las stories de una vez, el usuario puede ejecutar **@acceptance.md**.
@@ -47,7 +47,7 @@ Para un rellenado guiado de todas las stories de una vez, el usuario puede ejecu
 - **No cambies el `name` ni los `steps`** de ningún flujo a menos que se te pida explícitamente
 - **No cambies `story_points`** sin que se te indique
 - **`test_files`** — agrega la ruta real del archivo de test solo si se mencionó explícitamente
-- **`acceptance_criteria`** (en stories) — puedes añadir, quitar o editar criterios. Cada criterio puede ser un string o `{ text: "...", validated_by: "ruta/al/e2e.spec.ts" }`. Un criterio se considera cubierto cuando existe una prueba e2e que lo valida: pon la ruta del spec en `validated_by` y asegúrate de que ese archivo esté en `test_files` del flujo correspondiente; el viewer mostrará ✓ automáticamente.
+- **`acceptance_criteria`** (en stories) — puedes añadir, quitar o editar criterios. Formatos admitidos: (1) string; (2) `{ text: "...", validated_by: "ruta/al/spec.ts" }` — el viewer marca ✓ cuando esa ruta está en `test_files` de algún flujo de la historia; (3) formato extendido `{ id: "AC-XXX", description: "...", validated: true|false, flow_ids: ["FLOW-001", ...] }` — `flow_ids` = flujos que implementan ese criterio, HU done cuando todos tienen `validated: true`. No cambies el formato existente de un criterio a menos que se pida.
 - **Un flujo es `implemented`** cuando todo su código core funciona. Si hay features menores pendientes, usa `partial`
 - **Un flujo tiene `test_status: covered`** cuando tiene tests que cubren el camino principal (happy path)
 

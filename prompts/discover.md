@@ -145,12 +145,17 @@ stories:
     module: "id_modulo"
     priority: "critical | high | medium | low"
     status: "implemented | partial | pending"
-    flow_ids: ["FLOW-001", "FLOW-002"]
+    flow_ids: ["FLOW-001", "FLOW-002"]   # todos los flujos de la HU
     acceptance_criteria:
-      - "Criterio comprobable 1 (Given/When/Then o lista)"
-      - text: "Criterio 2"
-        validated_by: "src/tests/e2e/modulo/flow.spec.ts"
-      # ... mínimo 8 criterios. Si hay prueba e2e que valida el criterio, usa { text, validated_by: "ruta/al/spec.ts" }; el viewer marcará ✓ cuando esa ruta esté en test_files de algún flujo de la historia.
+      - id: "AC-001"
+        description: "Criterio comprobable 1 (Given/When/Then)"
+        validated: false
+        flow_ids: ["FLOW-001"]            # flujos que satisfacen ESTE criterio
+      - id: "AC-002"
+        description: "Criterio 2"
+        validated: true
+        flow_ids: ["FLOW-001", "FLOW-002"]
+      # ... mínimo 8 criterios. HU → flow_ids = flujos de la historia. Criterio → flow_ids = flujos que implementan ese criterio. La HU está done cuando todos los criterios tienen validated: true.
 
 flows:
   - id: "FLOW-001"
@@ -179,7 +184,7 @@ flows:
 
 - **Módulos:** Uno por cada ítem del mapa. Descripción rica (2-4 líneas), no una frase genérica.
 - **Entities:** Debe incluir **todas** las entidades de la sección 4 de las notas. Si en el código hay 6 u 8 entidades, el YAML debe tener 6 u 8 entradas en `entities:`. No documentes solo "sale" u otra sola.
-- **Stories:** Agrupa flujos en historias de usuario. Cada historia tiene `acceptance_criteria`: una lista de **criterios de aceptación** comprobables (formato Given/When/Then o frases que se puedan validar con tests o demo). Sirven para que el equipo y la IA validen la implementación. **Mínimo 8 criterios por historia.**
+- **Stories:** Agrupa flujos en historias de usuario. Cada historia tiene `flow_ids` y `acceptance_criteria`: mínimo 8 criterios comprobables. Formato: string, o `{ text: "...", validated_by: "ruta/spec.ts" }` (el viewer marca ✓ cuando esa ruta está en `test_files` de algún flujo). Opcionalmente puedes usar el formato extendido: `{ id: "AC-001", description: "...", validated: true|false, flow_ids: ["FLOW-001", ...] }` — entonces el criterio muestra qué flujos lo implementan y la HU está done cuando todos tienen `validated: true`.
 - **Flujos:** Extrae de las notas (sección 5). Un flujo = una intención clara. Por cada módulo, tantos flujos como acciones hayas identificado (mínimo varios por módulo si el código tiene varias pantallas/acciones). Mínimo 3 pasos por flujo en lenguaje de negocio.
 - **Stats:** Recalcula total, implemented, partial, pending, with_tests, coverage_pct al final.
 

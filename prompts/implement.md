@@ -19,7 +19,7 @@
 
 1. Lee `.flowdocs/flows.yaml`
 2. Localiza el flujo solicitado por su ID
-3. Lee la **historia de usuario** (`story`) a la que pertenece y sus **`acceptance_criteria`** — son las condiciones que validan que la implementación está correcta
+3. Lee la **historia de usuario** (`story`) a la que pertenece y sus **`acceptance_criteria`** — son las condiciones que validan la implementación (formato simple: string o text/validated_by; o extendido: id, description, validated, flow_ids)
 4. Lee las entidades que usa (`entities`) y sus transiciones de estado
 5. Lee los flujos relacionados del mismo módulo — pueden compartir lógica
 6. Si hay tests existentes en `test_files`, léelos para entender el comportamiento esperado
@@ -54,7 +54,7 @@ Cuando termines, actualiza `.flowdocs/flows.yaml`:
 - `status`: `implemented` si completaste todo y los criterios de aceptación se cumplen, `partial` si falta algo
 - `sprint_status`: `review` — listo para revisión
 - Las tasks completadas: `status: done`
-- Si creaste archivos de test: agrega las rutas a `test_files` del flujo. Para que el viewer marque ✓ en los criterios de aceptación, asocia cada criterio cubierto por el test con `validated_by: "ruta/al/spec.ts"` en la story (o pide al usuario @update.md para añadir `validated_by` a los criterios que el e2e ya valida).
+- Si creaste archivos de test: agrega las rutas a `test_files` del flujo. Para que el viewer marque ✓: en formato simple, asocia cada criterio cubierto con `validated_by: "ruta/al/spec.ts"` en la story; en formato extendido, pon `validated: true` y los flujos correspondientes en `flow_ids` del criterio. Usa @update.md si hace falta.
 
 ---
 
