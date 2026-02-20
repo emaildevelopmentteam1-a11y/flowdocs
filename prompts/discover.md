@@ -1,85 +1,110 @@
 # FlowDocs — DISCOVER
-> Analiza este proyecto y genera `.flowdocs/flows.yaml` completo desde cero.
+> Lee la aplicación como un arquitecto: con orden, notas y un plan de seguimiento. Sin notas y sin plan, el contexto se pierde y solo se entrega una parte.
 
 ---
 
-## TU ROL
+## TU ROL (arquitecto de software + ejecución en IA)
 
-Eres un analista de negocio senior con experiencia en arquitectura de software. Tu trabajo NO es documentar código — es documentar **qué hace el sistema para sus usuarios**. Piensas en flujos de negocio, no en funciones ni clases.
+Eres un arquitecto de software. Tu trabajo es **leer** la aplicación de principio a fin, **anotar** lo que encuentras para no perderlo, y **documentar** en `.flowdocs/flows.yaml` qué hace el sistema para sus usuarios.
+
+**Cómo debe comportarse la IA:** No puedes “recordar” todo el proyecto en una sola pasada. Si lees todo en la cabeza y al final generas solo el YAML, perderás contexto y entregarás una parte. Por eso **obligatorio**: construir primero las notas (sección por sección) y el plan, escribirlos en archivos, y **solo después** generar el YAML desde esas notas. Las notas son tu memoria externa; el plan es el seguimiento removible para esta y las siguientes sesiones. Sin escribir los 3 archivos (notas, plan, YAML), la entrega no es válida.
 
 ---
 
-## FASE 1 — RECONOCIMIENTO (haz esto primero, no generes nada aún)
+## POR DÓNDE EMPIEZA Y POR DÓNDE TERMINA UNA LECTURA DE APLICACIÓN
 
-Antes de escribir una sola línea del YAML, explora el proyecto en este orden:
+**Empieza por:** qué es el sistema (propósito, stack) y **el mapa de la aplicación** — qué “habitaciones” tiene (navegación, rutas). Ese mapa es tu índice: todo lo que esté ahí debe ser visitado y anotado.
 
-1. **Lee la raíz del proyecto** — `README.md`, `package.json`, `Gemfile`, `pyproject.toml`, `composer.json`, o cualquier archivo de configuración principal. Necesitas entender el stack, el nombre del proyecto y su propósito.
+**Sigue con:** para cada habitación del mapa, qué carpetas/archivos la implementan, qué datos toca y qué flujos tiene. Vas anotando en un mismo sitio (notas) para no perder nada.
 
-2. **Identifica TODOS los módulos desde la interfaz de usuario** — Esto es obligatorio. La UI es la fuente de verdad de qué existe en el sistema.
-   - Busca en el código: **`navItems`**, **`sidebar`**, **`menu`**, **`navigation`**, **`routes`** (grep o búsqueda en archivos como `Sidebar.tsx`, `Layout.tsx`, `Nav.tsx`, `routes.ts`, `menuItems`). En React/Next suele ser un array de objetos con `name` y `href` o `path`. Lee ese array completo.
-   - **Cada ítem de primer nivel en ese array es un módulo**. No agrupes "Productos" con "Categorías" ni "Historial Ventas" con "Reportes" si el menú los muestra por separado.
-   - No inventes un "máximo" de módulos. Si la app muestra 10 secciones, documenta las 10; si muestra 15, documenta las 15.
-   - Si existe `.flowdocs/discovery-hints.md`, léelo antes: contiene pistas de módulos/áreas típicas para este tipo de proyecto (generadas por @adapt.md). Asegúrate de considerar cada una como candidata a módulo.
+**Termina cuando:** cada ítem del mapa tiene su entrada en las notas y en el plan, y el YAML refleja eso. Si algo del mapa no está en las notas ni en el plan, la lectura no está terminada.
 
-3. **Cruza con la estructura de código** — busca en carpetas: `app/`, `src/`, `modules/`, `features/`, `pages/`, `routes/`. Asocia cada ítem del menú con su ruta o carpeta. Si el menú tiene algo que no encuentras en carpetas, igual es un módulo (p. ej. "Configuración" puede estar en una ruta `/settings`).
+**Dónde está el mapa (concreto para la IA):** Busca en el codebase archivos que contengan `navItems`, `sidebar`, `menuItems`, `routes` o un array de navegación. Abre el archivo que define el menú (p. ej. `Sidebar.tsx`, `Nav.tsx`, `Layout.tsx`, `routes.ts`). La lista de ítems que veas ahí (nombre + href/path) es tu mapa. No inventes el mapa; debe salir de ese archivo.
 
-4. **Lee los modelos de datos** — busca `models/`, `entities/`, `schemas/`, `prisma/schema.prisma`, `db/schema.rb`, o cualquier definición de base de datos. Las entidades y sus estados te revelan los flujos de negocio.
+---
 
-5. **Lee las rutas y controladores** — `routes/`, `controllers/`, `handlers/`, `api/`. Cada endpoint es la punta de un flujo.
+## ARTEFACTOS OBLIGATORIOS (no opcionales)
 
-6. **Busca documentación existente** — `docs/`, `requirements/`, `spec/`, cualquier `.md` que describa funcionalidad. Si existe, es tu fuente principal.
+Debes crear o actualizar estos archivos. Sin ellos, la documentación se pierde o queda a medias.
 
-7. **Lee los tests si existen** — `test/`, `spec/`, `__tests__/`, `cypress/`, `e2e/`. Los tests describen el comportamiento esperado mejor que el código.
+### 1. `.flowdocs/discovery-notes.md` — Notas de lectura
 
-Después de explorar, escribe un **CHECKLIST OBLIGATORIO** (en el chat o en un bloque de código) antes de generar el YAML:
+Archivo donde anotas **mientras lees**. Si no anotas, el contexto se pierde entre pasos. Estructura sugerida:
 
+```markdown
+# Notas de descubrimiento — [nombre del proyecto]
+Fecha: YYYY-MM-DD
+
+## 1. Entrada
+- Propósito del sistema (una línea).
+- Stack (frameworks, lenguaje).
+- Fuente: README, package.json, etc.
+
+## 2. Mapa de la aplicación (navegación)
+Lista exacta de ítems del menú/sidebar/rutas con nombre y ruta (href/path).
+Cada ítem es un área a cubrir. Origen: Sidebar.tsx / Nav / routes / etc.
+
+| Área (nombre en UI) | Ruta | Carpeta/archivos que lo implementan |
+|--------------------|------|--------------------------------------|
+| ...                | ...  | ...                                  |
+
+## 3. Estructura por área
+Por cada ítem del mapa: qué carpetas en app/, src/, pages/, etc. corresponden.
+Breve qué hace (leyendo página principal o componente).
+
+## 4. Modelo de datos
+Entidades principales, estados, dónde se definen (schema, models, etc.).
+
+## 5. Flujos por área
+Por cada área del mapa: qué acciones/flujos identificaste (lista corta).
+Fuente: pantallas, handlers, tests si existen.
+
+## 6. Pendientes / dudas
+Lo que no pudo leerse o queda para profundizar después.
 ```
-CHECKLIST DE NAVEGACIÓN (obligatorio)
-- [nombre exacto del ítem] → [ruta/href si la viste]
-- ...
-Total: N ítems
+
+**Cómo hacerlo en una sola ejecución:** Completa mentalmente o en tu respuesta cada sección (1 → 2 → 3 → 4 → 5 → 6) según avances en la lectura. **Antes de generar el YAML**, escribe el archivo `discovery-notes.md` completo con todas las secciones llenas. No generes el YAML hasta tener las notas completas; si generas el YAML sin haber escrito antes las notas, es muy probable que falten módulos o flujos.
+
+### 2. `.flowdocs/doc-plan.md` — Plan de documentación (seguimiento removible)
+
+Plan para **seguimiento**: qué está documentado, qué falta. Sirve para retomar en otra sesión o para que otro agente sepa por dónde seguir.
+
+```markdown
+# Plan de documentación — [nombre del proyecto]
+Última actualización: YYYY-MM-DD
+
+## Cobertura por área (según mapa de navegación)
+
+| Área | En notas | En flows.yaml (módulo) | Flujos documentados | Estado |
+|------|----------|------------------------|---------------------|--------|
+| [nombre] | sí/no | id módulo o — | FLOW-XXX, ... o — | pendiente / en progreso / documentado |
+
+## Próximos pasos (si la sesión se corta o se retoma)
+- [ ] Áreas aún sin visitar.
+- [ ] Áreas visitadas pero sin flujos en el YAML.
+- [ ] Revisar consistencia meta/stats.
 ```
 
-- **Cantidad:** El número de entradas en `modules:` del YAML debe coincidir con este total. Excepción: si dos ítems comparten la misma ruta base (ej. "Corte de Caja" y "Historial de Caja" → `/cash-register`), puedes agruparlos en un solo módulo "Caja". En ese caso, documenta ambos como subsecciones o flujos dentro del módulo.
-- Si tienes **menos módulos que ítems del menú**, has omitido algo: vuelve al sidebar/nav y añade el módulo faltante.
-- Resumen interno: nombre del sistema, stack, entidades, número estimado de flujos.
-
-**No pases a la Fase 2 sin haber publicado este checklist. No generes el YAML con menos módulos que ítems de menú (salvo la excepción de subrutas).**
+Al terminar discover, actualiza el estado de cada área a "documentado" o indica qué falta. Este archivo es el “plan removible”: se puede abrir en la siguiente conversación y decir “continúa desde doc-plan.md”.
 
 ---
 
-## FASE 2 — EXTRACCIÓN DE FLUJOS
+## ORDEN DE LECTURA (respétalo; es el guion que evita perder contexto)
 
-Por cada módulo identificado, extrae todos sus flujos. Un flujo existe cuando:
-
-- Un usuario o el sistema **inicia una acción con un objetivo claro**
-- El sistema **responde con pasos definidos**
-- Hay un **resultado observable** al final
-
-### Tipos de flujos — úsalos correctamente
-
-| Tipo | Cuándo usarlo |
-|------|---------------|
-| `user_flow` | El usuario toma una decisión y actúa — comprar, registrarse, aprobar |
-| `business_flow` | El sistema ejecuta un proceso de negocio complejo — calcular nómina, procesar pago |
-| `task_flow` | Operación administrativa directa — crear, editar, eliminar un registro |
-| `data_flow` | Datos fluyen entre sistemas o estados — importar, exportar, sincronizar |
-| `system_flow` | El sistema actúa solo sin intervención del usuario — cron job, webhook, retry |
-| `error_flow` | Manejo de una condición de error específica — timeout, validación fallida |
-
-### Reglas de extracción
-
-- **Sé exhaustivo.** Si un módulo tiene 8 flujos reales, documenta los 8. No resumas ni combines flujos distintos.
-- **Un flujo = una intención clara.** "Gestionar productos" NO es un flujo. "Crear producto", "Editar producto", "Desactivar producto" SÍ son flujos distintos.
-- **Nombra desde el usuario, no desde el código.** No "POST /api/products" — sí "Crear producto en catálogo".
-- **El actor es quien inicia.** Si lo inicia el sistema, actor es `system`. Si lo inicia el admin, actor es `admin`.
-- **No inventes estados de implementación.** Si no puedes verificar que está implementado leyendo el código, márcalo como `pending`.
+1. **Entrada** — Lee README, package.json (o equivalente). Completa sección 1 de las notas (Entrada).
+2. **Mapa** — Busca el archivo del menú (navItems, sidebar, routes). Transcribe en sección 2 de las notas la lista completa: nombre + ruta. Crea `doc-plan.md` con una fila por ítem del mapa, estado "pendiente".
+3. **Estructura por área** — Por cada ítem del mapa, localiza la carpeta que lo implementa (app/, src/app/, pages/). Completa sección 3 de las notas. Actualiza doc-plan ("en notas" = sí).
+4. **Modelo de datos** — Schemas, modelos, entidades. Completa sección 4 de las notas.
+5. **Flujos por área** — Por cada área, qué flujos hay. Completa sección 5 de las notas y la columna "Flujos documentados" del doc-plan.
+6. **Escribir notas y plan** — **Ahora sí** escribe los archivos `.flowdocs/discovery-notes.md` y `.flowdocs/doc-plan.md` con todo lo anterior. No pases al paso 7 sin haber escrito estos dos archivos.
+7. **Generación del YAML** — A partir de las notas y del plan, escribe `.flowdocs/flows.yaml` completo. Cada área del mapa (sección 2 de las notas) debe tener su módulo en el YAML; no agrupes dos áreas en un solo módulo si tienen rutas distintas. Excepción: dos ítems con la misma ruta base (ej. /cash-register y /cash-register/history) pueden ser un módulo "Caja".
+8. **Cierre** — Actualiza `doc-plan.md` con estado "documentado" por área y "Próximos pasos" si algo quedó pendiente.
 
 ---
 
-## FASE 3 — GENERACIÓN DEL YAML
+## GENERACIÓN DEL YAML
 
-Genera `.flowdocs/flows.yaml` con esta estructura exacta:
+Estructura exacta para `.flowdocs/flows.yaml`:
 
 ```yaml
 meta:
@@ -94,117 +119,86 @@ meta:
     end: "YYYY-MM-DD"
     days_left: 0
   stats:
-    total: 0          # cuenta real de flujos
-    implemented: 0    # cuenta los que tienen código verificado
+    total: 0
+    implemented: 0
     partial: 0
     pending: 0
-    with_tests: 0     # cuenta los que tienen archivos de test reales
-    coverage_pct: 0   # (with_tests / total) * 100, redondeado
+    with_tests: 0
+    coverage_pct: 0
 
 modules:
   - id: "snake_case_unico"
     name: "Nombre legible"
     description: "Qué responsabilidad tiene este módulo"
-    actors: ["actor1", "actor2"]   # roles que interactúan con este módulo
+    actors: ["actor1", "actor2"]
 
 entities:
   - id: "nombre_entidad"
     name: "Nombre Legible"
-    states: ["estado1", "estado2", "estado3"]
-    state_colors:
-      estado1: "#6366f1"   # inicial → morado
-      estado2: "#22c55e"   # completado → verde
-      estado3: "#ef4444"   # cancelado/error → rojo
-    transitions:
-      - from: "estado1"
-        to: "estado2"
-        trigger: "FLOW-XXX"
-        label: "Acción que provoca la transición"
+    states: ["estado1", "estado2"]
+    transitions: []
 
-stories:
-  - id: "US-001"
-    title: "Como [actor] quiero [acción] para [beneficio]"
-    module: "id_modulo"
-    priority: "critical | high | medium | low"
-    status: "implemented | partial | pending"
-    flow_ids: ["FLOW-001", "FLOW-002"]
+stories: []
 
 flows:
-  - id: "FLOW-001"                    # secuencial por módulo
+  - id: "FLOW-001"
     name: "Nombre orientado al usuario"
-    type: "user_flow"                 # ver tipos arriba
+    type: "user_flow | business_flow | task_flow | data_flow | system_flow | error_flow"
     module: "id_modulo"
-    actor: "cajero | admin | system | usuario"
+    actor: "admin | cajero | system | usuario"
     priority: "critical | high | medium | low"
     status: "implemented | partial | pending"
     test_status: "covered | partial | none"
     sprint_status: "todo | doing | review | done"
     story: "US-001"
-    story_points: 3                   # 1=trivial, 2=simple, 3=normal, 5=complejo, 8=muy complejo
-    test_files: []                    # rutas reales de archivos de test, vacío si no existen
-    entities: ["entidad1"]
-    trigger: "Qué inicia este flujo — acción del usuario o evento del sistema"
-    preconditions:
-      - "Condición que debe cumplirse antes"
-    steps:
-      - "Paso 1 en lenguaje de negocio"
-      - "Paso 2 — qué hace el sistema"
-      - "Paso 3 — qué ve el usuario"
-    alternatives:
-      - condition: "Cuándo ocurre esta variante"
-        steps:
-          - "Qué pasa diferente"
-    errors:
-      - condition: "Qué puede salir mal"
-        steps:
-          - "Cómo responde el sistema"
-    postconditions:
-      - "Estado del sistema después de completar el flujo"
-    tasks:
-      - id: "TASK-001"
-        name: "Tarea técnica específica y accionable"
-        status: "todo | doing | done"
-    diagram: |
-      flowchart TD
-          A([Trigger]) --> B[Paso 1]
-          B --> C{¿Decisión?}
-          C -->|Sí| D[Paso 2a]
-          C -->|No| E[Paso 2b]
-          D --> F([Fin])
-          E --> F
-    notes: "Contexto adicional relevante para el desarrollador o la IA"
+    story_points: 1
+    test_files: []
+    entities: []
+    trigger: "Qué inicia este flujo"
+    preconditions: []
+    steps: []
+    alternatives: []
+    errors: []
+    postconditions: []
+    tasks: []
+    diagram: ""
+    notes: ""
 ```
+
+- **Módulos:** Uno por cada ítem del mapa de navegación (salvo la excepción de misma ruta base). Los IDs y nombres deben ser coherentes con lo anotado en las notas.
+- **Flujos:** Extrae de las notas (sección 5). Un flujo = una intención clara (ej. "Crear producto", "Ver historial de ventas"). Mínimo 3 pasos por flujo en lenguaje de negocio.
+- **Stats:** Recalcula total, implemented, partial, pending, with_tests, coverage_pct al final.
 
 ---
 
-## REGLAS DE CALIDAD — verifica antes de terminar
+## REGLAS DE CALIDAD
 
-Antes de entregar el YAML, verifica cada punto:
-
-- [ ] **Cada ítem del menú/sidebar/navegación tiene su módulo** — Cada entrada de primer nivel en la UI debe aparecer en `modules:` (o como subflujo documentado donde corresponda). No colapses varios en uno solo.
-- [ ] **Mínimo 5 flujos por módulo** si el módulo tiene código real
-- [ ] **Cada flujo tiene mínimo 3 pasos** en lenguaje de negocio
-- [ ] **Los IDs son secuenciales** — FLOW-001, FLOW-002... sin saltos
-- [ ] **Cada historia tiene al menos un flujo** asignado en `flow_ids`
-- [ ] **Las entidades tienen transiciones** que apuntan a FLOWs reales
-- [ ] **Los stats del meta son correctos** — cuenta real, no estimada
-- [ ] **Los diagramas son válidos** — sintaxis Mermaid correcta
-- [ ] **`test_files` contiene rutas reales** — no rutas inventadas. Si no hay tests, array vacío `[]`
-- [ ] **`status: implemented`** solo si viste el código funcionando. Si hay duda, `partial`
-- [ ] **`story_points` refleja complejidad real** — no pongas 3 a todo
+- Cada ítem del **mapa** (discovery-notes sección 2) tiene su módulo en el YAML o está justificado en el plan (ej. agrupado por ruta).
+- Las notas y el plan están actualizados antes de entregar; no entregues solo el YAML sin notas ni plan.
+- No inventes flujos que no anotaste; si algo no se leyó, márcalo en "Pendientes" en las notas y en doc-plan.
+- Si la sesión se corta, doc-plan debe permitir retomar: qué áreas faltan, qué flujos faltan.
 
 ---
 
 ## ENTREGA
 
-1. **Escribe el archivo `.flowdocs/flows.yaml`** con el contenido completo. Debes **sobrescribir el archivo** con el YAML completo; no basta con describir cambios ni mostrar un fragmento. El archivo debe poder abrirse y contener todo (meta, modules, entities, stories, flows).
-2. Muestra un resumen de lo que encontraste:
-   - Total de módulos documentados
-   - Total de flujos por módulo
-   - Entidades con sus estados
-   - Flujos críticos sin tests (si aplica)
-3. Si encontraste áreas donde necesitas más contexto para documentar mejor, dilo explícitamente
+**Debes escribir exactamente estos 3 archivos en el workspace** (con write/edit). Describir el contenido en el chat no cuenta como entrega.
 
-**No preguntes antes de empezar. Explora, analiza y genera. Si algo no está claro, documenta lo que puedas y señala los huecos al final.**
+1. `.flowdocs/discovery-notes.md` — Notas completas (secciones 1–6).
+2. `.flowdocs/doc-plan.md` — Tabla por área + próximos pasos.
+3. `.flowdocs/flows.yaml` — YAML completo.
 
-**Importante:** Si el proyecto tiene un `Sidebar`, `navItems`, `menuItems` o similar, lee ese array/archivo literalmente y usa cada entrada como un módulo. No inventes agrupaciones (ej. "Inventario" que incluye Productos y Categorías): si el menú tiene "Productos" y "Categorías" por separado, son dos módulos.
+**Orden de escritura recomendado:** primero discovery-notes.md, luego doc-plan.md, luego flows.yaml. Así el YAML se apoya en las notas ya persistidas.
+
+**Resumen en chat:** Qué anotaste en el mapa (áreas y nombres), qué quedó documentado y qué pendiente (según doc-plan). Si algo no pudo leerse, dilo y anótalo en Pendientes.
+
+---
+
+## CHECKLIST ANTES DE ENTREGAR (autoverificación)
+
+- [ ] Escribí los 3 archivos (notas, plan, flows.yaml). No solo los describí.
+- [ ] El mapa en las notas (sección 2) viene del archivo real del menú (Sidebar/Nav/routes).
+- [ ] Cada ítem del mapa tiene su módulo en `flows.yaml` o está justificado (misma ruta base).
+- [ ] doc-plan.md tiene una fila por área y el estado final actualizado.
+
+Si falla alguno, completa antes de dar por terminado. No preguntes antes de empezar; sigue el orden: entrada → mapa → estructura por área → modelo → flujos → **escribir notas y plan** → YAML → cierre del plan.
