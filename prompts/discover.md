@@ -148,8 +148,9 @@ stories:
     flow_ids: ["FLOW-001", "FLOW-002"]
     acceptance_criteria:
       - "Criterio comprobable 1 (Given/When/Then o lista)"
-      - "Criterio comprobable 2"
-      # ... mínimo 8 criterios por historia en total
+      - text: "Criterio 2"
+        validated_by: "src/tests/e2e/modulo/flow.spec.ts"
+      # ... mínimo 8 criterios. Si hay prueba e2e que valida el criterio, usa { text, validated_by: "ruta/al/spec.ts" }; el viewer marcará ✓ cuando esa ruta esté en test_files de algún flujo de la historia.
 
 flows:
   - id: "FLOW-001"

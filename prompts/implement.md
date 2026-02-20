@@ -54,8 +54,7 @@ Cuando termines, actualiza `.flowdocs/flows.yaml`:
 - `status`: `implemented` si completaste todo y los criterios de aceptación se cumplen, `partial` si falta algo
 - `sprint_status`: `review` — listo para revisión
 - Las tasks completadas: `status: done`
-- Si creaste archivos de test: agrega las rutas a `test_files`
-- Si añadiste o refinaste criterios de aceptación: actualiza `acceptance_criteria` en la story (o indica que el usuario debe hacerlo con @update.md)
+- Si creaste archivos de test: agrega las rutas a `test_files` del flujo. Para que el viewer marque ✓ en los criterios de aceptación, asocia cada criterio cubierto por el test con `validated_by: "ruta/al/spec.ts"` en la story (o pide al usuario @update.md para añadir `validated_by` a los criterios que el e2e ya valida).
 
 ---
 

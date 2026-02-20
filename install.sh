@@ -50,6 +50,7 @@ download "prompts/implement.md" "$PROMPTS_DIR/implement.md"
 download "prompts/update.md"    "$PROMPTS_DIR/update.md"
 download "prompts/audit.md"     "$PROMPTS_DIR/audit.md"
 download "prompts/expand.md"    "$PROMPTS_DIR/expand.md"
+download "prompts/acceptance.md" "$PROMPTS_DIR/acceptance.md"
 [ -f "$FLOWDOCS_DIR/bin/flowdocs.js" ] && chmod +x "$FLOWDOCS_DIR/bin/flowdocs.js"
 
 # Detectar nombre del proyecto
@@ -114,6 +115,7 @@ Este proyecto usa FlowDocs. `.flowdocs/flows.yaml` es la fuente de verdad.
 | `.flowdocs/prompts/update.md`     | Actualiza estado de flujos |
 | `.flowdocs/prompts/audit.md`      | Encuentra inconsistencias |
 | `.flowdocs/prompts/expand.md`     | Profundiza en un módulo |
+| `.flowdocs/prompts/acceptance.md` | Rellena criterios de aceptación en stories |
 CONTEXT_END
 
 echo ""
