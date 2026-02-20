@@ -168,11 +168,9 @@ async function cmdInit() {
   console.log(`${c.bold}  ¡Listo!${c.reset}`);
   console.log('');
   console.log(`  ${c.cyan}Siguiente paso:${c.reset}`);
-  console.log(`  Abre Cursor o Antigravity y escribe:`);
+  console.log(`  Abre Cursor o Antigravity y escribe: ${c.bold}@discover.md${c.reset}`);
   console.log('');
-  console.log(`  ${c.bold}  @discover.md${c.reset}`);
-  console.log('');
-  console.log(`  La IA analizará tu proyecto y generará flows.yaml`);
+  dim('  Ver descripción de uso completa: flowdocs usage');
   console.log('');
 }
 
@@ -224,6 +222,7 @@ async function cmdUpdate() {
   } else {
     warn(`${updated} actualizados, ${failed} fallaron`);
   }
+  dim('  Ver descripción de uso: flowdocs usage');
   console.log('');
 }
 
@@ -303,6 +302,56 @@ function cmdStatus() {
   console.log('');
 }
 
+function cmdOpen() {
+  const cwd = process.cwd();
+  const viewerPath = path.join(cwd, '.flowdocs', 'viewer.html');
+  if (!fileExists(viewerPath)) {
+    err('.flowdocs/viewer.html no encontrado — ejecuta "flowdocs init" primero');
+    console.log('');
+    process.exit(1);
+  }
+  const absolutePath = path.resolve(viewerPath);
+  try {
+    if (process.platform === 'darwin') execSync(`open "${absolutePath}"`, { stdio: 'ignore' });
+    else if (process.platform === 'win32') execSync(`start "" "${absolutePath}"`, { stdio: 'ignore' });
+    else execSync(`xdg-open "${absolutePath}"`, { stdio: 'ignore' });
+    ok('Viewer abierto en el navegador');
+  } catch (e) {
+    info('Abre manualmente: ' + absolutePath);
+    info('O en el navegador: file://' + absolutePath.replace(/\\/g, '/'));
+  }
+  console.log('');
+}
+
+function cmdUsage() {
+  console.log('');
+  console.log(`  ${c.bold}${c.cyan}FlowDocs — Descripción de uso${c.reset}`);
+  console.log('');
+  console.log(`  ${c.bold}1. Generar documentación (una vez)${c.reset}`);
+  dim('    En Cursor/Antigravity escribe en el chat:');
+  console.log(`    ${c.cyan}@discover.md${c.reset}`);
+  dim('    La IA analiza el proyecto y genera .flowdocs/flows.yaml');
+  console.log('');
+  console.log(`  ${c.bold}2. Implementar un flujo${c.reset}`);
+  dim('    En el chat:');
+  console.log(`    ${c.cyan}@implement.md FLOW-003${c.reset}`);
+  dim('    La IA implementa siguiendo los steps del YAML');
+  console.log('');
+  console.log(`  ${c.bold}3. Actualizar estado en el YAML${c.reset}`);
+  dim('    En el chat:');
+  console.log(`    ${c.cyan}@update.md — FLOW-003 implementado, tests en spec/e2e/checkout.spec.ts${c.reset}`);
+  console.log('');
+  console.log(`  ${c.bold}4. Ver tablero visual${c.reset}`);
+  console.log(`    ${c.cyan}flowdocs open${c.reset}`);
+  console.log('');
+  console.log(`  ${c.bold}Comandos de terminal:${c.reset}`);
+  console.log(`    ${c.cyan}flowdocs status${c.reset}   resumen del proyecto`);
+  console.log(`    ${c.cyan}flowdocs update${c.reset}   actualizar viewer y prompts del repo`);
+  console.log(`    ${c.cyan}flowdocs open${c.reset}     abrir viewer en el navegador`);
+  console.log(`    ${c.cyan}flowdocs usage${c.reset}   ver esta descripción`);
+  console.log('');
+}
+
 function cmdHelp() {
   console.log('');
   console.log(`  ${c.bold}${c.cyan}flowdocs${c.reset} — Control de documentación para desarrollo con IA`);
@@ -312,16 +361,15 @@ function cmdHelp() {
   console.log(`    ${c.cyan}init${c.reset}      Instala FlowDocs en el proyecto actual`);
   console.log(`    ${c.cyan}update${c.reset}    Actualiza viewer y prompts (no toca flows.yaml)`);
   console.log(`    ${c.cyan}status${c.reset}    Muestra el resumen del proyecto en la terminal`);
+  console.log(`    ${c.cyan}open${c.reset}     Abre el viewer (tablero visual) en el navegador`);
+  console.log(`    ${c.cyan}usage${c.reset}    Muestra la descripción de uso completa`);
   console.log('');
   console.log(`  ${c.bold}Uso:${c.reset}`);
   console.log('');
-  console.log(`    npx flowdocs init`);
-  console.log(`    npx flowdocs update`);
-  console.log(`    npx flowdocs status`);
+  console.log(`    flowdocs init | update | status | open | usage`);
   console.log('');
-  console.log(`  ${c.bold}Después de init:${c.reset}`);
-  console.log('');
-  console.log(`    Abre Cursor o Antigravity y escribe @discover.md`);
+  console.log(`  ${c.bold}Primer paso:${c.reset} En Cursor/Antigravity escribe ${c.cyan}@discover.md${c.reset}`);
+  console.log(`  ${c.bold}Ver protocolo:${c.reset} ${c.cyan}flowdocs usage${c.reset}`);
   console.log('');
 }
 
@@ -411,6 +459,8 @@ const cmd = process.argv[2];
     case 'init':   await cmdInit();   break;
     case 'update': await cmdUpdate(); break;
     case 'status': cmdStatus();       break;
+    case 'open':   cmdOpen();         break;
+    case 'usage':  cmdUsage();        break;
     default:       cmdHelp();         break;
   }
 })().catch(e => {
