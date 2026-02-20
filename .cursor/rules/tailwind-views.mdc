@@ -1,0 +1,68 @@
+---
+description: Mejores prácticas Tailwind CSS para vistas y componentes. Orden de clases, responsive, dark mode, design tokens. Aplicar al escribir HTML/JSX con utilidades Tailwind.
+globs: ["**/*.html", "**/*.tsx", "**/*.jsx", "viewer.html", "**/components/**"]
+alwaysApply: false
+---
+
+# Tailwind CSS — Vistas y componentes
+
+Al construir vistas con Tailwind en este proyecto, sigue estas prácticas.
+
+## Orden de clases (recomendado)
+
+Agrupa y ordena utilidades en este orden para legibilidad y menos conflictos:
+
+1. **Layout** — `flex`, `grid`, `block`, `inline`, `overflow-*`
+2. **Posicionamiento** — `relative`, `absolute`, `top-*`, `z-*`
+3. **Box model** — `w-*`, `h-*`, `min-*`, `max-*`, `p-*`, `m-*`, `gap-*`
+4. **Tipografía** — `font-*`, `text-*`, `leading-*`, `tracking-*`, `truncate`
+5. **Visual** — `bg-*`, `border-*`, `rounded-*`, `shadow-*`, `opacity-*`
+6. **Interactividad** — `hover:`, `focus:`, `active:`, `disabled:`, `transition-*`
+
+Ejemplo: `flex flex-col gap-4 p-4 rounded-lg bg-surface-800 border border-white/10 hover:border-white/20 transition-colors`
+
+## Responsive (mobile-first)
+
+- Escribe primero estilos base (móvil); luego añade breakpoints con prefijos.
+- Usa `sm:`, `md:`, `lg:`, `xl:` solo donde cambie el diseño.
+- Evita duplicar en todos los breakpoints si el valor es el mismo.
+
+```html
+<div class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 lg:gap-6">
+```
+
+## Dark mode
+
+- En este proyecto el viewer usa `class="dark"` en el root; usa la variante `dark:`.
+- Par de ejemplo: `bg-white dark:bg-surface-900`, `text-slate-800 dark:text-slate-200`.
+- Define un conjunto acotado de tokens (ej. `--color-surface`, `--color-text`) y úsalos en lugar de mezclar muchas clases dark:.
+
+## Design tokens (tailwind.config / CSS)
+
+- Centraliza colores, espaciado y tipografía en configuración o variables CSS.
+- En el viewer se usan colores como `#0a0a0f`, `#6366f1`, `#e2e8f0`; mantén coherencia.
+- Preferir clases semánticas cuando se repiten: ej. `bg-surface-800` en lugar de `bg-[#16161f]` repartido.
+
+## Componentes y reutilización
+
+- Si el mismo bloque de clases se repite 3+ veces, extraer a componente o a una clase `@apply` en CSS.
+- En HTML puro (viewer): una sola hoja de estilos con clases utilitarias; evitar duplicar strings largos de clases — usar clases compartidas en `<style>` si hace falta.
+
+## Lo que evitar
+
+- No encadenar muchas utilidades arbitrarias `w-[...]` sin necesidad; usar la escala del tema.
+- No mezclar `!important` con Tailwind salvo caso excepcional.
+- No dejar clases contradictorias (ej. `hidden` y `block` en el mismo elemento).
+- No usar `inline` para bloques grandes de estilo; mantener clases en el HTML o en componentes.
+
+## Stack en este proyecto
+
+- Tailwind v3 (CDN o build según el subproyecto).
+- Dark mode por defecto; paleta: fondo `#0a0a0f`, acento `#6366f1`, texto `#e2e8f0`.
+- Fuentes: Sora (UI), JetBrains Mono (datos/código).
+
+## Referencias útiles
+
+- [Tailwind: Responsive Design](https://tailwindcss.com/docs/responsive-design)
+- [Tailwind: Dark Mode](https://tailwindcss.com/docs/dark-mode)
+- Orden de clases: usar el plugin Prettier oficial de Tailwind si se integra en el proyecto.

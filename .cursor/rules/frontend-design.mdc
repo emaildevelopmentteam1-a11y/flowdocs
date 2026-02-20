@@ -1,0 +1,74 @@
+---
+description: Diseño de interfaces frontend production-grade con estética distintiva y memorable. Activar en componentes UI, páginas, dashboards, rediseños, o cuando pidan "diseña una pantalla", "crea un componente de".
+globs: ["**/*.html", "**/*.tsx", "**/*.jsx", "**/*.css", "viewer.html", "**/components/**"]
+alwaysApply: false
+---
+
+# Frontend Design (FlowDocs)
+
+Cuando trabajes en UI, componentes o el viewer de este proyecto, sigue esta dirección.
+
+## Antes de escribir código — Define la dirección
+
+1. **¿Qué problema resuelve esta interfaz?** ¿Quién la usa y en qué contexto?
+2. **¿Qué tono tiene?** Elige uno y ejecútalo con precisión:
+   - Brutalmente minimal
+   - Industrial / utilitario (dark, denso, datos)
+   - Editorial / revista
+   - Retro-futurista
+   - Orgánico / natural
+   - Luxury / refinado
+   - Playful / toy-like
+   - Brutalista / raw
+3. **¿Qué va a hacer que esta interfaz sea INOLVIDABLE?** Define una cosa concreta.
+
+**Nunca generes sin una dirección clara.**
+
+## Reglas de implementación
+
+### Tipografía
+- Fuentes con carácter — evita Inter, Roboto, Arial, system-ui
+- Combina display font distintiva con body font refinada
+- Ejemplos: Sora + JetBrains Mono, Fraunces + DM Sans, Cabinet Grotesk + Instrument Serif
+
+### Color
+- CSS variables para consistencia
+- Un color dominante con acentos sharp
+- Commit al tema: dark industrial, cream editorial, neon brutalista — no mezcles sin razón
+
+### Movimiento
+- Micro-interacciones en momentos de alto impacto
+- Page load orquestado con staggered reveals
+- CSS-only para HTML puro; motion library para React si está disponible
+
+### Composición
+- Layouts inesperados — asimetría, overlap, elementos que rompen el grid
+- Espacio negativo generoso O densidad controlada
+- Fondos con atmósfera: gradient mesh, noise, patrones, grain
+
+### Código
+- Production-grade y funcional
+- Cohesivo con la dirección estética
+- Sin dead code ni placeholders
+
+## Lo que NUNCA hacer
+
+- Gradientes purple sobre fondo blanco
+- Cards genéricas con sombra suave y border-radius estándar
+- Inter / Roboto / Arial como principal
+- Layouts predecibles sin punto de vista
+- Diseños que podrían ser de cualquier proyecto
+
+## Stack en este proyecto (FlowDocs)
+
+- **Tailwind CSS** para utilidades
+- **Preline UI** para componentes base (si se usa)
+- **Dark mode** como default
+- **JetBrains Mono** para datos/código, **Sora** para UI general
+- Paleta base: `#0a0a0f` fondo, `#6366f1` acento primario, `#e2e8f0` texto
+
+## Entrega
+
+1. Código completo y funcional
+2. Comentarios solo donde la lógica no es obvia
+3. Una línea explicando decisiones de diseño no obvias
