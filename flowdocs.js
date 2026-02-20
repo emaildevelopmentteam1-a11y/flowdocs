@@ -188,10 +188,11 @@ async function cmdUpdate() {
     process.exit(1);
   }
 
-  // Actualizar viewer y prompts (NO flows.yaml, NO .cursorrules de raíz)
+  // Actualizar viewer, prompts, CLI (NO flows.yaml, NO .cursorrules de raíz)
   const toUpdate = [
     { remote: 'viewer.html',           local: path.join(flowdocsDir, 'viewer.html') },
     { remote: '.cursorrules',          local: path.join(flowdocsDir, '.cursorrules') },
+    { remote: 'bin/flowdocs.js',       local: path.join(flowdocsDir, 'bin', 'flowdocs.js') },
     ...FILES.prompts.map(p => ({
       remote: p,
       local: path.join(flowdocsDir, p)
@@ -213,6 +214,16 @@ async function cmdUpdate() {
       process.stdout.write(`\r${c.red}  ✗${c.reset} ${name} — ${e.message}\n`);
       failed++;
     }
+  }
+
+  // Si actualizamos el CLI del proyecto, actualizar también el global si existe
+  const localCli = path.join(flowdocsDir, 'bin', 'flowdocs.js');
+  const globalCli = path.join(process.env.HOME || process.env.USERPROFILE || '', '.flowdocs', 'bin', 'flowdocs.js');
+  if (fileExists(localCli) && fileExists(globalCli)) {
+    try {
+      fs.copyFileSync(localCli, globalCli);
+      ok('Comando global flowdocs actualizado');
+    } catch (e) {}
   }
 
   console.log('');
