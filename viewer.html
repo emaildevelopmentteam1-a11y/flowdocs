@@ -115,11 +115,13 @@ tr:hover td { background: #ffffff04; }
       </div>
     </nav>
 
-    <!-- Project info -->
+    <!-- Project info (meta.app, meta.version, meta.updated_at, meta.description) -->
     <div style="padding:12px 16px; border-top:1px solid #ffffff0f;">
       <div style="font-size:11px; color:#475569; margin-bottom:4px;">PROYECTO</div>
-      <div id="sidebar-app" style="font-size:13px; font-weight:600; color:#e2e8f0;">Sarchi POS</div>
-      <div id="sidebar-version" style="font-size:11px; color:#475569; font-family:'JetBrains Mono';">v2.1.0</div>
+      <div id="sidebar-app" style="font-size:13px; font-weight:600; color:#e2e8f0;">—</div>
+      <div id="sidebar-version" style="font-size:11px; color:#475569; font-family:'JetBrains Mono';">—</div>
+      <div id="sidebar-updated" style="font-size:10px; color:#334155; margin-top:4px;">—</div>
+      <div id="sidebar-description" style="font-size:11px; color:#475569; margin-top:6px; line-height:1.4; max-height:36px; overflow:hidden; text-overflow:ellipsis;" title=""></div>
     </div>
   </aside>
 
@@ -546,8 +548,18 @@ const MOCK_DATA = {
 // CARGA DE flows.yaml (mismo directorio que viewer.html)
 // ============================================================
 function normalizeData(raw) {
+  const meta = raw.meta || MOCK_DATA.meta;
+  const stats = meta.stats || MOCK_DATA.meta.stats || {};
+  const sprint = meta.sprint || MOCK_DATA.meta.sprint || {};
   return {
-    meta: raw.meta || MOCK_DATA.meta,
+    meta: {
+      app: meta.app ?? MOCK_DATA.meta.app,
+      version: meta.version ?? MOCK_DATA.meta.version,
+      description: meta.description ?? MOCK_DATA.meta.description,
+      updated_at: meta.updated_at ?? MOCK_DATA.meta.updated_at,
+      sprint: { number: sprint.number ?? 1, goal: sprint.goal ?? '', start: sprint.start ?? '', end: sprint.end ?? '', days_left: sprint.days_left ?? 0 },
+      stats: { total: stats.total ?? 0, implemented: stats.implemented ?? 0, partial: stats.partial ?? 0, pending: stats.pending ?? 0, with_tests: stats.with_tests ?? 0, coverage_pct: stats.coverage_pct ?? 0 }
+    },
     modules: Array.isArray(raw.modules) ? raw.modules : MOCK_DATA.modules,
     entities: Array.isArray(raw.entities) ? raw.entities : MOCK_DATA.entities,
     stories: Array.isArray(raw.stories) ? raw.stories : MOCK_DATA.stories,
@@ -657,21 +669,26 @@ function showView(name) {
 // ============================================================
 function renderDashboard() {
   const s = data.meta.stats;
-  document.getElementById('sidebar-app').textContent = data.meta.app;
-  document.getElementById('sidebar-version').textContent = `v${data.meta.version}`;
+  const total = s.total || 0;
+  document.getElementById('sidebar-app').textContent = data.meta.app || '—';
+  document.getElementById('sidebar-version').textContent = data.meta.version ? `v${data.meta.version}` : '—';
+  const sidebarUpdated = document.getElementById('sidebar-updated');
+  if (sidebarUpdated) { sidebarUpdated.textContent = data.meta.updated_at ? `Actualizado: ${data.meta.updated_at}` : ''; }
+  const sidebarDesc = document.getElementById('sidebar-description');
+  if (sidebarDesc) { sidebarDesc.textContent = data.meta.description || ''; sidebarDesc.title = data.meta.description || ''; }
 
-  document.getElementById('stat-total').textContent = s.total;
-  document.getElementById('stat-implemented').textContent = s.implemented;
-  document.getElementById('stat-notests').textContent = s.total - s.with_tests;
-  document.getElementById('stat-coverage').textContent = s.coverage_pct + '%';
+  document.getElementById('stat-total').textContent = total;
+  document.getElementById('stat-implemented').textContent = s.implemented ?? 0;
+  document.getElementById('stat-notests').textContent = Math.max(0, (total || 0) - (s.with_tests ?? 0));
+  document.getElementById('stat-coverage').textContent = (s.coverage_pct ?? 0) + '%';
 
-  const impPct = Math.round(s.implemented/s.total*100);
-  const noTestPct = Math.round((s.total-s.with_tests)/s.total*100);
-  document.getElementById('bar-implemented').style.width = impPct+'%';
-  document.getElementById('bar-notests').style.width = noTestPct+'%';
-  document.getElementById('bar-coverage').style.width = s.coverage_pct+'%';
+  const impPct = total ? Math.round((s.implemented ?? 0) / total * 100) : 0;
+  const noTestPct = total ? Math.round((total - (s.with_tests ?? 0)) / total * 100) : 0;
+  document.getElementById('bar-implemented').style.width = impPct + '%';
+  document.getElementById('bar-notests').style.width = noTestPct + '%';
+  document.getElementById('bar-coverage').style.width = (s.coverage_pct ?? 0) + '%';
 
-  // Modules
+  // Modules (id, name, description, actors)
   const ml = document.getElementById('modules-list');
   ml.innerHTML = '';
   data.modules.forEach(mod => {
@@ -681,12 +698,15 @@ function renderDashboard() {
     const part = flows.filter(f=>f.status==='partial').length;
     const pct = Math.round(impl/flows.length*100);
     const color = pct===100?'#22c55e':pct>50?'#f59e0b':'#ef4444';
+    const actors = Array.isArray(mod.actors) ? mod.actors.join(', ') : (mod.actors || '');
     ml.innerHTML += `
       <div>
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
           <span style="font-size:13px;color:#cbd5e1;">${mod.name}</span>
           <span style="font-size:11px;font-family:'JetBrains Mono';color:${color};">${impl}/${flows.length}</span>
         </div>
+        ${mod.description ? `<div style="font-size:11px;color:#64748b;margin-bottom:6px;line-height:1.3;">${mod.description}</div>` : ''}
+        ${actors ? `<div style="font-size:10px;color:#334155;margin-bottom:6px;">Actores: ${actors}</div>` : ''}
         <div class="progress-bar">
           <div class="progress-fill" style="background:${color};width:${pct}%"></div>
         </div>
@@ -700,7 +720,7 @@ function renderDashboard() {
   // Critical sin tests
   const cl = document.getElementById('critical-list');
   cl.innerHTML = '';
-  const critNoTest = data.flows.filter(f=>f.priority==='critical'&&f.test_status==='none');
+  const critNoTest = data.flows.filter(f=>f.priority==='critical'&&(f.test_status||'none')==='none');
   if(!critNoTest.length) {
     cl.innerHTML = '<div style="font-size:12px;color:#22c55e;padding:8px 0;">✓ Todos los flujos críticos tienen tests</div>';
   } else {
@@ -737,25 +757,25 @@ function renderDashboard() {
 // BACKLOG
 // ============================================================
 function renderBacklog() {
-  const sp = data.meta.sprint;
-  // Banner sprint
-  const daysColor = sp.days_left <= 3 ? '#ef4444' : sp.days_left <= 5 ? '#f59e0b' : '#10b981';
+  const sp = data.meta.sprint || {};
+  const daysLeft = sp.days_left ?? 0;
+  const daysColor = daysLeft <= 3 ? '#ef4444' : daysLeft <= 5 ? '#f59e0b' : '#10b981';
   document.getElementById('sprint-banner').innerHTML = `
     <div>
       <div style="font-size:10px;color:#64748b;font-family:'JetBrains Mono';margin-bottom:4px;">SPRINT ACTIVO</div>
-      <div style="font-size:20px;font-weight:700;color:#e2e8f0;">Sprint ${sp.number}</div>
+      <div style="font-size:20px;font-weight:700;color:#e2e8f0;">Sprint ${sp.number ?? '—'}</div>
     </div>
     <div style="flex:1;padding:0 16px;border-left:1px solid #1e293b;">
       <div style="font-size:11px;color:#94a3b8;margin-bottom:4px;">Objetivo</div>
-      <div style="font-size:13px;color:#cbd5e1;">${sp.goal}</div>
+      <div style="font-size:13px;color:#cbd5e1;">${sp.goal || '—'}</div>
     </div>
     <div style="text-align:center;min-width:80px;">
-      <div style="font-size:28px;font-weight:700;color:${daysColor};">${sp.days_left}</div>
+      <div style="font-size:28px;font-weight:700;color:${daysColor};">${daysLeft}</div>
       <div style="font-size:11px;color:#64748b;">días restantes</div>
     </div>
     <div style="text-align:center;min-width:80px;">
-      <div style="font-size:11px;color:#64748b;margin-bottom:4px;">${sp.start} → ${sp.end}</div>
-      <div style="font-size:11px;color:#475569;">Sprint ${sp.number}</div>
+      <div style="font-size:11px;color:#64748b;margin-bottom:4px;">${sp.start || ''} → ${sp.end || ''}</div>
+      <div style="font-size:11px;color:#475569;">Sprint ${sp.number ?? '—'}</div>
     </div>`;
 
   // Agrupar stories con sus flujos
@@ -1017,7 +1037,7 @@ function openPanel(flowId) {
 
   document.getElementById('panel-id').textContent = `${f.id} · ${typeLabels[f.type]||f.type}`;
 
-  const stepsHtml = f.steps.map((s,i)=>`
+  const stepsHtml = (Array.isArray(f.steps) ? f.steps : []).map((s,i)=>`
     <div style="display:flex;gap:10px;padding:6px 0;border-bottom:1px solid #ffffff06;">
       <span style="font-family:'JetBrains Mono';font-size:11px;color:#334155;flex-shrink:0;width:16px;">${i+1}</span>
       <span style="font-size:13px;color:#94a3b8;">${s}</span>
@@ -1053,14 +1073,16 @@ function openPanel(flowId) {
   document.getElementById('panel-content').innerHTML = `
     <div style="margin-bottom:20px;">
       <div style="font-size:18px;font-weight:700;color:#e2e8f0;margin-bottom:10px;line-height:1.3;">${f.name}</div>
+      ${f.description ? `<div style="font-size:13px;color:#94a3b8;margin-bottom:12px;line-height:1.4;">${f.description}</div>` : ''}
       <div style="display:flex;flex-wrap:wrap;gap:6px;">
-        ${statusBadge(f.status)}
+        ${statusBadge(f.status||'pending')}
         ${sprintStatusBadge(f.sprint_status)}
-        ${testBadge(f.test_status)}
-        ${priorityBadge(f.priority)}
+        ${testBadge(f.test_status||'none')}
+        ${priorityBadge(f.priority||'low')}
         <span class="badge badge-gray">${moduleName(f.module)}</span>
-        <span class="badge badge-gray">${f.actor}</span>
-        <span style="font-size:10px;font-family:'JetBrains Mono';color:#64748b;background:#1e293b;padding:2px 8px;border-radius:4px;">${f.story_points} pts</span>
+        ${f.actor ? `<span class="badge badge-gray">${f.actor}</span>` : ''}
+        ${(f.story_points != null) ? `<span style="font-size:10px;font-family:'JetBrains Mono';color:#64748b;background:#1e293b;padding:2px 8px;border-radius:4px;">${f.story_points} pts</span>` : ''}
+        ${(f.entities && f.entities.length) ? f.entities.map(e=>`<span class="badge badge-blue" style="font-size:10px;">${e}</span>`).join('') : ''}
       </div>
     </div>
 
@@ -1077,7 +1099,7 @@ function openPanel(flowId) {
 
     <div style="background:#0f0f17;border-radius:8px;padding:12px;margin-bottom:16px;">
       <div style="font-size:11px;color:#475569;margin-bottom:6px;text-transform:uppercase;letter-spacing:.08em;">Disparador</div>
-      <div style="font-size:13px;color:#cbd5e1;">${f.trigger}</div>
+      <div style="font-size:13px;color:#cbd5e1;">${f.trigger || '—'}</div>
     </div>
 
     <div style="margin-bottom:16px;">
@@ -1107,7 +1129,7 @@ function openPanel(flowId) {
 
     <div style="margin-bottom:16px;">
       <div style="font-size:11px;color:#475569;margin-bottom:8px;text-transform:uppercase;letter-spacing:.08em;">Diagrama</div>
-      <div class="mermaid" id="${panelId}">${f.diagram}</div>
+      <div class="mermaid" id="${panelId}">${f.diagram ? String(f.diagram).trim() : 'flowchart LR\n  A[Sin diagrama] --> B[—]'}</div>
     </div>
 
     <div style="margin-bottom:16px;">
