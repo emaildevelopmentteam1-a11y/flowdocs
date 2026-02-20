@@ -138,6 +138,11 @@ tr:hover td { background: #ffffff04; }
       </div>
     </header>
 
+    <!-- Aviso cuando file:// y sin YAML cargado -->
+    <div id="file-protocol-banner" style="display:none; padding:10px 24px; background:#f59e0b18; border-bottom:1px solid #f59e0b30; font-size:12px; color:#fbbf24;">
+      Abriste el viewer como archivo local. Para ver <strong>tu</strong> proyecto: usa el botón <strong>Cargar archivo</strong> (arriba a la derecha) y elige <code style="background:#00000030;padding:2px 6px;border-radius:4px;">flows.yaml</code> de esta carpeta.
+    </div>
+
     <!-- Content area -->
     <main style="flex:1; overflow-y:auto; min-height:0;">
 
@@ -606,7 +611,7 @@ let selectedFlow = null;
 // ============================================================
 // UTILS
 // ============================================================
-const typeLabels = { user_flow:'User Flow', task_flow:'Task Flow', business_flow:'Business Flow', data_flow:'Data Flow', error_flow:'Error Flow', system_flow:'System Flow' };
+const typeLabels = { user_flow:'User Flow', task_flow:'Task Flow', business_flow:'Business Flow', data_flow:'Data Flow', error_flow:'Error Flow', system_flow:'System Flow', integration_flow:'Integration' };
 const priorityLabels = { critical:'Crítico', high:'Alto', medium:'Medio', low:'Bajo' };
 
 function statusBadge(s) {
@@ -932,9 +937,9 @@ function renderListRows() {
         <td style="color:#e2e8f0;font-weight:500;max-width:260px;">${f.name}</td>
         <td><span class="badge badge-gray">${moduleName(f.module)}</span></td>
         <td style="color:#64748b;font-size:12px;">${typeLabels[f.type]||f.type}</td>
-        <td>${statusBadge(f.status)}</td>
-        <td>${testBadge(f.test_status)}</td>
-        <td>${priorityBadge(f.priority)}</td>
+        <td>${statusBadge(f.status||'pending')}</td>
+        <td>${testBadge(f.test_status||'none')}</td>
+        <td>${priorityBadge(f.priority||'low')}</td>
       </tr>`;
   });
   if(!flows.length) {
@@ -965,7 +970,12 @@ function renderEntities() {
       return `<span class="state-node" style="background:${c}18;color:${c};border:1px solid ${c}30;">${s}</span>`;
     }).join('');
 
+    const baseStyle = "font-family:'JetBrains Mono';font-size:10px;color:#6366f1;background:#6366f115;padding:2px 6px;border-radius:4px;border:1px solid #6366f125;";
     const transHtml = e.transitions.map(t=>{
+      const triggerStr = (t.trigger || '').toString();
+      const firstFlowId = triggerStr.split(',')[0].trim();
+      const canOpen = firstFlowId && data.flows.some(fl=>fl.id===firstFlowId);
+      const onclick = canOpen ? ` onclick="openPanel('${firstFlowId.replace(/'/g,"\\'")}')" style="cursor:pointer;${baseStyle}"` : ` style="${baseStyle}"`;
       return `
         <div class="transition-arrow">
           <span style="font-family:'JetBrains Mono';font-size:11px;color:${colors[t.from]||'#6366f1'};">${t.from}</span>
@@ -975,7 +985,7 @@ function renderEntities() {
           <span style="font-family:'JetBrains Mono';font-size:11px;color:${colors[t.to]||'#22c55e'};">${t.to}</span>
           <span style="flex:1;"></span>
           <span style="font-size:11px;color:#334155;">${t.label}</span>
-          <span onclick="openPanel('${t.trigger}')" style="font-family:'JetBrains Mono';font-size:10px;color:#6366f1;background:#6366f115;padding:2px 6px;border-radius:4px;cursor:pointer;border:1px solid #6366f125;">${t.trigger}</span>
+          <span${onclick}>${triggerStr}</span>
         </div>`;
     }).join('');
 
@@ -1146,6 +1156,10 @@ document.addEventListener('DOMContentLoaded', async function() {
 function updateDataSourceHint() {
   const el = document.getElementById('data-source-hint');
   if (!el) return;
+  const banner = document.getElementById('file-protocol-banner');
+  if (banner) {
+    banner.style.display = (window.location.protocol === 'file:' && dataSource === 'mock') ? 'block' : 'none';
+  }
   if (dataSource === 'yaml') {
     el.textContent = 'flows.yaml';
     el.title = 'Datos cargados desde la URL. Usa Recargar para refrescar.';

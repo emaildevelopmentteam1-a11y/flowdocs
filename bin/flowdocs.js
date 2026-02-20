@@ -315,25 +315,55 @@ function cmdStatus() {
   console.log('');
 }
 
+const FLOWDOCS_PORT = 3847;
+const MIME = { '.html': 'text/html', '.yaml': 'text/yaml', '.yml': 'text/yaml', '.json': 'application/json', '.md': 'text/markdown', '.txt': 'text/plain' };
+
 function cmdOpen() {
   const cwd = process.cwd();
-  const viewerPath = path.join(cwd, '.flowdocs', 'viewer.html');
+  const flowdocsDir = path.join(cwd, '.flowdocs');
+  const viewerPath = path.join(flowdocsDir, 'viewer.html');
   if (!fileExists(viewerPath)) {
     err('.flowdocs/viewer.html no encontrado — ejecuta "flowdocs init" primero');
     console.log('');
     process.exit(1);
   }
-  const absolutePath = path.resolve(viewerPath);
-  try {
-    if (process.platform === 'darwin') execSync(`open "${absolutePath}"`, { stdio: 'ignore' });
-    else if (process.platform === 'win32') execSync(`start "" "${absolutePath}"`, { stdio: 'ignore' });
-    else execSync(`xdg-open "${absolutePath}"`, { stdio: 'ignore' });
-    ok('Viewer abierto en el navegador');
-  } catch (e) {
-    info('Abre manualmente: ' + absolutePath);
-    info('O en el navegador: file://' + absolutePath.replace(/\\/g, '/'));
-  }
-  console.log('');
+  const flowdocsDirResolved = path.resolve(flowdocsDir);
+  const server = http.createServer((req, res) => {
+    const subPath = (req.url === '/' ? '/viewer.html' : req.url).split('?')[0].replace(/^\/+/, '');
+    let filePath = path.resolve(flowdocsDirResolved, subPath);
+    if (!filePath.startsWith(flowdocsDirResolved)) filePath = viewerPath;
+    if (!fileExists(filePath) || !fs.statSync(filePath).isFile()) {
+      res.writeHead(404, { 'Content-Type': 'text/plain' });
+      res.end('Not found');
+      return;
+    }
+    const ext = path.extname(filePath);
+    const contentType = MIME[ext] || 'application/octet-stream';
+    res.writeHead(200, { 'Content-Type': contentType });
+    res.end(fs.readFileSync(filePath));
+  });
+  server.listen(FLOWDOCS_PORT, '127.0.0.1', () => {
+    const url = `http://127.0.0.1:${FLOWDOCS_PORT}/viewer.html`;
+    try {
+      setTimeout(() => {
+        if (process.platform === 'darwin') execSync(`open "${url}"`, { stdio: 'ignore' });
+        else if (process.platform === 'win32') execSync(`start "" "${url}"`, { stdio: 'ignore' });
+        else execSync(`xdg-open "${url}"`, { stdio: 'ignore' });
+      }, 300);
+    } catch (_) {}
+    ok('Viewer abierto — ' + url);
+    dim('  El servidor sirve tu flows.yaml automáticamente. Ctrl+C para cerrar.');
+    console.log('');
+  });
+  server.on('error', (e) => {
+    if (e.code === 'EADDRINUSE') {
+      err(`Puerto ${FLOWDOCS_PORT} en uso. Cierra la otra ventana del viewer o ejecuta: kill-port ${FLOWDOCS_PORT}`);
+    } else {
+      err(e.message);
+    }
+    console.log('');
+    process.exit(1);
+  });
 }
 
 function cmdUsage() {
