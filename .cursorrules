@@ -1,0 +1,25 @@
+# FlowDocs — Contexto Permanente
+
+Este proyecto usa FlowDocs. `.flowdocs/flows.yaml` es la fuente de verdad.
+
+## Siempre
+
+- Lee `.flowdocs/flows.yaml` al inicio de cualquier tarea de desarrollo
+- Sigue los `steps` del flujo al implementar — no improvises
+- Al terminar una implementación, actualiza `status` y `sprint_status` en el YAML
+
+## Nunca
+
+- Implementar funcionalidad sin flujo documentado (pregunta primero)
+- Marcar `implemented` si hay funcionalidad core faltante
+- Inventar rutas de archivos de test
+
+## Comandos disponibles
+
+| Archivo | Qué hace |
+|---------|----------|
+| `.flowdocs/prompts/discover.md`   | Documenta el proyecto desde cero |
+| `.flowdocs/prompts/implement.md`  | Implementa un flujo específico |
+| `.flowdocs/prompts/update.md`     | Actualiza estado de flujos |
+| `.flowdocs/prompts/audit.md`      | Encuentra inconsistencias |
+| `.flowdocs/prompts/expand.md`     | Profundiza en un módulo |
