@@ -233,6 +233,7 @@ async function cmdUpdate() {
     warn('flows.yaml no fue modificado');
   } else {
     warn(`${updated} actualizados, ${failed} fallaron`);
+    dim('  Comprueba conexión a internet y que GitHub esté accesible.');
   }
   dim('  Ver descripción de uso: flowdocs usage');
   console.log('');

@@ -44,10 +44,13 @@ Dime qué cambió. Ejemplos de cómo invocarlo:
 
 ---
 
-## ENTREGA
+## ENTREGA (obligatorio para que el update funcione)
 
-1. Aplica los cambios en `.flowdocs/flows.yaml`
-2. Lista exactamente qué cambió:
+1. **Aplica los cambios** en `.flowdocs/flows.yaml` (edita el archivo en el workspace).
+2. **Incluye en tu respuesta el contenido completo del archivo** `.flowdocs/flows.yaml` actualizado dentro de un bloque de código (por ejemplo con cabecera `` ```yaml ``). Así el usuario puede comprobar el resultado o reemplazar el archivo si la edición automática falló.
+3. Lista exactamente qué cambió:
    - Flujos actualizados y qué campo cambió
    - Stats antes → después
-3. Si detectas inconsistencias mientras actualizas, señálalo sin cambiarlo a menos que se te pidió
+4. Si detectas inconsistencias mientras actualizas, señálalo sin cambiarlo a menos que se te pidió
+
+**Por qué:** Si solo describes los cambios ("cambia FLOW-003 a implemented") pero no escribes el archivo ni muestras el YAML completo, el usuario no puede aplicar el update. Para que el update funcione, el archivo debe quedar modificado o el YAML completo debe estar en tu respuesta para copiar y pegar.

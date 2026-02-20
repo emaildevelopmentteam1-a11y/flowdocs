@@ -16,8 +16,8 @@ Antes de escribir una sola línea del YAML, explora el proyecto en este orden:
 1. **Lee la raíz del proyecto** — `README.md`, `package.json`, `Gemfile`, `pyproject.toml`, `composer.json`, o cualquier archivo de configuración principal. Necesitas entender el stack, el nombre del proyecto y su propósito.
 
 2. **Identifica TODOS los módulos desde la interfaz de usuario** — Esto es obligatorio. La UI es la fuente de verdad de qué existe en el sistema.
-   - Busca el **menú de navegación**, **sidebar**, **layout** o **router**: archivos como `layout.tsx`, `Sidebar.tsx`, `Nav.tsx`, `routes.ts`, `menuItems`, configuración de rutas en Next/React/Vue.
-   - **Cada ítem de primer nivel en el menú o en las rutas es un módulo**. No agrupes varios bajo uno solo si el usuario los ve separados.
+   - Busca en el código: **`navItems`**, **`sidebar`**, **`menu`**, **`navigation`**, **`routes`** (grep o búsqueda en archivos como `Sidebar.tsx`, `Layout.tsx`, `Nav.tsx`, `routes.ts`, `menuItems`). En React/Next suele ser un array de objetos con `name` y `href` o `path`. Lee ese array completo.
+   - **Cada ítem de primer nivel en ese array es un módulo**. No agrupes "Productos" con "Categorías" ni "Historial Ventas" con "Reportes" si el menú los muestra por separado.
    - No inventes un "máximo" de módulos. Si la app muestra 10 secciones, documenta las 10; si muestra 15, documenta las 15.
    - Si existe `.flowdocs/discovery-hints.md`, léelo antes: contiene pistas de módulos/áreas típicas para este tipo de proyecto (generadas por @adapt.md). Asegúrate de considerar cada una como candidata a módulo.
 
@@ -31,14 +31,20 @@ Antes de escribir una sola línea del YAML, explora el proyecto en este orden:
 
 7. **Lee los tests si existen** — `test/`, `spec/`, `__tests__/`, `cypress/`, `e2e/`. Los tests describen el comportamiento esperado mejor que el código.
 
-Después de explorar, escribe un resumen interno de lo que encontraste:
-- Nombre y propósito del sistema
-- Stack tecnológico
-- **Lista completa de módulos** — uno por cada ítem de navegación o sección principal que viste (sin límite de cantidad; si hay 12, lista los 12)
-- Entidades principales con sus estados
-- Número estimado de flujos totales
+Después de explorar, escribe un **CHECKLIST OBLIGATORIO** (en el chat o en un bloque de código) antes de generar el YAML:
 
-**No continues a la Fase 2 hasta tener este resumen claro. Si el menú o las rutas muestran más módulos de los que listaste, vuelve a revisar el layout/sidebar/router y añade los que falten.**
+```
+CHECKLIST DE NAVEGACIÓN (obligatorio)
+- [nombre exacto del ítem] → [ruta/href si la viste]
+- ...
+Total: N ítems
+```
+
+- **Cantidad:** El número de entradas en `modules:` del YAML debe coincidir con este total. Excepción: si dos ítems comparten la misma ruta base (ej. "Corte de Caja" y "Historial de Caja" → `/cash-register`), puedes agruparlos en un solo módulo "Caja". En ese caso, documenta ambos como subsecciones o flujos dentro del módulo.
+- Si tienes **menos módulos que ítems del menú**, has omitido algo: vuelve al sidebar/nav y añade el módulo faltante.
+- Resumen interno: nombre del sistema, stack, entidades, número estimado de flujos.
+
+**No pases a la Fase 2 sin haber publicado este checklist. No generes el YAML con menos módulos que ítems de menú (salvo la excepción de subrutas).**
 
 ---
 
@@ -191,7 +197,7 @@ Antes de entregar el YAML, verifica cada punto:
 
 ## ENTREGA
 
-1. Crea el archivo `.flowdocs/flows.yaml` con el contenido completo
+1. **Escribe el archivo `.flowdocs/flows.yaml`** con el contenido completo. Debes **sobrescribir el archivo** con el YAML completo; no basta con describir cambios ni mostrar un fragmento. El archivo debe poder abrirse y contener todo (meta, modules, entities, stories, flows).
 2. Muestra un resumen de lo que encontraste:
    - Total de módulos documentados
    - Total de flujos por módulo
@@ -200,3 +206,5 @@ Antes de entregar el YAML, verifica cada punto:
 3. Si encontraste áreas donde necesitas más contexto para documentar mejor, dilo explícitamente
 
 **No preguntes antes de empezar. Explora, analiza y genera. Si algo no está claro, documenta lo que puedas y señala los huecos al final.**
+
+**Importante:** Si el proyecto tiene un `Sidebar`, `navItems`, `menuItems` o similar, lee ese array/archivo literalmente y usa cada entrada como un módulo. No inventes agrupaciones (ej. "Inventario" que incluye Productos y Categorías): si el menú tiene "Productos" y "Categorías" por separado, son dos módulos.
