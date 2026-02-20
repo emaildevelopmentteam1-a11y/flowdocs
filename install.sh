@@ -49,7 +49,7 @@ download "prompts/implement.md" "$PROMPTS_DIR/implement.md"
 download "prompts/update.md"    "$PROMPTS_DIR/update.md"
 download "prompts/audit.md"     "$PROMPTS_DIR/audit.md"
 download "prompts/expand.md"    "$PROMPTS_DIR/expand.md"
-chmod +x "$FLOWDOCS_DIR/bin/flowdocs.js"
+[ -f "$FLOWDOCS_DIR/bin/flowdocs.js" ] && chmod +x "$FLOWDOCS_DIR/bin/flowdocs.js"
 
 # Detectar nombre del proyecto
 PROJECT_NAME=$(basename "$PWD")
