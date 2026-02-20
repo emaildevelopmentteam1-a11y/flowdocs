@@ -677,27 +677,28 @@ function renderDashboard() {
   const sidebarDesc = document.getElementById('sidebar-description');
   if (sidebarDesc) { sidebarDesc.textContent = data.meta.description || ''; sidebarDesc.title = data.meta.description || ''; }
 
-  document.getElementById('stat-total').textContent = total;
+  const flowCount = (data.flows && data.flows.length) || 0;
+  const totalFlows = flowCount > 0 ? flowCount : (total || 0);
+  document.getElementById('stat-total').textContent = totalFlows;
   document.getElementById('stat-implemented').textContent = s.implemented ?? 0;
-  document.getElementById('stat-notests').textContent = Math.max(0, (total || 0) - (s.with_tests ?? 0));
+  document.getElementById('stat-notests').textContent = Math.max(0, totalFlows - (s.with_tests ?? 0));
   document.getElementById('stat-coverage').textContent = (s.coverage_pct ?? 0) + '%';
 
-  const impPct = total ? Math.round((s.implemented ?? 0) / total * 100) : 0;
-  const noTestPct = total ? Math.round((total - (s.with_tests ?? 0)) / total * 100) : 0;
+  const impPct = totalFlows ? Math.round((s.implemented ?? 0) / totalFlows * 100) : 0;
+  const noTestPct = totalFlows ? Math.round((totalFlows - (s.with_tests ?? 0)) / totalFlows * 100) : 0;
   document.getElementById('bar-implemented').style.width = impPct + '%';
   document.getElementById('bar-notests').style.width = noTestPct + '%';
   document.getElementById('bar-coverage').style.width = (s.coverage_pct ?? 0) + '%';
 
-  // Modules (id, name, description, actors)
+  // Modules (id, name, description, actors) — mostrar TODOS los módulos del YAML, aunque tengan 0 flujos
   const ml = document.getElementById('modules-list');
   ml.innerHTML = '';
   data.modules.forEach(mod => {
     const flows = data.flows.filter(f=>f.module===mod.id);
-    if(!flows.length) return;
     const impl = flows.filter(f=>f.status==='implemented').length;
     const part = flows.filter(f=>f.status==='partial').length;
-    const pct = Math.round(impl/flows.length*100);
-    const color = pct===100?'#22c55e':pct>50?'#f59e0b':'#ef4444';
+    const pct = flows.length ? Math.round(impl/flows.length*100) : 0;
+    const color = flows.length === 0 ? '#475569' : (pct===100?'#22c55e':pct>50?'#f59e0b':'#ef4444');
     const actors = Array.isArray(mod.actors) ? mod.actors.join(', ') : (mod.actors || '');
     ml.innerHTML += `
       <div>
@@ -778,14 +779,17 @@ function renderBacklog() {
       <div style="font-size:11px;color:#475569;">Sprint ${sp.number ?? '—'}</div>
     </div>`;
 
+  // IDs de flujos que están en alguna historia
+  const flowIdsInStories = new Set((data.stories || []).flatMap(s => s.flow_ids || []));
+
   // Agrupar stories con sus flujos
-  const stories = data.stories;
+  const stories = data.stories || [];
   const priorityOrder = { critical:0, high:1, medium:2, low:3 };
-  const sorted = [...stories].sort((a,b) => priorityOrder[a.priority] - priorityOrder[b.priority]);
+  const sorted = [...stories].sort((a,b) => (priorityOrder[a.priority] ?? 4) - (priorityOrder[b.priority] ?? 4));
 
   let html = '';
   sorted.forEach(s => {
-    const flows = data.flows.filter(f => s.flow_ids.includes(f.id));
+    const flows = data.flows.filter(f => (s.flow_ids || []).includes(f.id));
     const totalPts = flows.reduce((a,f)=>a+(f.story_points||0),0);
     const donePts  = flows.filter(f=>f.sprint_status==='done').reduce((a,f)=>a+(f.story_points||0),0);
     const pct = totalPts ? Math.round(donePts/totalPts*100) : 0;
@@ -809,12 +813,32 @@ function renderBacklog() {
           <span style="font-family:'JetBrains Mono';font-size:10px;color:#475569;min-width:64px;">${f.id}</span>
           <span style="font-size:12px;color:#cbd5e1;flex:1;">${f.name}</span>
           ${sprintStatusBadge(f.sprint_status)}
-          ${testBadge(f.test_status)}
-          <span style="font-size:11px;font-family:'JetBrains Mono';color:#64748b;">${f.story_points}pts</span>
+          ${testBadge(f.test_status||'none')}
+          <span style="font-size:11px;font-family:'JetBrains Mono';color:#64748b;">${f.story_points!=null?f.story_points+'pts':''}</span>
         </div>`).join('')}
       </div>
     </div>`;
   });
+
+  // Flujos que NO están en ninguna historia — así todos los flujos del YAML aparecen en algún sitio
+  const orphanFlows = data.flows.filter(f => !flowIdsInStories.has(f.id));
+  if (orphanFlows.length) {
+    html += `
+    <div style="background:#1e1e2a;border:1px solid #334155;border-radius:10px;padding:16px 20px;margin-bottom:12px;">
+      <div style="font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:.08em;margin-bottom:12px;">Flujos sin historia asignada (${orphanFlows.length})</div>
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        ${orphanFlows.map(f => `
+        <div onclick="openPanel('${f.id}')" style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:6px;cursor:pointer;background:#0a0f1e;border:1px solid #1a2540;">
+          <span style="font-family:'JetBrains Mono';font-size:10px;color:#475569;min-width:64px;">${f.id}</span>
+          <span style="font-size:12px;color:#cbd5e1;flex:1;">${f.name}</span>
+          <span class="badge badge-gray" style="font-size:10px;">${moduleName(f.module)}</span>
+          ${statusBadge(f.status||'pending')}
+          ${testBadge(f.test_status||'none')}
+          ${(f.story_points != null) ? `<span style="font-size:11px;font-family:'JetBrains Mono';color:#64748b;">${f.story_points}pts</span>` : ''}
+        </div>`).join('')}
+      </div>
+    </div>`;
+  }
   document.getElementById('backlog-content').innerHTML = html;
 }
 
@@ -866,7 +890,11 @@ function renderBoardColumns() {
   if(boardTypeFilter!=='all')   flows = flows.filter(f=>f.type===boardTypeFilter);
 
   const cols = { todo:[], doing:[], review:[], done:[] };
-  flows.forEach(f => cols[f.sprint_status || 'todo']?.push(f));
+  const validCols = ['todo','doing','review','done'];
+  flows.forEach(f => {
+    const col = (f.sprint_status && validCols.includes(f.sprint_status)) ? f.sprint_status : 'todo';
+    cols[col].push(f);
+  });
 
   document.getElementById('count-pending').textContent     = cols.todo.length;
   document.getElementById('count-partial').textContent     = cols.doing.length;
