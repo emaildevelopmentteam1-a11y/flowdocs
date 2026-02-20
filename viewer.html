@@ -72,6 +72,37 @@ tr:hover td { background: #ffffff04; }
 .transition-arrow { display: flex; align-items: center; gap: 8px; padding: 6px 0; font-size: 12px; color: #475569; }
 .col-header { background: #0f0f17; border: 1px solid #ffffff0f; border-radius: 10px 10px 0 0; padding: 12px 16px; display: flex; align-items: center; justify-content: space-between; }
 .col-body { background: #0a0a0f; border: 1px solid #ffffff0f; border-top: none; border-radius: 0 0 10px 10px; padding: 12px; min-height: 400px; display: flex; flex-direction: column; gap: 8px; }
+
+/* Backlog HU cards (estructura referencia) */
+#backlog-content { display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 16px; }
+.story-card { background: #0f1117; border: 1px solid #1a1f2e; border-radius: 12px; overflow: hidden; cursor: pointer; transition: border-color .2s, transform .15s; }
+.story-card:hover { border-color: #6366f140; transform: translateY(-1px); }
+.story-card-header { display: flex; align-items: center; gap: 10px; padding: 14px 16px 12px; }
+.story-card-id { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: #475569; }
+.story-card-title { font-size: 13px; font-weight: 600; color: #e2e8f0; flex: 1; line-height: 1.4; }
+.story-ac-badge { font-size: 11px; font-family: 'JetBrains Mono', monospace; padding: 2px 8px; border-radius: 20px; white-space: nowrap; flex-shrink: 0; }
+.story-progress-bar { height: 2px; background: #1e293b; }
+.story-progress-fill { height: 100%; border-radius: 2px; transition: width .4s; }
+.story-criteria-list { padding: 10px 16px 14px; display: flex; flex-direction: column; gap: 0; }
+.story-criterion { display: flex; align-items: flex-start; gap: 9px; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,.04); }
+.story-criterion:last-child { border-bottom: none; }
+.story-checkbox { width: 15px; height: 15px; border-radius: 3px; border: 1px solid #1e293b; background: transparent; flex-shrink: 0; margin-top: 2px; display: flex; align-items: center; justify-content: center; }
+.story-checkbox.checked { background: #10b981; border-color: #10b981; }
+.story-criterion-text { font-size: 12px; color: #94a3b8; line-height: 1.5; flex: 1; }
+.story-criterion-text.done { color: #475569; text-decoration: line-through; }
+.story-chips { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+.story-chip { font-family: 'JetBrains Mono', monospace; font-size: 10px; padding: 2px 7px; border-radius: 20px; border: 1px solid; cursor: pointer; transition: opacity .15s; }
+.story-chip:hover { opacity: .75; }
+.story-chip-todo   { color: #475569; background: rgba(71,85,105,.12); border-color: rgba(71,85,105,.4); }
+.story-chip-doing  { color: #3b82f6; background: rgba(59,130,246,.12); border-color: rgba(59,130,246,.4); }
+.story-chip-review { color: #8b5cf6; background: rgba(139,92,246,.12); border-color: rgba(139,92,246,.4); }
+.story-chip-done   { color: #10b981; background: rgba(16,185,129,.12); border-color: rgba(16,185,129,.4); }
+.story-priority { font-size: 10px; font-family: 'JetBrains Mono', monospace; padding: 2px 7px; border-radius: 4px; flex-shrink: 0; }
+.story-priority-critical { background: rgba(239,68,68,.12); color: #f87171; }
+.story-priority-high     { background: rgba(245,158,11,.12); color: #fbbf24; }
+.story-priority-medium   { background: rgba(59,130,246,.12); color: #60a5fa; }
+.story-priority-low      { background: rgba(71,85,105,.2); color: #64748b; }
+.story-module { font-size: 10px; color: #475569; font-family: 'JetBrains Mono', monospace; }
 </style>
 </head>
 <body>
@@ -668,7 +699,7 @@ function flowsForCriterion(c, storyFlows) {
   if (!validatedBy) return [];
   return storyFlows.filter(f => (f.test_files || []).some(tf => tf === validatedBy || (tf && tf.includes(validatedBy))));
 }
-const flowTagColors = ['#14532d','#3b1f5e','#1e3a5f','#713f12','#134e4a']; // verde, púrpura, azul, ámbar, teal
+const flowTagColors = ['#14532d','#3b1f5e','#1e3a5f','#713f12','#134e4a'];
 function flowTagPills(flows) {
   if (!flows || !flows.length) return '';
   return flows.map((f, i) => {
@@ -677,6 +708,18 @@ function flowTagPills(flows) {
     return `<span onclick="event.stopPropagation();openPanel('${f.id}')" style="display:inline-block;font-size:10px;font-family:'JetBrains Mono';padding:2px 8px;border-radius:99px;margin-right:6px;margin-top:4px;cursor:pointer;background:${hex}40;color:${fg};border:1px solid ${hex}60;">${f.id}</span>`;
   }).join('');
 }
+function sprintStatusChipClass(s) {
+  const map = { todo: 'story-chip-todo', doing: 'story-chip-doing', review: 'story-chip-review', done: 'story-chip-done' };
+  return map[s] || 'story-chip-todo';
+}
+function flowChipsHtml(flows) {
+  if (!flows || !flows.length) return '';
+  return flows.map(f => {
+    const cls = sprintStatusChipClass(f.sprint_status || 'todo');
+    return `<span class="story-chip ${cls}" data-flow-id="${String(f.id).replace(/"/g,'&quot;')}">${f.id}</span>`;
+  }).join('');
+}
+const checkSvg = '<svg width="9" height="9" viewBox="0 0 10 10" fill="none"><path d="M2 5l2.5 2.5L8 3" stroke="white" stroke-width="1.5" stroke-linecap="round"/></svg>';
 function criterionRow(c, i, storyFlows) {
   const { text, implemented } = normCriterion(c, storyFlows);
   const safe = String(text).replace(/</g,'&lt;').replace(/>/g,'&gt;');
@@ -685,21 +728,21 @@ function criterionRow(c, i, storyFlows) {
     : '<span style="color:#475569;" title="Sin prueba e2e que lo valide">○</span>';
   return `<div style="display:flex;align-items:flex-start;gap:8px;font-size:12px;padding:4px 0;padding-left:8px;border-left:2px solid ${implemented?'#22c55e40':'#6366f140'};"><span style="flex-shrink:0;width:14px;">${icon}</span><span style="color:${implemented?'#64748b':'#94a3b8'}">${i+1}. ${safe}</span></div>`;
 }
-// Fila de criterio para la tarjeta del backlog: checkbox visual + texto + tags de flujos debajo.
+// Fila de criterio para la tarjeta del backlog (estructura referencia: checkbox + texto + chips por estado).
 function criterionCardRow(c, i, storyFlows) {
   const { text, implemented } = normCriterion(c, storyFlows);
   const safe = String(text).replace(/</g,'&lt;').replace(/>/g,'&gt;');
   const flows = flowsForCriterion(c, storyFlows);
   const checkbox = implemented
-    ? '<span style="display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:4px;background:#22c55e;color:#0a0a0f;font-size:10px;flex-shrink:0;">✓</span>'
-    : '<span style="display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:4px;border:2px solid #475569;flex-shrink:0;"></span>';
-  const pills = flowTagPills(flows);
-  return `<div style="margin-bottom:10px;">
-    <div style="display:flex;align-items:flex-start;gap:10px;font-size:12px;">
-      ${checkbox}
-      <span style="color:#cbd5e1;flex:1;">${safe}</span>
+    ? `<div class="story-checkbox checked">${checkSvg}</div>`
+    : '<div class="story-checkbox"></div>';
+  const chips = flowChipsHtml(flows);
+  return `<div class="story-criterion">
+    ${checkbox}
+    <div style="flex:1;">
+      <div class="story-criterion-text ${implemented ? 'done' : ''}">${safe}</div>
+      ${chips ? `<div class="story-chips">${chips}</div>` : ''}
     </div>
-    ${pills ? `<div style="margin-left:26px;margin-top:4px;">${pills}</div>` : ''}
   </div>`;
 }
 
@@ -846,33 +889,37 @@ function renderBacklog() {
   let html = '';
   sorted.forEach(s => {
     const flows = data.flows.filter(f => (s.flow_ids || []).includes(f.id));
-    const totalPts = flows.reduce((a,f)=>a+(f.story_points||0),0);
-    const donePts  = flows.filter(f=>f.sprint_status==='done').reduce((a,f)=>a+(f.story_points||0),0);
-    const pct = totalPts ? Math.round(donePts/totalPts*100) : 0;
-    const storyStatusColor = { implemented:'#10b981', partial:'#f59e0b', pending:'#475569' };
-
     const criteriaCount = (s.acceptance_criteria || []).length;
     const list = (s.acceptance_criteria || []).map(c => normCriterion(c, flows));
     const criteriaDone = list.filter(x => x.implemented).length;
+    const pct = criteriaCount ? Math.round(criteriaDone / criteriaCount * 100) : 0;
+    const allDone = criteriaDone === criteriaCount && criteriaCount > 0;
+    const acColor = allDone ? '#10b981' : criteriaDone > 0 ? '#f59e0b' : '#475569';
+    const barColor = allDone ? '#10b981' : '#f59e0b';
     const criteriaBadge = criteriaCount ? `${criteriaDone}/${criteriaCount} ✓` : '—';
+    const safeId = String(s.id).replace(/"/g, '&quot;');
+
+    const criteriaHtml = (s.acceptance_criteria && s.acceptance_criteria.length)
+      ? s.acceptance_criteria.map((c, i) => criterionCardRow(c, i, flows)).join('')
+      : '<div style="font-size:11px;color:#475569;padding:8px 0;">Sin criterios. Añádelos con @update.md.</div>';
 
     html += `
-    <div class="story-card" style="background:#0f172a;border:1px solid #1e293b;border-radius:10px;padding:16px 20px;margin-bottom:12px;">
-      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
-        <div style="flex:1;display:flex;align-items:center;gap:10px;min-width:0;">
-          ${priorityBadge(s.priority)}
-          <span style="font-family:'JetBrains Mono';font-size:10px;color:#475569;">${s.id}</span>
-          <span style="font-size:13px;font-weight:600;color:#e2e8f0;flex:1;">${s.title}</span>
-          <span style="font-size:11px;color:#64748b;">${moduleName(s.module)}</span>
-          <span style="font-size:11px;font-family:'JetBrains Mono';font-weight:600;color:#0a0a0f;background:#f59e0b;padding:3px 8px;border-radius:4px;">${criteriaBadge}</span>
+    <div class="story-card" data-story-id="${safeId}" title="Ver detalles y prompt">
+      <div class="story-card-header">
+        <span class="story-priority story-priority-${(s.priority || 'medium')}">${(s.priority || 'medium')}</span>
+        <div style="flex:1;min-width:0;">
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:3px;">
+            <span class="story-card-id">${s.id}</span>
+            <span class="story-module">· ${moduleName(s.module)}</span>
+          </div>
+          <div class="story-card-title">${s.title || s.id}</div>
         </div>
-        <button type="button" onclick="openStoryPanel('${s.id}')" style="flex-shrink:0;padding:6px 12px;font-size:11px;border-radius:6px;border:1px solid #6366f140;background:#6366f118;color:#818cf8;cursor:pointer;" title="Abrir modal con prompt para copiar">Prompt</button>
+        <span class="story-ac-badge" style="color:${acColor};background:${acColor}18;border:1px solid ${acColor}30;">${criteriaBadge}</span>
       </div>
-      <div style="height:2px;background:#f59e0b40;border-radius:1px;margin:12px 0 14px 0;"></div>
-      <div style="height:3px;background:#1e293b;border-radius:2px;margin-bottom:14px;">
-        <div style="height:100%;width:${pct}%;background:${pct===100?'#10b981':'#3b82f6'};border-radius:2px;transition:width 0.3s;"></div>
+      <div class="story-progress-bar">
+        <div class="story-progress-fill" style="width:${pct}%;background:${barColor};"></div>
       </div>
-      ${(s.acceptance_criteria && s.acceptance_criteria.length) ? (s.acceptance_criteria.map((c,i)=>criterionCardRow(c,i,flows)).join('')) : '<div style="font-size:11px;color:#475569;">Sin criterios. Añádelos con @update.md.</div>'}
+      <div class="story-criteria-list">${criteriaHtml}</div>
     </div>`;
   });
 
@@ -1201,6 +1248,26 @@ function openStoryPanel(storyId) {
   document.getElementById('detail-panel').classList.add('open');
   document.getElementById('overlay').classList.add('open');
 }
+
+// Delegación: clic en card abre modal HU, clic en chip abre panel del flujo.
+(function() {
+  const el = document.getElementById('backlog-content');
+  if (!el) return;
+  el.addEventListener('click', function(e) {
+    const chip = e.target.closest('[data-flow-id]');
+    if (chip) {
+      e.preventDefault();
+      e.stopPropagation();
+      openPanel(chip.getAttribute('data-flow-id'));
+      return;
+    }
+    const card = e.target.closest('.story-card');
+    if (card && card.dataset.storyId) {
+      e.preventDefault();
+      openStoryPanel(card.dataset.storyId);
+    }
+  });
+})();
 
 function copyStoryPrompt(which) {
   const text = which === 2 ? window.__currentStoryPromptE2E : window.__currentStoryPrompt;
