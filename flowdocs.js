@@ -16,6 +16,7 @@ const FILES = {
   viewer:   'viewer.html',
   cursorrules: '.cursorrules',
   prompts: [
+    'prompts/adapt.md',
     'prompts/discover.md',
     'prompts/implement.md',
     'prompts/update.md',
@@ -339,9 +340,8 @@ function cmdUsage() {
   console.log(`  ${c.bold}${c.cyan}FlowDocs — Descripción de uso${c.reset}`);
   console.log('');
   console.log(`  ${c.bold}1. Generar documentación (una vez)${c.reset}`);
-  dim('    En Cursor/Antigravity escribe en el chat:');
-  console.log(`    ${c.cyan}@discover.md${c.reset}`);
-  dim('    La IA analiza el proyecto y genera .flowdocs/flows.yaml');
+  dim(`    Opcional: ${c.cyan}@adapt.md${c.reset} — infiere tipo de app y genera pistas.`);
+  dim(`    Luego: ${c.cyan}@discover.md${c.reset} — analiza el proyecto y genera .flowdocs/flows.yaml`);
   console.log('');
   console.log(`  ${c.bold}2. Implementar un flujo${c.reset}`);
   dim('    En el chat:');

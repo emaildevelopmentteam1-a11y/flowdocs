@@ -18,7 +18,8 @@ Este proyecto usa FlowDocs. `.flowdocs/flows.yaml` es la fuente de verdad.
 
 | Archivo | Qué hace |
 |---------|----------|
-| `.flowdocs/prompts/discover.md`   | Documenta el proyecto desde cero |
+| `.flowdocs/prompts/adapt.md`      | Infiere tipo de app y genera pistas para discover (opcional, antes de discover) |
+| `.flowdocs/prompts/discover.md`   | Documenta el proyecto desde cero (usa pistas si existe discovery-hints.md) |
 | `.flowdocs/prompts/implement.md`  | Implementa un flujo específico |
 | `.flowdocs/prompts/update.md`     | Actualiza estado de flujos |
 | `.flowdocs/prompts/audit.md`      | Encuentra inconsistencias |

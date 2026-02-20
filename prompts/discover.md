@@ -15,24 +15,30 @@ Antes de escribir una sola línea del YAML, explora el proyecto en este orden:
 
 1. **Lee la raíz del proyecto** — `README.md`, `package.json`, `Gemfile`, `pyproject.toml`, `composer.json`, o cualquier archivo de configuración principal. Necesitas entender el stack, el nombre del proyecto y su propósito.
 
-2. **Identifica los módulos de negocio** — busca en la estructura de carpetas: `app/`, `src/`, `modules/`, `features/`, `controllers/`, `routes/`, `pages/`, `views/`. Cada carpeta de dominio es un módulo candidato.
+2. **Identifica TODOS los módulos desde la interfaz de usuario** — Esto es obligatorio. La UI es la fuente de verdad de qué existe en el sistema.
+   - Busca el **menú de navegación**, **sidebar**, **layout** o **router**: archivos como `layout.tsx`, `Sidebar.tsx`, `Nav.tsx`, `routes.ts`, `menuItems`, configuración de rutas en Next/React/Vue.
+   - **Cada ítem de primer nivel en el menú o en las rutas es un módulo**. No agrupes varios bajo uno solo si el usuario los ve separados.
+   - No inventes un "máximo" de módulos. Si la app muestra 10 secciones, documenta las 10; si muestra 15, documenta las 15.
+   - Si existe `.flowdocs/discovery-hints.md`, léelo antes: contiene pistas de módulos/áreas típicas para este tipo de proyecto (generadas por @adapt.md). Asegúrate de considerar cada una como candidata a módulo.
 
-3. **Lee los modelos de datos** — busca `models/`, `entities/`, `schemas/`, `prisma/schema.prisma`, `db/schema.rb`, o cualquier definición de base de datos. Las entidades y sus estados te revelan los flujos de negocio.
+3. **Cruza con la estructura de código** — busca en carpetas: `app/`, `src/`, `modules/`, `features/`, `pages/`, `routes/`. Asocia cada ítem del menú con su ruta o carpeta. Si el menú tiene algo que no encuentras en carpetas, igual es un módulo (p. ej. "Configuración" puede estar en una ruta `/settings`).
 
-4. **Lee las rutas y controladores** — `routes/`, `controllers/`, `handlers/`, `api/`. Cada endpoint es la punta de un flujo.
+4. **Lee los modelos de datos** — busca `models/`, `entities/`, `schemas/`, `prisma/schema.prisma`, `db/schema.rb`, o cualquier definición de base de datos. Las entidades y sus estados te revelan los flujos de negocio.
 
-5. **Busca documentación existente** — `docs/`, `requirements/`, `spec/`, cualquier `.md` que describa funcionalidad. Si existe, es tu fuente principal.
+5. **Lee las rutas y controladores** — `routes/`, `controllers/`, `handlers/`, `api/`. Cada endpoint es la punta de un flujo.
 
-6. **Lee los tests si existen** — `test/`, `spec/`, `__tests__/`, `cypress/`, `e2e/`. Los tests describen el comportamiento esperado mejor que el código.
+6. **Busca documentación existente** — `docs/`, `requirements/`, `spec/`, cualquier `.md` que describa funcionalidad. Si existe, es tu fuente principal.
+
+7. **Lee los tests si existen** — `test/`, `spec/`, `__tests__/`, `cypress/`, `e2e/`. Los tests describen el comportamiento esperado mejor que el código.
 
 Después de explorar, escribe un resumen interno de lo que encontraste:
 - Nombre y propósito del sistema
 - Stack tecnológico
-- Módulos identificados (mínimo 3, máximo 10)
+- **Lista completa de módulos** — uno por cada ítem de navegación o sección principal que viste (sin límite de cantidad; si hay 12, lista los 12)
 - Entidades principales con sus estados
 - Número estimado de flujos totales
 
-**No continues a la Fase 2 hasta tener este resumen claro.**
+**No continues a la Fase 2 hasta tener este resumen claro. Si el menú o las rutas muestran más módulos de los que listaste, vuelve a revisar el layout/sidebar/router y añade los que falten.**
 
 ---
 
@@ -169,6 +175,7 @@ flows:
 
 Antes de entregar el YAML, verifica cada punto:
 
+- [ ] **Cada ítem del menú/sidebar/navegación tiene su módulo** — Cada entrada de primer nivel en la UI debe aparecer en `modules:` (o como subflujo documentado donde corresponda). No colapses varios en uno solo.
 - [ ] **Mínimo 5 flujos por módulo** si el módulo tiene código real
 - [ ] **Cada flujo tiene mínimo 3 pasos** en lenguaje de negocio
 - [ ] **Los IDs son secuenciales** — FLOW-001, FLOW-002... sin saltos

@@ -44,6 +44,7 @@ download() {
 echo -e "  ${DIM}Descargando archivos...${RESET}"; echo ""
 download "viewer.html"          "$FLOWDOCS_DIR/viewer.html"
 download "bin/flowdocs.js"      "$FLOWDOCS_DIR/bin/flowdocs.js"
+download "prompts/adapt.md"     "$PROMPTS_DIR/adapt.md"
 download "prompts/discover.md"  "$PROMPTS_DIR/discover.md"
 download "prompts/implement.md" "$PROMPTS_DIR/implement.md"
 download "prompts/update.md"    "$PROMPTS_DIR/update.md"
@@ -144,6 +145,7 @@ Este proyecto usa FlowDocs. `.flowdocs/flows.yaml` es la fuente de verdad.
 - Inventar rutas de test
 
 ## Workflows
+- `flowdocs-adapt`      — inferir tipo de app y generar pistas (opcional, antes de discover)
 - `flowdocs-discover`   — documentar proyecto desde cero
 - `flowdocs-implement`  — implementar un flujo
 - `flowdocs-update`     — actualizar estado
@@ -152,10 +154,10 @@ Este proyecto usa FlowDocs. `.flowdocs/flows.yaml` es la fuente de verdad.
 SKILL
 ok ".agent/skills/flowdocs/SKILL.md  ${GRAY}(Antigravity)${RESET}"
 
-for p in discover implement update audit expand; do
+for p in adapt discover implement update audit expand; do
   cp "$PROMPTS_DIR/${p}.md" ".agent/workflows/flowdocs-${p}.md" 2>/dev/null && true
 done
-ok ".agent/workflows/  ${GRAY}(Antigravity — 5 workflows)${RESET}"
+ok ".agent/workflows/  ${GRAY}(Antigravity — 6 workflows)${RESET}"
 
 # CLAUDE CODE
 if [ ! -f "CLAUDE.md" ]; then
