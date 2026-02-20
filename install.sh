@@ -161,15 +161,46 @@ EOF
   fi
 fi
 
-# ─── Crear alias flowdocs (opcional) ─────────────────────────────────────────
+# ─── Instalar comando global flowdocs ────────────────────────────────────────
 
 if command -v node &>/dev/null; then
-  # Crear script wrapper en el proyecto
-  cat > "$FLOWDOCS_DIR/flowdocs" << 'EOF'
+  INSTALL_DIR="$HOME/.flowdocs"
+  BIN_DIR="$HOME/.local/bin"
+
+  # Copiar CLI a ~/.flowdocs/bin/
+  mkdir -p "$INSTALL_DIR/bin"
+  cp "$FLOWDOCS_DIR/bin/flowdocs.js" "$INSTALL_DIR/bin/flowdocs.js"
+  chmod +x "$INSTALL_DIR/bin/flowdocs.js"
+
+  # Crear script wrapper global
+  mkdir -p "$BIN_DIR"
+  cat > "$BIN_DIR/flowdocs" << 'EOF'
 #!/usr/bin/env bash
-node "$(dirname "$0")/bin/flowdocs.js" "$@"
+node "$HOME/.flowdocs/bin/flowdocs.js" "$@"
 EOF
-  chmod +x "$FLOWDOCS_DIR/flowdocs"
+  chmod +x "$BIN_DIR/flowdocs"
+
+  # Agregar ~/.local/bin al PATH si no está
+  SHELL_RC=""
+  if [ -f "$HOME/.zshrc" ]; then
+    SHELL_RC="$HOME/.zshrc"
+  elif [ -f "$HOME/.bashrc" ]; then
+    SHELL_RC="$HOME/.bashrc"
+  fi
+
+  if [ -n "$SHELL_RC" ]; then
+    if ! grep -q '\.local/bin' "$SHELL_RC" 2>/dev/null; then
+      echo '' >> "$SHELL_RC"
+      echo '# FlowDocs CLI' >> "$SHELL_RC"
+      echo 'export PATH="$HOME/.local/bin:$PATH"' >> "$SHELL_RC"
+      ok "PATH actualizado en $SHELL_RC"
+    fi
+  fi
+
+  # Intentar que funcione en la sesión actual
+  export PATH="$HOME/.local/bin:$PATH"
+
+  ok "comando 'flowdocs' instalado globalmente"
 fi
 
 # ─── Fin ──────────────────────────────────────────────────────────────────────
@@ -184,6 +215,10 @@ echo -e "  ${BOLD}  @discover.md${RESET}"
 echo ""
 echo -e "  ${GRAY}La IA analizará tu proyecto y generará flows.yaml${RESET}"
 echo ""
-echo -e "  ${GRAY}Ver estado del proyecto:${RESET}"
-echo -e "  ${GRAY}  node .flowdocs/bin/flowdocs.js status${RESET}"
+echo -e "  ${BOLD}Comandos disponibles:${RESET}"
+echo -e "  ${CYAN}flowdocs status${RESET}   — resumen del proyecto"
+echo -e "  ${CYAN}flowdocs update${RESET}   — actualizar viewer y prompts"
+echo ""
+echo -e "  ${YELLOW}Nota:${RESET} reinicia la terminal para usar 'flowdocs' como comando global"
+echo -e "  ${GRAY}  o ejecuta: export PATH=\"\$HOME/.local/bin:\$PATH\"${RESET}"
 echo ""
