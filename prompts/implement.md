@@ -19,7 +19,7 @@
 
 1. Lee `.flowdocs/flows.yaml`
 2. Localiza el flujo solicitado por su ID
-3. Lee la historia de usuario (`story`) a la que pertenece
+3. Lee la **historia de usuario** (`story`) a la que pertenece y sus **`acceptance_criteria`** — son las condiciones que validan que la implementación está correcta
 4. Lee las entidades que usa (`entities`) y sus transiciones de estado
 5. Lee los flujos relacionados del mismo módulo — pueden compartir lógica
 6. Si hay tests existentes en `test_files`, léelos para entender el comportamiento esperado
@@ -44,13 +44,18 @@ Respeta:
 - **`errors`** — maneja los errores descritos
 - **`postconditions`** — verifica que el estado final es correcto
 
-### Paso 4 — Actualiza el YAML
+### Paso 4 — Valida contra criterios de aceptación
+
+Antes de dar por terminado, **comprueba cada `acceptance_criteria`** de la historia. Si falta alguno en el YAML, proponlo y sugiere al usuario actualizar con `@update.md`.
+
+### Paso 5 — Actualiza el YAML
 
 Cuando termines, actualiza `.flowdocs/flows.yaml`:
-- `status`: `implemented` si completaste todo, `partial` si falta algo
+- `status`: `implemented` si completaste todo y los criterios de aceptación se cumplen, `partial` si falta algo
 - `sprint_status`: `review` — listo para revisión
 - Las tasks completadas: `status: done`
 - Si creaste archivos de test: agrega las rutas a `test_files`
+- Si añadiste o refinaste criterios de aceptación: actualiza `acceptance_criteria` en la story (o indica que el usuario debe hacerlo con @update.md)
 
 ---
 

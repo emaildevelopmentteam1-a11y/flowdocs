@@ -139,7 +139,17 @@ entities:
     state_colors: {}   # opcional
     transitions: []
 
-stories: []
+stories:
+  - id: "US-001"
+    title: "Como [rol] quiero [objetivo] para [beneficio]."
+    module: "id_modulo"
+    priority: "critical | high | medium | low"
+    status: "implemented | partial | pending"
+    flow_ids: ["FLOW-001", "FLOW-002"]
+    acceptance_criteria:
+      - "Criterio comprobable 1 (Given/When/Then o lista)"
+      - "Criterio comprobable 2"
+      # ... mínimo 8 criterios por historia en total
 
 flows:
   - id: "FLOW-001"
@@ -168,6 +178,7 @@ flows:
 
 - **Módulos:** Uno por cada ítem del mapa. Descripción rica (2-4 líneas), no una frase genérica.
 - **Entities:** Debe incluir **todas** las entidades de la sección 4 de las notas. Si en el código hay 6 u 8 entidades, el YAML debe tener 6 u 8 entradas en `entities:`. No documentes solo "sale" u otra sola.
+- **Stories:** Agrupa flujos en historias de usuario. Cada historia tiene `acceptance_criteria`: una lista de **criterios de aceptación** comprobables (formato Given/When/Then o frases que se puedan validar con tests o demo). Sirven para que el equipo y la IA validen la implementación. **Mínimo 8 criterios por historia.**
 - **Flujos:** Extrae de las notas (sección 5). Un flujo = una intención clara. Por cada módulo, tantos flujos como acciones hayas identificado (mínimo varios por módulo si el código tiene varias pantallas/acciones). Mínimo 3 pasos por flujo en lenguaje de negocio.
 - **Stats:** Recalcula total, implemented, partial, pending, with_tests, coverage_pct al final.
 
@@ -201,6 +212,7 @@ flows:
 - [ ] Escribí los 3 archivos (notas, plan, flows.yaml). No solo los describí.
 - [ ] El mapa en las notas (sección 2) viene del archivo real del menú (Sidebar/Nav/routes).
 - [ ] Cada ítem del mapa tiene su módulo en `flows.yaml` con descripción de 2-4 líneas.
+- [ ] Cada **story** tiene `acceptance_criteria` con al menos 8 criterios comprobables.
 - [ ] **Cada entidad** de la sección 4 de las notas tiene su entrada en `entities:` del YAML (no solo una).
 - [ ] Cada módulo tiene **varios flujos** documentados si el código tiene varias acciones/pantallas.
 - [ ] doc-plan.md tiene una fila por área y el estado final actualizado.

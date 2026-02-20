@@ -39,6 +39,7 @@ Dime qué cambió. Ejemplos de cómo invocarlo:
 - **No cambies el `name` ni los `steps`** de ningún flujo a menos que se te pida explícitamente
 - **No cambies `story_points`** sin que se te indique
 - **`test_files`** — agrega la ruta real del archivo de test solo si se mencionó explícitamente
+- **`acceptance_criteria`** (en stories) — puedes añadir, quitar o editar criterios si el usuario lo pide o si se acordó en refinamiento
 - **Un flujo es `implemented`** cuando todo su código core funciona. Si hay features menores pendientes, usa `partial`
 - **Un flujo tiene `test_status: covered`** cuando tiene tests que cubren el camino principal (happy path)
 

@@ -796,13 +796,16 @@ function renderBacklog() {
     const storyStatusColor = { implemented:'#10b981', partial:'#f59e0b', pending:'#475569' };
 
     html += `
-    <div style="background:#0f172a;border:1px solid #1e293b;border-radius:10px;padding:16px 20px;margin-bottom:12px;">
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;cursor:pointer;" onclick="this.parentElement.querySelector('.story-flows').style.display=this.parentElement.querySelector('.story-flows').style.display==='none'?'block':'none'">
-        ${priorityBadge(s.priority)}
-        <span style="font-family:'JetBrains Mono';font-size:10px;color:#475569;">${s.id}</span>
-        <span style="font-size:13px;font-weight:600;color:#e2e8f0;flex:1;">${s.title}</span>
-        <span style="font-size:11px;color:#64748b;">${moduleName(s.module)}</span>
-        <span style="font-size:11px;font-family:'JetBrains Mono';color:${storyStatusColor[s.status]||'#475569'};background:#1e293b;padding:2px 8px;border-radius:4px;">${donePts}/${totalPts} pts</span>
+    <div class="story-card" style="background:#0f172a;border:1px solid #1e293b;border-radius:10px;padding:16px 20px;margin-bottom:12px;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+        <div style="flex:1;display:flex;align-items:center;gap:10px;cursor:pointer;" onclick="var el=this.closest('.story-card').querySelector('.story-flows');if(el)el.style.display=el.style.display==='none'?'block':'none'">
+          ${priorityBadge(s.priority)}
+          <span style="font-family:'JetBrains Mono';font-size:10px;color:#475569;">${s.id}</span>
+          <span style="font-size:13px;font-weight:600;color:#e2e8f0;flex:1;">${s.title}</span>
+          <span style="font-size:11px;color:#64748b;">${moduleName(s.module)}</span>
+          <span style="font-size:11px;font-family:'JetBrains Mono';color:${storyStatusColor[s.status]||'#475569'};background:#1e293b;padding:2px 8px;border-radius:4px;">${donePts}/${totalPts} pts</span>
+        </div>
+        <button type="button" onclick="event.stopPropagation();openStoryPanel('${s.id}')" style="flex-shrink:0;padding:6px 12px;font-size:11px;border-radius:6px;border:1px solid #6366f140;background:#6366f118;color:#818cf8;cursor:pointer;" title="Abrir modal con prompt para copiar al agente IA">Prompt</button>
       </div>
       <div style="height:3px;background:#1e293b;border-radius:2px;margin-bottom:12px;">
         <div style="height:100%;width:${pct}%;background:${pct===100?'#10b981':'#3b82f6'};border-radius:2px;transition:width 0.3s;"></div>
@@ -1054,12 +1057,79 @@ function renderEntities() {
 }
 
 // ============================================================
-// DETAIL PANEL
+// PROMPT MAESTRO (por historia) — para copiar y pegar al agente IA
+// ============================================================
+function buildStoryPrompt(s) {
+  const flowIds = s.flow_ids || [];
+  const flowIdsStr = flowIds.join(' ');
+  const criteria = (s.acceptance_criteria || []).length
+    ? (s.acceptance_criteria || []).map(c => `- ${c}`).join('\n')
+    : '- (Añade criterios con @update.md)';
+  const implementLine = flowIds.length ? `@implement.md ${flowIdsStr}` : '@implement.md FLOW-XXX';
+  return `Implementa o valida la siguiente historia de usuario usando .flowdocs/flows.yaml como referencia.
+
+Historia: ${s.id} — ${s.title || ''}
+Módulo: ${moduleName(s.module)}
+Flujos: ${flowIds.length ? flowIds.join(', ') : '—'}
+
+Criterios de aceptación:
+${criteria}
+
+En el chat ejecuta (copia y pega):
+${implementLine}
+
+Antes de dar por terminado, verifica cada criterio de aceptación. Si falta alguno en el YAML, proponlo y actualiza con @update.md.`;
+}
+
+function openStoryPanel(storyId) {
+  const s = data.stories.find(x=>x.id===storyId);
+  if(!s) return;
+  const promptText = buildStoryPrompt(s);
+  document.getElementById('panel-id').textContent = `${s.id} · Prompt para el agente`;
+  const criteriaHtml = (s.acceptance_criteria && s.acceptance_criteria.length)
+    ? s.acceptance_criteria.map(c=>`<div style="font-size:12px;color:#94a3b8;padding:4px 0;padding-left:12px;border-left:2px solid #6366f140;">${c}</div>`).join('')
+    : '<div style="font-size:12px;color:#475569;">Sin criterios aún. Añádelos con @update.md.</div>';
+  document.getElementById('panel-content').innerHTML = `
+    <div style="margin-bottom:16px;">
+      <div style="font-size:16px;font-weight:700;color:#e2e8f0;margin-bottom:8px;">${s.title || s.id}</div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;">
+        ${priorityBadge(s.priority)}
+        <span class="badge badge-gray">${moduleName(s.module)}</span>
+        <span style="font-size:11px;color:#64748b;">${(s.flow_ids||[]).join(', ')}</span>
+      </div>
+      <div style="font-size:11px;color:#475569;margin-bottom:6px;text-transform:uppercase;letter-spacing:.08em;">Criterios de aceptación</div>
+      ${criteriaHtml}
+    </div>
+    <div style="background:#0f0f17;border:1px solid #6366f130;border-radius:8px;padding:14px;margin-bottom:14px;">
+      <div style="font-size:11px;color:#6366f1;margin-bottom:8px;text-transform:uppercase;letter-spacing:.08em;">Prompt para el agente (copiar y pegar)</div>
+      <pre id="story-prompt-text" style="margin:0;font-size:11px;line-height:1.5;color:#cbd5e1;white-space:pre-wrap;word-break:break-word;max-height:280px;overflow-y:auto;">${promptText.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</pre>
+      <button type="button" onclick="copyStoryPrompt()" style="margin-top:12px;padding:8px 14px;border-radius:6px;border:1px solid #6366f150;background:#6366f118;color:#818cf8;font-size:12px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-2M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
+        <span id="copy-btn-label">Copiar prompt</span>
+      </button>
+    </div>`;
+  window.__currentStoryPrompt = promptText;
+  document.getElementById('detail-panel').classList.add('open');
+  document.getElementById('overlay').classList.add('open');
+}
+
+function copyStoryPrompt() {
+  const text = window.__currentStoryPrompt;
+  if (!text) return;
+  navigator.clipboard.writeText(text).then(() => {
+    const lbl = document.getElementById('copy-btn-label');
+    if (lbl) { lbl.textContent = 'Copiado'; setTimeout(() => { lbl.textContent = 'Copiar prompt'; }, 2000); }
+  });
+}
+
+// ============================================================
+// DETAIL PANEL (flujo)
 // ============================================================
 function openPanel(flowId) {
   const f = data.flows.find(x=>x.id===flowId);
   if(!f) return;
   selectedFlow = f;
+  window.__currentStoryPrompt = null;
 
   const story = data.stories.find(s=>s.id===f.story);
 
@@ -1118,6 +1188,7 @@ function openPanel(flowId) {
     <div style="background:#0f1f3d;border:1px solid #1e3a5f;border-radius:8px;padding:12px;margin-bottom:16px;">
       <div style="font-size:10px;color:#3b82f6;margin-bottom:4px;font-family:'JetBrains Mono';">${story.id} · HISTORIA DE USUARIO</div>
       <div style="font-size:13px;color:#93c5fd;">${story.title}</div>
+      <button type="button" onclick="openStoryPanel('${story.id}')" style="margin-top:8px;padding:4px 10px;font-size:11px;border-radius:4px;border:1px solid #6366f140;background:#6366f115;color:#818cf8;cursor:pointer;">Ver prompt de la historia →</button>
     </div>` : ''}
 
     <div style="margin-bottom:16px;">
