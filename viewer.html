@@ -133,6 +133,8 @@ tr:hover td { background: #ffffff04; }
       <div style="display:flex; align-items:center; gap:6px;">
         <span id="data-source-hint" style="font-size:11px; font-family:'JetBrains Mono'; color:#334155; background:#ffffff06; padding:4px 10px; border-radius:6px; border:1px solid #ffffff08;">—</span>
         <button type="button" onclick="reloadYaml()" style="font-size:10px; padding:4px 8px; border-radius:4px; border:1px solid #ffffff15; background:#ffffff08; color:#94a3b8; cursor:pointer;">Recargar</button>
+        <input type="file" id="file-yaml-input" accept=".yaml,.yml,text/yaml" style="display:none" onchange="onYamlFileSelected(event)">
+        <button type="button" onclick="document.getElementById('file-yaml-input').click()" style="font-size:10px; padding:4px 8px; border-radius:4px; border:1px solid #ffffff15; background:#ffffff08; color:#94a3b8; cursor:pointer;" title="Si abriste el viewer como file://, usa esto para elegir flows.yaml">Cargar archivo</button>
       </div>
     </header>
 
@@ -549,6 +551,9 @@ function normalizeData(raw) {
 }
 
 async function loadFlowDocs() {
+  if (window.location.protocol === 'file:') {
+    return normalizeData(MOCK_DATA);
+  }
   try {
     const r = await fetch('flows.yaml', { cache: 'no-store' });
     if (!r.ok) throw new Error(r.statusText);
@@ -557,9 +562,33 @@ async function loadFlowDocs() {
     if (!raw) throw new Error('YAML no parseado');
     return normalizeData(raw);
   } catch (e) {
-    console.warn('FlowDocs: no se pudo cargar flows.yaml:', e.message, '— usando datos de ejemplo.');
+    console.warn('FlowDocs: no se pudo cargar flows.yaml:', e.message);
     return normalizeData(MOCK_DATA);
   }
+}
+
+function onYamlFileSelected(ev) {
+  const f = ev.target.files && ev.target.files[0];
+  if (!f) return;
+  const reader = new FileReader();
+  reader.onload = function() {
+    try {
+      const raw = typeof jsyaml !== 'undefined' ? jsyaml.load(reader.result) : null;
+      if (!raw) throw new Error('YAML no parseado');
+      data = normalizeData(raw);
+      dataSource = 'file';
+      updateDataSourceHint();
+      renderDashboard();
+      if (activeView === 'backlog') renderBacklog();
+      if (activeView === 'board') renderBoard();
+      if (activeView === 'list') renderList();
+      if (activeView === 'entities') renderEntities();
+    } catch (e) {
+      console.error('FlowDocs: error al parsear el archivo:', e);
+    }
+    ev.target.value = '';
+  };
+  reader.readAsText(f, 'UTF-8');
 }
 
 // ============================================================
@@ -1119,14 +1148,21 @@ function updateDataSourceHint() {
   if (!el) return;
   if (dataSource === 'yaml') {
     el.textContent = 'flows.yaml';
-    el.title = 'Datos cargados desde flows.yaml. Recarga la página si editaste el archivo.';
+    el.title = 'Datos cargados desde la URL. Usa Recargar para refrescar.';
+  } else if (dataSource === 'file') {
+    el.textContent = 'archivo';
+    el.title = 'Datos cargados desde un archivo. Usa "Cargar archivo" de nuevo para elegir otro flows.yaml.';
   } else {
     el.textContent = 'ejemplo';
-    el.title = 'No se pudo cargar flows.yaml (¿abriste como file://?). Sirve la carpeta .flowdocs (ej. npx serve .flowdocs) y abre viewer.html desde la URL.';
+    el.title = 'No se pudo cargar por URL (común si abriste como file://). Usa "Cargar archivo" y elige .flowdocs/flows.yaml.';
   }
 }
 
 async function reloadYaml() {
+  if (window.location.protocol === 'file:') {
+    document.getElementById('file-yaml-input').click();
+    return;
+  }
   data = await loadFlowDocs();
   dataSource = (data.flows !== MOCK_DATA.flows || data.entities !== MOCK_DATA.entities) ? 'yaml' : 'mock';
   updateDataSourceHint();
