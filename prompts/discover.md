@@ -52,12 +52,11 @@ Cada ítem es un área a cubrir. Origen: Sidebar.tsx / Nav / routes / etc.
 Por cada ítem del mapa: qué carpetas en app/, src/, pages/, etc. corresponden.
 Breve qué hace (leyendo página principal o componente).
 
-## 4. Modelo de datos
-Entidades principales, estados, dónde se definen (schema, models, etc.).
+## 4. Modelo de datos (TODAS las entidades)
+**Obligatorio:** Busca y lista **cada** entidad/tabla/modelo del sistema. No documentes solo una (ej. "sale"). Busca en: `schema.ts`, `schema.js`, `prisma/schema.prisma`, `models/`, `types/`, definiciones de tablas (Drizzle, TypeORM, Sequelize), tipos TypeScript de dominio. Cada entidad: nombre, estados posibles (si aplica), dónde se define. Si el código tiene product, order, customer, category, sale, cash_session, printer, etc., **todas** deben aparecer aquí. El YAML tendrá una entrada en `entities:` por cada una.
 
-## 5. Flujos por área
-Por cada área del mapa: qué acciones/flujos identificaste (lista corta).
-Fuente: pantallas, handlers, tests si existen.
+## 5. Flujos por área (exhaustivo)
+Por cada área del mapa: lista **todos** los flujos que identificaste (no solo uno o dos). Fuente: pantallas, botones, handlers, API, tests. Un flujo = una acción con inicio y fin (ej. "Crear producto", "Editar categoría", "Ver historial de ventas", "Cerrar caja"). Si un módulo tiene varias pantallas o acciones, debe tener varios flujos. No dejes módulos con 0 o 1 flujo si el código tiene más.
 
 ## 6. Pendientes / dudas
 Lo que no pudo leerse o queda para profundizar después.
@@ -94,8 +93,8 @@ Al terminar discover, actualiza el estado de cada área a "documentado" o indica
 1. **Entrada** — Lee README, package.json (o equivalente). Completa sección 1 de las notas (Entrada).
 2. **Mapa** — Busca el archivo del menú (navItems, sidebar, routes). Transcribe en sección 2 de las notas la lista completa: nombre + ruta. Crea `doc-plan.md` con una fila por ítem del mapa, estado "pendiente".
 3. **Estructura por área** — Por cada ítem del mapa, localiza la carpeta que lo implementa (app/, src/app/, pages/). Completa sección 3 de las notas. Actualiza doc-plan ("en notas" = sí).
-4. **Modelo de datos** — Schemas, modelos, entidades. Completa sección 4 de las notas.
-5. **Flujos por área** — Por cada área, qué flujos hay. Completa sección 5 de las notas y la columna "Flujos documentados" del doc-plan.
+4. **Modelo de datos** — Busca **todas** las entidades (schema, prisma, models, types). Completa sección 4 con **cada** entidad encontrada; si solo anotas una, el YAML quedará incompleto.
+5. **Flujos por área** — Por cada área, lista **todos** los flujos (crear, editar, listar, aprobar, etc.). Completa sección 5 y la columna "Flujos documentados" del doc-plan. Módulos con varias pantallas = varios flujos.
 6. **Escribir notas y plan** — **Ahora sí** escribe los archivos `.flowdocs/discovery-notes.md` y `.flowdocs/doc-plan.md` con todo lo anterior. No pases al paso 7 sin haber escrito estos dos archivos.
 7. **Generación del YAML** — A partir de las notas y del plan, escribe `.flowdocs/flows.yaml` completo. Cada área del mapa (sección 2 de las notas) debe tener su módulo en el YAML; no agrupes dos áreas en un solo módulo si tienen rutas distintas. Excepción: dos ítems con la misma ruta base (ej. /cash-register y /cash-register/history) pueden ser un módulo "Caja".
 8. **Cierre** — Actualiza `doc-plan.md` con estado "documentado" por área y "Próximos pasos" si algo quedó pendiente.
@@ -129,13 +128,15 @@ meta:
 modules:
   - id: "snake_case_unico"
     name: "Nombre legible"
-    description: "Qué responsabilidad tiene este módulo"
+    description: "Descripción de 2-4 líneas: qué hace el módulo, qué pantallas principales tiene, qué responsabilidad tiene. No una sola frase genérica."
     actors: ["actor1", "actor2"]
 
 entities:
+  # OBLIGATORIO: una entrada por cada entidad de la sección 4 de las notas. Si el código tiene product, order, customer, category, sale, cash_session, etc., todas deben estar aquí con sus states y transitions.
   - id: "nombre_entidad"
     name: "Nombre Legible"
     states: ["estado1", "estado2"]
+    state_colors: {}   # opcional
     transitions: []
 
 stories: []
@@ -165,8 +166,9 @@ flows:
     notes: ""
 ```
 
-- **Módulos:** Uno por cada ítem del mapa de navegación (salvo la excepción de misma ruta base). Los IDs y nombres deben ser coherentes con lo anotado en las notas.
-- **Flujos:** Extrae de las notas (sección 5). Un flujo = una intención clara (ej. "Crear producto", "Ver historial de ventas"). Mínimo 3 pasos por flujo en lenguaje de negocio.
+- **Módulos:** Uno por cada ítem del mapa. Descripción rica (2-4 líneas), no una frase genérica.
+- **Entities:** Debe incluir **todas** las entidades de la sección 4 de las notas. Si en el código hay 6 u 8 entidades, el YAML debe tener 6 u 8 entradas en `entities:`. No documentes solo "sale" u otra sola.
+- **Flujos:** Extrae de las notas (sección 5). Un flujo = una intención clara. Por cada módulo, tantos flujos como acciones hayas identificado (mínimo varios por módulo si el código tiene varias pantallas/acciones). Mínimo 3 pasos por flujo en lenguaje de negocio.
 - **Stats:** Recalcula total, implemented, partial, pending, with_tests, coverage_pct al final.
 
 ---
@@ -198,7 +200,9 @@ flows:
 
 - [ ] Escribí los 3 archivos (notas, plan, flows.yaml). No solo los describí.
 - [ ] El mapa en las notas (sección 2) viene del archivo real del menú (Sidebar/Nav/routes).
-- [ ] Cada ítem del mapa tiene su módulo en `flows.yaml` o está justificado (misma ruta base).
+- [ ] Cada ítem del mapa tiene su módulo en `flows.yaml` con descripción de 2-4 líneas.
+- [ ] **Cada entidad** de la sección 4 de las notas tiene su entrada en `entities:` del YAML (no solo una).
+- [ ] Cada módulo tiene **varios flujos** documentados si el código tiene varias acciones/pantallas.
 - [ ] doc-plan.md tiene una fila por área y el estado final actualizado.
 
 Si falla alguno, completa antes de dar por terminado. No preguntes antes de empezar; sigue el orden: entrada → mapa → estructura por área → modelo → flujos → **escribir notas y plan** → YAML → cierre del plan.
