@@ -64,3 +64,11 @@ No cambies el formato de criterios que ya existen; si la story usa strings o tex
 1. El archivo `.flowdocs/flows.yaml` actualizado (edita el archivo en el workspace).
 2. Incluye en tu respuesta el YAML completo de la sección `stories:` (o al menos las stories que modificaste) dentro de un bloque `` ```yaml ``.
 3. Resumen: qué stories actualizaste y cuántos criterios tiene ahora cada una.
+
+---
+
+## SECUENCIA FINAL (orden y estructura)
+
+1. **Orden:** Lee flows.yaml → por cada story indicada, añade o completa acceptance_criteria (mínimo 8) → actualiza `meta.updated_at`. No cambies flow_ids, name ni steps de flujos.
+2. **Estructura:** Mantén el formato ya usado en cada story (simple: string o text/validated_by; o extendido: id, description, validated, flow_ids). Incluye la sección `stories:` modificada en tu respuesta.
+3. **Para el viewer:** El usuario recarga el viewer (Recargar o `flowdocs open`) para ver los criterios y el badge X/Y ✓ en las cards.

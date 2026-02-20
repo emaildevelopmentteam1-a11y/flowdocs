@@ -63,3 +63,11 @@ Para un rellenado guiado de todas las stories de una vez, el usuario puede ejecu
 4. Si detectas inconsistencias mientras actualizas, señálalo sin cambiarlo a menos que se te pidió
 
 **Por qué:** Si solo describes los cambios ("cambia FLOW-003 a implemented") pero no escribes el archivo ni muestras el YAML completo, el usuario no puede aplicar el update. Para que el update funcione, el archivo debe quedar modificado o el YAML completo debe estar en tu respuesta para copiar y pegar.
+
+---
+
+## SECUENCIA FINAL (orden y estructura)
+
+1. **Orden:** Lee el YAML completo → aplica solo los cambios pedidos → actualiza `meta.updated_at` (fecha de hoy) → recalcula `meta.stats` (total, implemented, partial, pending, with_tests, coverage_pct).
+2. **Estructura:** Mantén las secciones del YAML en este orden: `meta`, `modules`, `entities`, `stories`, `flows`. No inventes campos que no existían.
+3. **Para el viewer:** Incluye el YAML completo en tu respuesta (bloque `` ```yaml ``). El usuario recarga el viewer (botón Recargar o `flowdocs open`) para ver los cambios.

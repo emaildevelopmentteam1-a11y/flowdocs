@@ -83,3 +83,11 @@ Recalcula los stats del `meta` y compáralos con los actuales. Si difieren, mues
 - **Sé específico** — no "hay flujos sin tests", sino "FLOW-003, FLOW-011, FLOW-013 no tienen tests"
 - **Prioriza por impacto** — lo que rompe el trabajo con IA va primero
 - **Si no puedes verificar algo** sin leer un archivo específico, pídelo
+
+---
+
+## SECUENCIA FINAL (orden y estructura)
+
+1. **Orden:** Lee flows.yaml completo y el código relevante → agrupa hallazgos por severidad (crítico, importante, menor) → reporta con IDs concretos y stats reales vs documentados. No edites el YAML.
+2. **Estructura del reporte:** Usa el formato de ejemplo (secciones por severidad, tabla stats, lista de funcionalidad sin documentar). El usuario puede usar @update.md para corregir; tras aplicar cambios, recargar el viewer para ver el estado actualizado.
+3. **Para el viewer:** La auditoría no cambia el YAML. Cuando el usuario corrija con @update.md, deberá recargar el viewer (Recargar o `flowdocs open`).

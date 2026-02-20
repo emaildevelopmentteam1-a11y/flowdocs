@@ -23,6 +23,7 @@ const FILES = {
     'prompts/audit.md',
     'prompts/expand.md',
     'prompts/acceptance.md',
+    'prompts/backlog.md',
   ]
 };
 
@@ -374,6 +375,9 @@ function cmdUsage() {
   console.log(`  ${c.bold}1. Generar documentación (una vez)${c.reset}`);
   dim(`    Opcional: ${c.cyan}@adapt.md${c.reset} — infiere tipo de app y genera pistas.`);
   dim(`    Luego: ${c.cyan}@discover.md${c.reset} — analiza el proyecto y genera .flowdocs/flows.yaml`);
+  console.log('');
+  console.log(`  ${c.bold}1b. Añadir al backlog (historias y flujos desde requisitos)${c.reset}`);
+  dim(`    ${c.cyan}@backlog.md${c.reset} — describe requisitos en lenguaje natural; la IA crea stories, flujos y criterios (o complementa existentes)`);
   console.log('');
   console.log(`  ${c.bold}2. Implementar un flujo${c.reset}`);
   dim('    En el chat:');

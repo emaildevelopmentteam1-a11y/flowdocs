@@ -23,6 +23,7 @@ const FILES = {
     'prompts/audit.md',
     'prompts/expand.md',
     'prompts/acceptance.md',
+    'prompts/backlog.md',
   ]
 };
 

@@ -17,7 +17,8 @@ flowdocs/                      ← raíz del repo en Bitbucket
   │     ├── update.md
   │     ├── audit.md
   │     ├── expand.md
-  │     └── acceptance.md
+  │     ├── acceptance.md
+  │     └── backlog.md
   └── README.md
 ```
 

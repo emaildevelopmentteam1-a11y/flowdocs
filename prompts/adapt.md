@@ -84,3 +84,11 @@ Al terminar, escribe en el chat:
 - Si ya existe `discovery-hints.md`, sobrescríbelo con la nueva versión adaptada.
 
 **No preguntes antes de empezar. Analiza, clasifica, escribe el archivo y da el resumen.**
+
+---
+
+## SECUENCIA FINAL (orden y estructura)
+
+1. **Orden:** Clasifica el proyecto (tipo, dominio, roles) → genera la lista de áreas típicas para ese tipo → escribe `.flowdocs/discovery-hints.md` → da el resumen en chat con el siguiente paso (@discover.md).
+2. **Estructura:** El archivo de pistas es markdown; no generes flows.yaml ni documentación de flujos. El siguiente paso en la cadena es ejecutar @discover.md para generar/actualizar flows.yaml; después el usuario puede abrir el viewer (`flowdocs open`) para ver la documentación.
+3. **Para el viewer:** Adapt no genera flows.yaml. Tras ejecutar @discover.md (que sí lo genera), el usuario abre o recarga el viewer para ver la documentación.

@@ -51,6 +51,7 @@ download "prompts/update.md"    "$PROMPTS_DIR/update.md"
 download "prompts/audit.md"     "$PROMPTS_DIR/audit.md"
 download "prompts/expand.md"    "$PROMPTS_DIR/expand.md"
 download "prompts/acceptance.md" "$PROMPTS_DIR/acceptance.md"
+download "prompts/backlog.md"    "$PROMPTS_DIR/backlog.md"
 [ -f "$FLOWDOCS_DIR/bin/flowdocs.js" ] && chmod +x "$FLOWDOCS_DIR/bin/flowdocs.js"
 
 # Detectar nombre del proyecto

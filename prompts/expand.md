@@ -47,3 +47,11 @@
 1. Lista de flujos nuevos encontrados con su justificación
 2. El YAML actualizado con los flujos nuevos integrados
 3. Stats recalculados
+
+---
+
+## SECUENCIA FINAL (orden y estructura)
+
+1. **Orden:** Lee flows.yaml y el código del módulo → identifica flujos faltantes → añade flujos (IDs en secuencia) y actualiza flow_ids de las stories → recalcula `meta.stats` y `meta.updated_at`. Incluye el YAML completo o las secciones modificadas en tu respuesta.
+2. **Estructura:** Los flujos nuevos con el mismo formato que los existentes (id, name, type, module, actor, steps, story, etc.). No modifiques flujos ya documentados salvo error claro.
+3. **Para el viewer:** El usuario recarga el viewer (Recargar o `flowdocs open`) para ver los nuevos flujos en el tablero y en el Backlog.

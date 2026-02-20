@@ -224,3 +224,11 @@ flows:
 - [ ] doc-plan.md tiene una fila por área y el estado final actualizado.
 
 Si falla alguno, completa antes de dar por terminado. No preguntes antes de empezar; sigue el orden: entrada → mapa → estructura por área → modelo → flujos → **escribir notas y plan** → YAML → cierre del plan.
+
+---
+
+## SECUENCIA FINAL (orden y estructura)
+
+1. **Orden de escritura:** discovery-notes.md → doc-plan.md → flows.yaml. No generes el YAML sin haber escrito antes las notas y el plan.
+2. **Estructura del YAML:** `meta` (app, version, description, updated_at, sprint, stats) → `modules` → `entities` → `stories` (id, title, module, priority, flow_ids, acceptance_criteria) → `flows` (id, name, type, module, actor, steps, etc.). Recalcula `meta.stats` al final.
+3. **Para el viewer:** Tras escribir `flows.yaml`, el usuario debe abrir o recargar el viewer (`flowdocs open` o botón Recargar) para ver la documentación actualizada.

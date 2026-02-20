@@ -76,3 +76,11 @@ Cuando termines, actualiza `.flowdocs/flows.yaml`:
 3. Instrucciones para probar manualmente el flujo
 4. El YAML actualizado con el nuevo estado
 5. Si quedó algo pendiente, describe exactamente qué y por qué
+
+---
+
+## SECUENCIA FINAL (orden y estructura)
+
+1. **Orden:** Implementa el código según los steps → valida contra acceptance_criteria → actualiza `.flowdocs/flows.yaml` (status, sprint_status, tasks, test_files; si aplica, validated_by o validated + flow_ids en criterios) → actualiza `meta.updated_at` y `meta.stats`.
+2. **Estructura del YAML:** No cambies la estructura existente; solo los campos de estado del flujo y de la story afectada. Incluye en la respuesta el YAML completo o las secciones modificadas.
+3. **Para el viewer:** El usuario recarga el viewer (Recargar o `flowdocs open`) para ver el nuevo estado del flujo y de los criterios.
