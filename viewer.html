@@ -232,13 +232,16 @@ tr:hover td { background: #ffffff04; }
 
       </div>
 
-      <!-- BOARD VIEW -->
+      <!-- BACKLOG VIEW -->
       <div id="view-backlog" class="view" style="padding:24px;">
+        <div id="sprint-selector-backlog" style="display:flex;align-items:center;gap:8px;margin-bottom:16px;flex-wrap:wrap;"></div>
         <div id="sprint-banner" style="background:linear-gradient(135deg,#1e293b,#0f172a);border:1px solid #334155;border-radius:12px;padding:20px 24px;margin-bottom:20px;display:flex;align-items:center;gap:24px;flex-wrap:wrap;"></div>
         <div id="backlog-content"></div>
       </div>
 
       <div id="view-board" class="view" style="padding:24px;">
+        <!-- Sprint filter -->
+        <div id="sprint-selector-board" style="display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap;"></div>
         <!-- Filters -->
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:20px;flex-wrap:wrap;">
           <span style="font-size:11px;color:#475569;margin-right:4px;">MÓDULO</span>
@@ -361,6 +364,12 @@ const MOCK_DATA = {
       end: "2026-02-28",
       days_left: 9
     },
+    sprints: [
+      { number: 1, goal: "MVP inicial", start: "2026-01-01", end: "2026-01-14", days_left: 0 },
+      { number: 2, goal: "Estabilización", start: "2026-02-01", end: "2026-02-14", days_left: 0 },
+      { number: 3, goal: "Completar checkout real y cubrir flujos críticos con tests", start: "2026-02-17", end: "2026-02-28", days_left: 9 }
+    ],
+    active_sprint: 3,
     stats: { total: 15, implemented: 7, partial: 5, pending: 3, with_tests: 4, coverage_pct: 27 }
   },
   modules: [
@@ -371,15 +380,15 @@ const MOCK_DATA = {
     { id: "customers", name: "Clientes",          actors: ["admin"] },
   ],
   stories: [
-    { id: "US-001", title: "Cobrar una venta al cliente", module: "pos", priority: "critical", status: "partial", flow_ids: ["FLOW-001","FLOW-002","FLOW-003"] },
-    { id: "US-002", title: "Gestionar el catálogo de productos", module: "inventory", priority: "high", status: "implemented", flow_ids: ["FLOW-005","FLOW-006"] },
-    { id: "US-003", title: "Controlar el inventario físico", module: "inventory", priority: "high", status: "partial", flow_ids: ["FLOW-007","FLOW-008"] },
-    { id: "US-004", title: "Abrir y cerrar el turno de caja", module: "cash", priority: "critical", status: "partial", flow_ids: ["FLOW-011"] },
+    { id: "US-001", title: "Cobrar una venta al cliente", module: "pos", priority: "critical", status: "partial", sprint: 3, flow_ids: ["FLOW-001","FLOW-002","FLOW-003"] },
+    { id: "US-002", title: "Gestionar el catálogo de productos", module: "inventory", priority: "high", status: "implemented", sprint: 2, flow_ids: ["FLOW-005","FLOW-006"] },
+    { id: "US-003", title: "Controlar el inventario físico", module: "inventory", priority: "high", status: "partial", sprint: 2, flow_ids: ["FLOW-007","FLOW-008"] },
+    { id: "US-004", title: "Abrir y cerrar el turno de caja", module: "cash", priority: "critical", status: "partial", sprint: 3, flow_ids: ["FLOW-011"] },
     { id: "US-005", title: "Seguir el estado de los pedidos", module: "orders", priority: "high", status: "partial", flow_ids: ["FLOW-012"] },
-    { id: "US-006", title: "Gestionar clientes y su historial", module: "customers", priority: "medium", status: "implemented", flow_ids: ["FLOW-010"] },
-    { id: "US-007", title: "Acceder al sistema de forma segura", module: "pos", priority: "critical", status: "implemented", flow_ids: ["FLOW-013"] },
-    { id: "US-008", title: "Anular una venta y revertir stock", module: "pos", priority: "high", status: "implemented", flow_ids: ["FLOW-014"] },
-    { id: "US-009", title: "Operar sin conexión a internet", module: "pos", priority: "high", status: "partial", flow_ids: ["FLOW-015"] },
+    { id: "US-006", title: "Gestionar clientes y su historial", module: "customers", priority: "medium", status: "implemented", sprint: 1, flow_ids: ["FLOW-010"] },
+    { id: "US-007", title: "Acceder al sistema de forma segura", module: "pos", priority: "critical", status: "implemented", sprint: 1, flow_ids: ["FLOW-013"] },
+    { id: "US-008", title: "Anular una venta y revertir stock", module: "pos", priority: "high", status: "implemented", sprint: 3, flow_ids: ["FLOW-014"] },
+    { id: "US-009", title: "Operar sin conexión a internet", module: "pos", priority: "high", status: "partial", sprint: 3, flow_ids: ["FLOW-015"] },
   ],
   entities: [
     {
@@ -578,17 +587,38 @@ const MOCK_DATA = {
 // ============================================================
 // CARGA DE flows.yaml (mismo directorio que viewer.html)
 // ============================================================
+function resolveActiveSprint(meta) {
+  const sprints = meta.sprints;
+  const activeNum = meta.active_sprint;
+  if (Array.isArray(sprints) && sprints.length && ('active_sprint' in meta)) {
+    const found = sprints.find(s => String(s.number) === String(activeNum));
+    if (found) {
+      let days = found.days_left;
+      if (days == null && found.start && found.end) {
+        const end = new Date(found.end);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        end.setHours(0, 0, 0, 0);
+        days = Math.max(0, Math.ceil((end - today) / (24 * 60 * 60 * 1000)));
+      }
+      return { number: found.number, goal: found.goal ?? '', start: found.start ?? '', end: found.end ?? '', days_left: days ?? 0 };
+    }
+  }
+  return meta.sprint || {};
+}
+
 function normalizeData(raw) {
   const meta = raw.meta || MOCK_DATA.meta;
   const stats = meta.stats || MOCK_DATA.meta.stats || {};
-  const sprint = meta.sprint || MOCK_DATA.meta.sprint || {};
+  const sprintResolved = resolveActiveSprint(meta) || meta.sprint || MOCK_DATA.meta.sprint || {};
+  const sprint = { number: sprintResolved.number ?? 1, goal: sprintResolved.goal ?? '', start: sprintResolved.start ?? '', end: sprintResolved.end ?? '', days_left: sprintResolved.days_left ?? 0 };
   return {
     meta: {
       app: meta.app ?? MOCK_DATA.meta.app,
       version: meta.version ?? MOCK_DATA.meta.version,
       description: meta.description ?? MOCK_DATA.meta.description,
       updated_at: meta.updated_at ?? MOCK_DATA.meta.updated_at,
-      sprint: { number: sprint.number ?? 1, goal: sprint.goal ?? '', start: sprint.start ?? '', end: sprint.end ?? '', days_left: sprint.days_left ?? 0 },
+      sprint,
       stats: { total: stats.total ?? 0, implemented: stats.implemented ?? 0, partial: stats.partial ?? 0, pending: stats.pending ?? 0, with_tests: stats.with_tests ?? 0, coverage_pct: stats.coverage_pct ?? 0 }
     },
     modules: Array.isArray(raw.modules) ? raw.modules : MOCK_DATA.modules,
@@ -625,6 +655,7 @@ function onYamlFileSelected(ev) {
       if (!raw) throw new Error('YAML no parseado');
       data = normalizeData(raw);
       dataSource = 'file';
+      selectedSprintFilter = (data.meta.active_sprint != null) ? data.meta.active_sprint : 'all';
       updateDataSourceHint();
       renderDashboard();
       if (activeView === 'backlog') renderBacklog();
@@ -650,6 +681,40 @@ let boardTypeFilter = 'all';
 let listModuleFilter = 'all';
 let searchQuery = '';
 let selectedFlow = null;
+/** Filtro de sprint en Backlog/Tablero: 'all' | 'backlog' | número de sprint */
+let selectedSprintFilter = 'all';
+
+/** Devuelve las stories que corresponden al filtro de sprint actual */
+function getStoriesForSprintFilter() {
+  const list = data.stories || [];
+  if (selectedSprintFilter === 'all') return list;
+  if (selectedSprintFilter === 'backlog') return list.filter(s => s.sprint == null || s.sprint === undefined || s.sprint === '');
+  return list.filter(s => Number(s.sprint) === Number(selectedSprintFilter));
+}
+
+/** Cambia el filtro de sprint y re-renderiza la vista activa (backlog o board) */
+function setSelectedSprintFilter(val) {
+  selectedSprintFilter = val;
+  if (activeView === 'backlog') renderBacklog();
+  if (activeView === 'board') renderBoard();
+}
+
+/** Rellena un contenedor con botones de filtro por sprint (Todos, Backlog, Sprint 1, Sprint 2, ...) */
+function renderSprintSelector(containerId) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  const sprints = data.meta.sprints || [];
+  const isActive = (v) => (v === 'all' && selectedSprintFilter === 'all') || (v === 'backlog' && selectedSprintFilter === 'backlog') || (typeof v === 'number' && Number(selectedSprintFilter) === v);
+  let html = `<span style="font-size:11px;color:#475569;margin-right:6px;">SPRINT</span>`;
+  html += `<button class="filter-btn ${isActive('all') ? 'active' : ''}" onclick="setSelectedSprintFilter('all')">Todos</button>`;
+  html += `<button class="filter-btn ${isActive('backlog') ? 'active' : ''}" onclick="setSelectedSprintFilter('backlog')">Backlog</button>`;
+  sprints.forEach(s => {
+    const n = (s && typeof s === 'object' && s.number != null) ? s.number : (typeof s === 'number' ? s : null);
+    if (n == null) return;
+    html += `<button class="filter-btn ${isActive(n) ? 'active' : ''}" onclick="setSelectedSprintFilter(${Number(n)})">Sprint ${n}</button>`;
+  });
+  el.innerHTML = html;
+}
 
 // ============================================================
 // UTILS
@@ -857,6 +922,8 @@ function renderDashboard() {
 // BACKLOG
 // ============================================================
 function renderBacklog() {
+  renderSprintSelector('sprint-selector-backlog');
+
   const sp = data.meta.sprint || {};
   const daysLeft = sp.days_left ?? 0;
   const daysColor = daysLeft <= 3 ? '#ef4444' : daysLeft <= 5 ? '#f59e0b' : '#10b981';
@@ -878,13 +945,12 @@ function renderBacklog() {
       <div style="font-size:11px;color:#475569;">Sprint ${sp.number ?? '—'}</div>
     </div>`;
 
-  // IDs de flujos que están en alguna historia
+  // Stories filtradas por sprint seleccionado
+  const storiesFiltered = getStoriesForSprintFilter();
   const flowIdsInStories = new Set((data.stories || []).flatMap(s => s.flow_ids || []));
 
-  // Agrupar stories con sus flujos
-  const stories = data.stories || [];
   const priorityOrder = { critical:0, high:1, medium:2, low:3 };
-  const sorted = [...stories].sort((a,b) => (priorityOrder[a.priority] ?? 4) - (priorityOrder[b.priority] ?? 4));
+  const sorted = [...storiesFiltered].sort((a,b) => (priorityOrder[a.priority] ?? 4) - (priorityOrder[b.priority] ?? 4));
 
   let html = '';
   sorted.forEach(s => {
@@ -923,8 +989,9 @@ function renderBacklog() {
     </div>`;
   });
 
-  // Flujos que NO están en ninguna historia — así todos los flujos del YAML aparecen en algún sitio
-  const orphanFlows = data.flows.filter(f => !flowIdsInStories.has(f.id));
+  // Flujos que NO están en ninguna historia (solo cuando se muestra Todos o Backlog)
+  const showOrphans = selectedSprintFilter === 'all' || selectedSprintFilter === 'backlog';
+  const orphanFlows = showOrphans ? data.flows.filter(f => !flowIdsInStories.has(f.id)) : [];
   if (orphanFlows.length) {
     html += `
     <div style="background:#1e1e2a;border:1px solid #334155;border-radius:10px;padding:16px 20px;margin-bottom:12px;">
@@ -983,12 +1050,25 @@ function setBoardTypeFilter(val, el) {
 }
 
 function renderBoard() {
+  renderSprintSelector('sprint-selector-board');
   renderBoardFilters();
   renderBoardColumns();
 }
 
 function renderBoardColumns() {
   let flows = data.flows;
+  // Filtro por sprint: solo flujos cuya historia está en el conjunto filtrado (o sin historia si backlog/all)
+  const storiesInScope = new Set(getStoriesForSprintFilter().map(s => s.id));
+  if (selectedSprintFilter === 'all') {
+    // todos los flujos
+  } else if (selectedSprintFilter === 'backlog') {
+    flows = flows.filter(f => {
+      const story = (data.stories || []).find(s => s.id === f.story);
+      return !story || story.sprint == null || story.sprint === '';
+    });
+  } else {
+    flows = flows.filter(f => storiesInScope.has(f.story));
+  }
   if(boardModuleFilter!=='all') flows = flows.filter(f=>f.module===boardModuleFilter);
   if(boardTypeFilter!=='all')   flows = flows.filter(f=>f.type===boardTypeFilter);
 
@@ -1422,9 +1502,11 @@ document.addEventListener('DOMContentLoaded', async function() {
   try {
     data = await loadFlowDocs();
     dataSource = (data.flows !== MOCK_DATA.flows || data.entities !== MOCK_DATA.entities) ? 'yaml' : 'mock';
+    selectedSprintFilter = (data.meta.active_sprint != null) ? data.meta.active_sprint : 'all';
   } catch (e) {
     data = normalizeData(MOCK_DATA);
     dataSource = 'mock';
+    selectedSprintFilter = 'all';
   }
   updateDataSourceHint();
   renderDashboard();
@@ -1456,6 +1538,7 @@ async function reloadYaml() {
   }
   data = await loadFlowDocs();
   dataSource = (data.flows !== MOCK_DATA.flows || data.entities !== MOCK_DATA.entities) ? 'yaml' : 'mock';
+  selectedSprintFilter = (data.meta.active_sprint != null) ? data.meta.active_sprint : 'all';
   updateDataSourceHint();
   renderDashboard();
   if (activeView === 'backlog') renderBacklog();

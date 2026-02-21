@@ -111,12 +111,26 @@ meta:
   version: "1.0.0"
   description: "Una línea que describe qué hace el sistema"
   updated_at: "YYYY-MM-DD"
+  # Sprint activo (formato simple: un solo sprint)
   sprint:
     number: 1
     goal: "Definir con el equipo"
     start: "YYYY-MM-DD"
     end: "YYYY-MM-DD"
     days_left: 0
+  # Opcional: varios sprints (ir subiendo historial). El viewer muestra el que coincida con active_sprint.
+  # sprints:
+  #   - number: 1
+  #     goal: "MVP inicial"
+  #     start: "2026-01-01"
+  #     end: "2026-01-14"
+  #     days_left: 0
+  #   - number: 2
+  #     goal: "Estabilización"
+  #     start: "2026-02-15"
+  #     end: "2026-02-28"
+  #     days_left: 9
+  # active_sprint: 2
   stats:
     total: 0
     implemented: 0
@@ -145,6 +159,7 @@ stories:
     module: "id_modulo"
     priority: "critical | high | medium | low"
     status: "implemented | partial | pending"
+    sprint: 1   # opcional: número de sprint; sin sprint = backlog sin asignar. El viewer filtra Backlog/Tablero por sprint.
     flow_ids: ["FLOW-001", "FLOW-002"]   # todos los flujos de la HU
     acceptance_criteria:
       - id: "AC-001"

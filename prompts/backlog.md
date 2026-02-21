@@ -39,7 +39,7 @@ y que quede registrado en la venta.
    - **Nueva historia:** si es una capacidad o epic nuevo → crea una story nueva (siguiente US-XXX), sus flujos (FLOW-XXX) y mínimo 8 criterios de aceptación (formato simple o extendido según el resto del YAML).
    - **Nuevo flujo en historia existente:** si encaja en una story ya existente → añade el/los flujo(s) a esa story (en `flow_ids` de la story y en cada criterio que corresponda con `flow_ids`), y crea los criterios de aceptación que cubran el nuevo flujo.
    - **Solo criterios o pasos:** si es un matiz o condición sobre algo ya documentado → añade criterios a la story existente o steps/alternatives/errors al flujo existente.
-4. **Generar** el YAML en el mismo formato que el archivo actual (stories con `id`, `title`, `module`, `priority`, `status`, `flow_ids`, `acceptance_criteria`; flows con `id`, `name`, `type`, `module`, `actor`, `priority`, `status`, `test_status`, `sprint_status`, `story`, `story_points`, `entities`, `trigger`, `preconditions`, `steps`, etc.). Continuar la numeración de IDs.
+4. **Generar** el YAML en el mismo formato que el archivo actual (stories con `id`, `title`, `module`, `priority`, `status`, `flow_ids`, `acceptance_criteria`; opcionalmente `sprint: N` para asignar la historia a un sprint y filtrar en el viewer; flows con `id`, `name`, `type`, `module`, `actor`, `priority`, `status`, `test_status`, `sprint_status`, `story`, `story_points`, `entities`, `trigger`, `preconditions`, `steps`, etc.). Continuar la numeración de IDs.
 5. **Actualizar** `meta.stats` (total, implemented, partial, pending, with_tests, coverage_pct) y `meta.updated_at`.
 
 ---
@@ -48,7 +48,7 @@ y que quede registrado en la venta.
 
 - **IDs:** Siguen la secuencia del YAML. Si el último flujo es FLOW-020, el nuevo es FLOW-021. Si la última story es US-005, la nueva es US-006. Criterios: AC-001, AC-002, … por story.
 - **Módulos:** Usa solo `module` que ya existan en `modules:` del YAML. Si el requisito implica un área nueva, propón un nuevo módulo y añádelo a `modules:` con `id`, `name`, `description`, `actors`.
-- **Stories:** Formato "Como [rol] quiero [objetivo] para [beneficio]." Mínimo 8 criterios de aceptación por historia nueva. `flow_ids` = todos los flujos de esa historia. Criterios con `description` (o `text`) y, si usas formato extendido, `validated: false`, `flow_ids` por criterio.
+- **Stories:** Formato "Como [rol] quiero [objetivo] para [beneficio]." Mínimo 8 criterios de aceptación por historia nueva. `flow_ids` = todos los flujos de esa historia. Opcional: `sprint: N` (número) para asignar la historia a un sprint; sin `sprint` = backlog sin asignar (el viewer filtra por sprint). Criterios con `description` (o `text`) y, si usas formato extendido, `validated: false`, `flow_ids` por criterio.
 - **Flujos:** Cada flujo tiene `story: "US-XXX"` (la historia a la que pertenece). Mínimo 3 `steps` en lenguaje de negocio. Asigna `type` (user_flow, business_flow, task_flow, data_flow, system_flow, error_flow), `actor`, `priority`, `status: "pending"`, `test_status: "none"`, `sprint_status: "todo"` por defecto.
 - **No borres** ni reescribas flujos o historias existentes salvo que el usuario pida explícitamente modificar uno. Solo añade o complementa.
 - Si algo es ambiguo, elige la opción más razonable y coméntalo en la respuesta.

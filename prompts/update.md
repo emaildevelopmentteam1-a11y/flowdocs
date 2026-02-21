@@ -18,6 +18,7 @@ Dime qué cambió. Ejemplos de cómo invocarlo:
 @update.md — FLOW-003, FLOW-011 y FLOW-015 pasaron a doing en el sprint
 @update.md — Las tasks TASK-007 y TASK-008 de FLOW-003 están done
 @update.md — El sprint 3 terminó, actualiza todos los done y abre sprint 4
+@update.md — Usamos varios sprints: añade sprint 3 a meta.sprints y pon active_sprint: 3
 ```
 
 **Migrar a la nueva estructura (criterios de aceptación):** Si el proyecto ya tiene `flows.yaml` pero las stories no tienen `acceptance_criteria`, el usuario puede pedirte que los añadas. Ejemplo de invocación:
@@ -37,13 +38,13 @@ Para un rellenado guiado de todas las stories de una vez, el usuario puede ejecu
 3. **Actualiza los stats del meta** — recalcula `total`, `implemented`, `partial`, `pending`, `with_tests`, `coverage_pct`
 4. **Actualiza `updated_at`** con la fecha de hoy
 5. **Si marcas un flujo como `implemented`**, verifica que sus tasks relevantes estén en `done`
-6. **Si el sprint cambió**, actualiza `sprint.number`, `goal`, `start`, `end`, `days_left`
+6. **Si el sprint cambió:** Con un solo sprint (`meta.sprint`), actualiza `sprint.number`, `goal`, `start`, `end`, `days_left`. Si usas varios sprints (`meta.sprints` + `meta.active_sprint`), añade el nuevo sprint a la lista `sprints:` y pon `active_sprint:` al número del sprint activo; opcionalmente rellena `days_left` en cada ítem o déjalo y el viewer lo calcula por las fechas. Las stories pueden tener un campo opcional **`sprint: N`** (número) para asignar la historia a un sprint; el viewer filtra Backlog y Tablero por el sprint seleccionado.
 
 ---
 
 ## REGLAS
 
-- **No inventes campos nuevos** que no estaban en el YAML original
+- **No inventes campos nuevos** que no estaban en el YAML original (salvo `sprint` en stories si usas varios sprints y quieres filtrar por sprint en el viewer)
 - **No cambies el `name` ni los `steps`** de ningún flujo a menos que se te pida explícitamente
 - **No cambies `story_points`** sin que se te indique
 - **`test_files`** — agrega la ruta real del archivo de test solo si se mencionó explícitamente

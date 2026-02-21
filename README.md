@@ -48,6 +48,26 @@ Cuando hagas cambios al viewer o los prompts:
 2. Los devs corren el comando de instalación en sus proyectos
 3. Se actualiza viewer y prompts sin tocar `flows.yaml`
 
+## Subir cambios y bajar en un proyecto (ej. sarchi)
+
+Si tienes el repo **flowdocs** y un proyecto (ej. **sarchi**) en paralelo:
+
+- **Subir cambios** (desde la raíz del repo flowdocs):
+  ```bash
+  cd flowdocs
+  node bin/flowdocs.js publish
+  ```
+  Hace `git add -A`, `git commit -m "flowdocs: actualizar viewer y prompts"` y `git push`. Opcional: `flowdocs publish "mensaje custom"`.
+
+- **Bajar en sarchi** (actualizar viewer y prompts desde el repo flowdocs local, sin tocar `flows.yaml`):
+  ```bash
+  cd sarchi
+  node ../flowdocs/bin/flowdocs.js update --from ../flowdocs
+  ```
+  O con variable de entorno: `FLOWDOCS_SOURCE=../flowdocs node ../flowdocs/bin/flowdocs.js update`.
+
+Así puedes probar cambios del viewer en flowdocs y llevarlos a sarchi sin pasar por GitHub.
+
 ## Desarrollo local
 
 ```bash

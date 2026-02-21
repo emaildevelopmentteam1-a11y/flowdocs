@@ -27,6 +27,16 @@ const FILES = {
   ]
 };
 
+/** Origen local: --from <path> o env FLOWDOCS_SOURCE. Si está definido, init/update copian desde ahí en vez de descargar. */
+function getLocalSourcePath() {
+  const fromEnv = process.env.FLOWDOCS_SOURCE;
+  const argv = process.argv.slice(2);
+  const fromIdx = argv.findIndex(a => a === '--from' || a === '-f');
+  if (fromIdx !== -1 && argv[fromIdx + 1]) return path.resolve(process.cwd(), argv[fromIdx + 1]);
+  if (fromEnv) return path.resolve(process.cwd(), fromEnv);
+  return null;
+}
+
 // ─── Colores ──────────────────────────────────────────────────────────────────
 
 const c = {
@@ -83,6 +93,31 @@ function fileExists(filePath) {
   return fs.existsSync(filePath);
 }
 
+/** Copia viewer, prompts y .cursorrules desde un directorio local (repo flowdocs) al .flowdocs del proyecto. */
+function copyFromLocal(sourceDir, flowdocsDir, opts = {}) {
+  const { includeBin = false } = opts;
+  let copied = 0;
+  const copyOne = (relativePath) => {
+    const src = path.join(sourceDir, relativePath);
+    const dest = path.join(flowdocsDir, relativePath);
+    if (!fileExists(src)) return false;
+    ensureDir(path.dirname(dest));
+    fs.copyFileSync(src, dest);
+    copied++;
+    return true;
+  };
+  copyOne('viewer.html');
+  copyOne('.cursorrules');
+  FILES.prompts.forEach(p => copyOne(p));
+  if (includeBin) copyOne('bin/flowdocs.js');
+  return copied;
+}
+
+/** Comprueba si cwd es la raíz del repo flowdocs (tiene viewer.html y prompts/). */
+function isFlowdocsRepoRoot(dir) {
+  return fileExists(path.join(dir, 'viewer.html')) && fileExists(path.join(dir, 'prompts'));
+}
+
 // ─── Comandos ─────────────────────────────────────────────────────────────────
 
 async function cmdInit() {
@@ -107,39 +142,52 @@ async function cmdInit() {
   info(`Proyecto detectado: ${c.bold}${projectName}${c.reset}`);
   console.log('');
 
-  // Descargar viewer.html
-  process.stdout.write(`  ${c.dim}Descargando viewer.html...${c.reset}`);
-  try {
-    const viewer = await download(`${REPO_BASE}/viewer.html`);
-    writeFile(path.join(flowdocsDir, 'viewer.html'), viewer);
-    process.stdout.write(`\r${c.green}  ✓${c.reset} viewer.html\n`);
-  } catch (e) {
-    process.stdout.write(`\r${c.red}  ✗${c.reset} viewer.html — ${e.message}\n`);
-    // Usar el viewer local como fallback si estamos en dev
-    warn('Usando viewer local como fallback');
-  }
-
-  // Descargar prompts
-  for (const prompt of FILES.prompts) {
-    const name = path.basename(prompt);
-    process.stdout.write(`  ${c.dim}Descargando ${name}...${c.reset}`);
-    try {
-      const content = await download(`${REPO_BASE}/${prompt}`);
-      writeFile(path.join(flowdocsDir, prompt), content);
-      process.stdout.write(`\r${c.green}  ✓${c.reset} prompts/${name}\n`);
-    } catch (e) {
-      process.stdout.write(`\r${c.red}  ✗${c.reset} prompts/${name} — ${e.message}\n`);
+  const localSource = getLocalSourcePath();
+  if (localSource) {
+    if (!fileExists(path.join(localSource, 'viewer.html'))) {
+      err(`Origen local no válido (falta viewer.html): ${localSource}`);
+      console.log('');
+      process.exit(1);
     }
-  }
+    info(`Copiando desde: ${c.bold}${localSource}${c.reset}`);
+    ensureDir(flowdocsDir);
+    ensureDir(path.join(flowdocsDir, 'prompts'));
+    const n = copyFromLocal(localSource, flowdocsDir);
+    ok(`${n} archivos copiados desde el repo flowdocs local`);
+  } else {
+    // Descargar viewer.html
+    process.stdout.write(`  ${c.dim}Descargando viewer.html...${c.reset}`);
+    try {
+      const viewer = await download(`${REPO_BASE}/viewer.html`);
+      writeFile(path.join(flowdocsDir, 'viewer.html'), viewer);
+      process.stdout.write(`\r${c.green}  ✓${c.reset} viewer.html\n`);
+    } catch (e) {
+      process.stdout.write(`\r${c.red}  ✗${c.reset} viewer.html — ${e.message}\n`);
+      warn('Usando viewer local como fallback');
+    }
 
-  // Descargar .cursorrules
-  process.stdout.write(`  ${c.dim}Descargando .cursorrules...${c.reset}`);
-  try {
-    const rules = await download(`${REPO_BASE}/.cursorrules`);
-    writeFile(path.join(flowdocsDir, '.cursorrules'), rules);
-    process.stdout.write(`\r${c.green}  ✓${c.reset} .flowdocs/.cursorrules\n`);
-  } catch (e) {
-    process.stdout.write(`\r${c.red}  ✗${c.reset} .cursorrules — ${e.message}\n`);
+    // Descargar prompts
+    for (const prompt of FILES.prompts) {
+      const name = path.basename(prompt);
+      process.stdout.write(`  ${c.dim}Descargando ${name}...${c.reset}`);
+      try {
+        const content = await download(`${REPO_BASE}/${prompt}`);
+        writeFile(path.join(flowdocsDir, prompt), content);
+        process.stdout.write(`\r${c.green}  ✓${c.reset} prompts/${name}\n`);
+      } catch (e) {
+        process.stdout.write(`\r${c.red}  ✗${c.reset} prompts/${name} — ${e.message}\n`);
+      }
+    }
+
+    // Descargar .cursorrules
+    process.stdout.write(`  ${c.dim}Descargando .cursorrules...${c.reset}`);
+    try {
+      const rules = await download(`${REPO_BASE}/.cursorrules`);
+      writeFile(path.join(flowdocsDir, '.cursorrules'), rules);
+      process.stdout.write(`\r${c.green}  ✓${c.reset} .flowdocs/.cursorrules\n`);
+    } catch (e) {
+      process.stdout.write(`\r${c.red}  ✗${c.reset} .cursorrules — ${e.message}\n`);
+    }
   }
 
   // Crear flows.yaml vacío
@@ -191,53 +239,107 @@ async function cmdUpdate() {
     process.exit(1);
   }
 
-  // Actualizar viewer, prompts, CLI (NO flows.yaml, NO .cursorrules de raíz)
-  const toUpdate = [
-    { remote: 'viewer.html',           local: path.join(flowdocsDir, 'viewer.html') },
-    { remote: '.cursorrules',          local: path.join(flowdocsDir, '.cursorrules') },
-    { remote: 'bin/flowdocs.js',       local: path.join(flowdocsDir, 'bin', 'flowdocs.js') },
-    ...FILES.prompts.map(p => ({
-      remote: p,
-      local: path.join(flowdocsDir, p)
-    }))
-  ];
-
+  const localSource = getLocalSourcePath();
   let updated = 0;
   let failed  = 0;
 
-  for (const file of toUpdate) {
-    const name = file.remote;
-    process.stdout.write(`  ${c.dim}Actualizando ${name}...${c.reset}`);
-    try {
-      const content = await download(`${REPO_BASE}/${file.remote}`);
-      writeFile(file.local, content);
-      process.stdout.write(`\r${c.green}  ✓${c.reset} ${name}\n`);
-      updated++;
-    } catch (e) {
-      process.stdout.write(`\r${c.red}  ✗${c.reset} ${name} — ${e.message}\n`);
-      failed++;
+  if (localSource) {
+    if (!fileExists(path.join(localSource, 'viewer.html'))) {
+      err(`Origen local no válido (falta viewer.html): ${localSource}`);
+      console.log('');
+      process.exit(1);
     }
-  }
+    info(`Actualizando desde repo local: ${c.bold}${localSource}${c.reset}`);
+    ensureDir(path.join(flowdocsDir, 'prompts'));
+    ensureDir(path.join(flowdocsDir, 'bin'));
+    updated = copyFromLocal(localSource, flowdocsDir, { includeBin: true });
+    ok(`${updated} archivos actualizados desde flowdocs local`);
+  } else {
+    // Actualizar viewer, prompts, CLI (NO flows.yaml) desde la red
+    const toUpdate = [
+      { remote: 'viewer.html',           local: path.join(flowdocsDir, 'viewer.html') },
+      { remote: '.cursorrules',          local: path.join(flowdocsDir, '.cursorrules') },
+      { remote: 'bin/flowdocs.js',       local: path.join(flowdocsDir, 'bin', 'flowdocs.js') },
+      ...FILES.prompts.map(p => ({
+        remote: p,
+        local: path.join(flowdocsDir, p)
+      }))
+    ];
 
-  // Si actualizamos el CLI del proyecto, actualizar también el global si existe
-  const localCli = path.join(flowdocsDir, 'bin', 'flowdocs.js');
-  const globalCli = path.join(process.env.HOME || process.env.USERPROFILE || '', '.flowdocs', 'bin', 'flowdocs.js');
-  if (fileExists(localCli) && fileExists(globalCli)) {
-    try {
-      fs.copyFileSync(localCli, globalCli);
-      ok('Comando global flowdocs actualizado');
-    } catch (e) {}
+    for (const file of toUpdate) {
+      const name = file.remote;
+      process.stdout.write(`  ${c.dim}Actualizando ${name}...${c.reset}`);
+      try {
+        const content = await download(`${REPO_BASE}/${file.remote}`);
+        writeFile(file.local, content);
+        process.stdout.write(`\r${c.green}  ✓${c.reset} ${name}\n`);
+        updated++;
+      } catch (e) {
+        process.stdout.write(`\r${c.red}  ✗${c.reset} ${name} — ${e.message}\n`);
+        failed++;
+      }
+    }
+
+    // Si actualizamos el CLI del proyecto, actualizar también el global si existe
+    const localCli = path.join(flowdocsDir, 'bin', 'flowdocs.js');
+    const globalCli = path.join(process.env.HOME || process.env.USERPROFILE || '', '.flowdocs', 'bin', 'flowdocs.js');
+    if (fileExists(localCli) && fileExists(globalCli)) {
+      try {
+        fs.copyFileSync(localCli, globalCli);
+        ok('Comando global flowdocs actualizado');
+      } catch (e) {}
+    }
   }
 
   console.log('');
   if (failed === 0) {
-    ok(`${updated} archivos actualizados`);
+    if (!localSource) ok(`${updated} archivos actualizados`);
     warn('flows.yaml no fue modificado');
   } else {
     warn(`${updated} actualizados, ${failed} fallaron`);
     dim('  Comprueba conexión a internet y que GitHub esté accesible.');
   }
-  dim('  Ver descripción de uso: flowdocs usage');
+  dim('  Para bajar desde el repo flowdocs local: flowdocs update --from ../flowdocs');
+  console.log('');
+}
+
+async function cmdPublish() {
+  const cwd = process.cwd();
+  console.log('');
+  console.log(`${c.bold}${c.cyan}  FlowDocs${c.reset} — subir cambios al remoto`);
+  console.log('');
+
+  if (!isFlowdocsRepoRoot(cwd)) {
+    err('Este comando debe ejecutarse desde la raíz del repositorio flowdocs (donde está viewer.html y prompts/).');
+    info('Desde un proyecto (ej. sarchi), usa "flowdocs update --from ../flowdocs" para bajar los cambios.');
+    console.log('');
+    process.exit(1);
+  }
+
+  try {
+    execSync('git rev-parse --is-inside-work-tree', { cwd, stdio: 'pipe' });
+  } catch (_) {
+    err('No es un repositorio git. Inicializa con: git init');
+    console.log('');
+    process.exit(1);
+  }
+
+  const msg = process.argv.slice(3).join(' ').trim() || 'flowdocs: actualizar viewer y prompts';
+  try {
+    execSync('git add -A', { cwd, stdio: 'inherit' });
+    execSync('git', ['commit', '-m', msg], { cwd, stdio: 'inherit' });
+    execSync('git push', { cwd, stdio: 'inherit' });
+    ok('Cambios subidos al remoto.');
+  } catch (e) {
+    const stderr = (e.stderr && e.stderr.toString()) || '';
+    if (e.status === 1 && (stderr.includes('nothing to commit') || stderr.includes('no changes added'))) {
+      warn('No hay cambios que commitear. Haz tus ediciones y vuelve a ejecutar flowdocs publish.');
+    } else {
+      err('Error al subir. Revisa: git status y, si aplica, git push.');
+    }
+    console.log('');
+    process.exit(1);
+  }
   console.log('');
 }
 
@@ -393,9 +495,12 @@ function cmdUsage() {
   console.log('');
   console.log(`  ${c.bold}Comandos de terminal:${c.reset}`);
   console.log(`    ${c.cyan}flowdocs status${c.reset}   resumen del proyecto`);
-  console.log(`    ${c.cyan}flowdocs update${c.reset}   actualizar viewer y prompts del repo`);
+  console.log(`    ${c.cyan}flowdocs update${c.reset}   actualizar viewer y prompts (bajar)`);
+  console.log(`    ${c.cyan}flowdocs update --from ../flowdocs${c.reset}   bajar desde el repo flowdocs local`);
   console.log(`    ${c.cyan}flowdocs open${c.reset}     abrir viewer en el navegador`);
   console.log(`    ${c.cyan}flowdocs usage${c.reset}   ver esta descripción`);
+  console.log(`  ${c.bold}En el repo flowdocs:${c.reset}`);
+  console.log(`    ${c.cyan}flowdocs publish${c.reset}   subir cambios (git add, commit, push)`);
   console.log('');
 }
 
@@ -407,13 +512,15 @@ function cmdHelp() {
   console.log('');
   console.log(`    ${c.cyan}init${c.reset}      Instala FlowDocs en el proyecto actual`);
   console.log(`    ${c.cyan}update${c.reset}    Actualiza viewer y prompts (no toca flows.yaml)`);
+  console.log(`    ${c.cyan}update --from <path>${c.reset}  Bajar desde el repo flowdocs local (ej. ../flowdocs)`);
   console.log(`    ${c.cyan}status${c.reset}    Muestra el resumen del proyecto en la terminal`);
   console.log(`    ${c.cyan}open${c.reset}     Abre el viewer (tablero visual) en el navegador`);
+  console.log(`    ${c.cyan}publish${c.reset}   (solo en repo flowdocs) Sube cambios: git add, commit, push`);
   console.log(`    ${c.cyan}usage${c.reset}    Muestra la descripción de uso completa`);
   console.log('');
   console.log(`  ${c.bold}Uso:${c.reset}`);
   console.log('');
-  console.log(`    flowdocs init | update | status | open | usage`);
+  console.log(`    flowdocs init | update | status | open | publish | usage`);
   console.log('');
   console.log(`  ${c.bold}Primer paso:${c.reset} En Cursor/Antigravity escribe ${c.cyan}@discover.md${c.reset}`);
   console.log(`  ${c.bold}Ver protocolo:${c.reset} ${c.cyan}flowdocs usage${c.reset}`);
@@ -503,12 +610,13 @@ const cmd = process.argv[2];
 
 (async () => {
   switch (cmd) {
-    case 'init':   await cmdInit();   break;
-    case 'update': await cmdUpdate(); break;
-    case 'status': cmdStatus();       break;
-    case 'open':   cmdOpen();         break;
-    case 'usage':  cmdUsage();        break;
-    default:       cmdHelp();         break;
+    case 'init':    await cmdInit();    break;
+    case 'update':  await cmdUpdate();  break;
+    case 'status':  cmdStatus();       break;
+    case 'open':    cmdOpen();         break;
+    case 'publish': await cmdPublish(); break;
+    case 'usage':   cmdUsage();        break;
+    default:        cmdHelp();         break;
   }
 })().catch(e => {
   console.error(`\n  ${c.red}Error:${c.reset} ${e.message}\n`);
