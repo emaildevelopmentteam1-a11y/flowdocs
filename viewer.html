@@ -103,6 +103,80 @@ tr:hover td { background: #ffffff04; }
 .story-priority-medium   { background: rgba(59,130,246,.12); color: #60a5fa; }
 .story-priority-low      { background: rgba(71,85,105,.2); color: #64748b; }
 .story-module { font-size: 10px; color: #475569; font-family: 'JetBrains Mono', monospace; }
+
+/* Story panel (modal de historias) */
+.story-panel-header { padding: 20px 22px 16px; border-bottom: 1px solid #1a1f2e; background: linear-gradient(160deg,#0f1225 0%,#0d0f18 60%); position: relative; }
+.story-panel-header .header-actions { position: absolute; top: 14px; right: 14px; display: flex; align-items: center; gap: 6px; }
+.story-panel-header .legend-btn { width: 22px; height: 22px; border-radius: 50%; border: 1px solid #334155; background: transparent; color: #475569; font-size: 11px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all .15s; }
+.story-panel-header .legend-btn:hover { border-color: #6366f1; color: #6366f1; background: #6366f110; }
+.story-meta-row { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+.story-meta-id { font-family: 'JetBrains Mono',monospace; font-size: 11px; color: #6366f1; background: #6366f112; border: 1px solid #6366f130; padding: 2px 8px; border-radius: 4px; }
+.story-meta-module { font-family: 'JetBrains Mono',monospace; font-size: 10px; color: #475569; }
+.story-meta-sprint { font-size: 10px; color: #8b5cf6; background: #8b5cf610; border: 1px solid #8b5cf630; padding: 2px 7px; border-radius: 4px; font-family: 'JetBrains Mono',monospace; margin-left: auto; }
+.story-panel-title { font-size: 14px; font-weight: 600; color: #e2e8f0; line-height: 1.5; margin-bottom: 14px; padding-right: 64px; }
+.story-header-badges { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.story-badge-priority { font-size: 10px; font-family: 'JetBrains Mono',monospace; padding: 3px 8px; border-radius: 4px; }
+.story-badge-status { font-size: 10px; font-family: 'JetBrains Mono',monospace; padding: 3px 8px; border-radius: 4px; color: #34d399; background: #10b98115; border: 1px solid #10b98130; }
+.story-badge-module { font-size: 10px; font-family: 'JetBrains Mono',monospace; padding: 3px 8px; border-radius: 4px; color: #94a3b8; background: #1e293b; border: 1px solid #334155; }
+.progress-strip { padding: 12px 22px; border-bottom: 1px solid #1a1f2e; background: #0a0c15; display: flex; align-items: center; gap: 12px; }
+.progress-label { font-size: 11px; color: #475569; font-family: 'JetBrains Mono',monospace; white-space: nowrap; }
+.progress-track { flex: 1; height: 4px; background: #1e293b; border-radius: 2px; overflow: hidden; }
+.progress-track.narrow { max-width: 56px; }
+.progress-fill-bar { height: 100%; border-radius: 2px; transition: width .3s; }
+.progress-count { font-family: 'JetBrains Mono',monospace; font-size: 12px; font-weight: 600; white-space: nowrap; }
+.story-panel-body { overflow-y: auto; max-height: 50vh; padding: 14px 22px 24px; }
+.story-section { padding-bottom: 14px; border-bottom: 1px solid #ffffff06; margin-bottom: 14px; }
+.story-section:last-of-type { border-bottom: none; margin-bottom: 0; }
+.section-title { font-size: 10px; font-family: 'JetBrains Mono',monospace; color: #334155; text-transform: uppercase; letter-spacing: .1em; margin-bottom: 10px; }
+.flow-row { display: flex; align-items: center; gap: 8px; padding: 7px 10px; border-radius: 7px; margin-bottom: 4px; background: #0a0c15; border: 1px solid #1a1f2e; transition: border-color .15s; cursor: default; }
+.flow-row:last-child { margin-bottom: 0; }
+.flow-row:hover { border-color: #6366f140; }
+.flow-row.clickable { cursor: pointer; }
+.status-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+.ac-id { font-family: 'JetBrains Mono',monospace; font-size: 10px; color: #334155; min-width: 52px; flex-shrink: 0; }
+.ac-desc { font-size: 11px; color: #64748b; flex: 1; line-height: 1.4; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.shield-btn { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 5px; border: 1px solid #10b98130; background: #10b98110; cursor: pointer; color: #10b981; flex-shrink: 0; transition: background .15s; }
+.shield-btn:hover { background: #10b98125; }
+.shield-btn.no-spec { border-color: #1e293b; background: transparent; color: #1e293b; cursor: default; pointer-events: none; }
+.chip-sprint { font-family: 'JetBrains Mono',monospace; font-size: 10px; padding: 2px 7px; border-radius: 20px; border: 1px solid; white-space: nowrap; flex-shrink: 0; }
+.chip-sprint.todo { color: #475569; background: #47556915; border-color: #47556940; }
+.chip-sprint.doing { color: #3b82f6; background: #3b82f615; border-color: #3b82f640; }
+.chip-sprint.review { color: #8b5cf6; background: #8b5cf615; border-color: #8b5cf640; }
+.chip-sprint.done { color: #10b981; background: #10b98115; border-color: #10b98140; }
+.sprint-badge { font-family: 'JetBrains Mono',monospace; font-size: 10px; padding: 2px 7px; border-radius: 4px; flex-shrink: 0; }
+.sprint-badge.todo { color: #475569; background: #1e293b; }
+.sprint-badge.doing { color: #60a5fa; background: #3b82f615; border: 1px solid #3b82f630; }
+.sprint-badge.review { color: #c084fc; background: #8b5cf615; border: 1px solid #8b5cf630; }
+.sprint-badge.done { color: #34d399; background: #10b98115; border: 1px solid #10b98130; }
+.spec-list-toggle { display: flex; align-items: center; justify-content: space-between; cursor: pointer; }
+.spec-list-toggle .section-title { margin-bottom: 0; }
+.spec-list-content { display: none; flex-direction: column; margin-top: 10px; }
+.spec-list-content.open { display: flex; }
+.spec-list-item { display: flex; align-items: center; gap: 8px; padding: 6px 0; font-family: 'JetBrains Mono',monospace; font-size: 10px; color: #10b981; border-bottom: 1px solid #ffffff04; }
+.spec-list-item:last-child { border-bottom: none; }
+.overlay-modal { display: none; position: fixed; inset: 0; z-index: 60; align-items: center; justify-content: center; background: #000000a0; backdrop-filter: blur(5px); }
+.overlay-modal.open { display: flex; }
+@keyframes scaleIn { from { opacity:0; transform:scale(.96) translateY(6px); } to { opacity:1; transform:scale(1) translateY(0); } }
+.spec-modal-box { background: #0d0f1a; border: 1px solid #1e293b; border-radius: 14px; overflow: hidden; width: 460px; max-width: 92vw; box-shadow: 0 32px 80px #000000ee; animation: scaleIn .18s ease; }
+.spec-modal-header { display: flex; align-items: center; gap: 10px; padding: 14px 18px; border-bottom: 1px solid #1e293b; background: #0a0c15; }
+.spec-modal-ac { font-family: 'JetBrains Mono',monospace; font-size: 11px; color: #10b981; background: #10b98112; border: 1px solid #10b98130; padding: 2px 8px; border-radius: 4px; flex-shrink: 0; }
+.spec-modal-desc { font-size: 11px; color: #64748b; flex: 1; line-height: 1.4; }
+.evidence-area { background: #070810; min-height: 180px; display: flex; align-items: center; justify-content: center; }
+.evidence-area img { max-width: 100%; max-height: 300px; object-fit: contain; display: block; }
+.evidence-empty { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 40px; color: #1e293b; }
+.evidence-empty span { font-family: 'JetBrains Mono',monospace; font-size: 10px; }
+.spec-files-area { padding: 12px 18px; border-top: 1px solid #1e293b; }
+.spec-files-label { font-size: 10px; font-family: 'JetBrains Mono',monospace; color: #334155; text-transform: uppercase; letter-spacing: .08em; margin-bottom: 8px; }
+.spec-file-row { display: flex; align-items: center; gap: 8px; padding: 6px 10px; background: #0a0c15; border: 1px solid #10b98120; border-radius: 6px; margin-bottom: 4px; font-family: 'JetBrains Mono',monospace; font-size: 11px; color: #10b981; }
+.spec-file-row:last-child { margin-bottom: 0; }
+.spec-modal-footer { display: flex; justify-content: flex-end; padding: 10px 18px; border-top: 1px solid #1e293b; background: #0a0c15; }
+.legend-modal-box { background: #0d0f1a; border: 1px solid #1e293b; border-radius: 14px; padding: 20px 22px; width: 340px; max-width: 92vw; box-shadow: 0 32px 80px #000000ee; animation: scaleIn .18s ease; }
+.legend-group-title { font-size: 10px; font-family: 'JetBrains Mono',monospace; color: #334155; text-transform: uppercase; letter-spacing: .08em; padding-bottom: 6px; border-bottom: 1px solid #ffffff06; margin-bottom: 8px; margin-top: 16px; }
+.legend-group-title:first-of-type { margin-top: 0; }
+.legend-row { display: flex; align-items: center; gap: 10px; padding: 4px 0; }
+.legend-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.legend-label { font-size: 12px; color: #94a3b8; flex: 1; }
+.legend-desc { font-size: 10px; color: #334155; font-family: 'JetBrains Mono',monospace; }
 </style>
 </head>
 <body>
@@ -336,7 +410,7 @@ tr:hover td { background: #ffffff04; }
 <!-- Panel lateral -->
 <div class="panel-overlay" id="overlay" onclick="closePanel()"></div>
 <div class="panel" id="detail-panel">
-  <div style="padding:24px;">
+  <div id="panel-wrapper" style="padding:24px;">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
       <div id="panel-id" style="font-family:'JetBrains Mono';font-size:12px;color:#475569;"></div>
       <button onclick="closePanel()" style="background:none;border:none;color:#475569;cursor:pointer;padding:4px;">
@@ -344,6 +418,57 @@ tr:hover td { background: #ffffff04; }
       </button>
     </div>
     <div id="panel-content"></div>
+  </div>
+</div>
+
+<!-- Modales del story panel (spec + evidence, leyenda) -->
+<div class="overlay-modal" id="overlay-spec">
+  <div class="spec-modal-box" onclick="event.stopPropagation()">
+    <div class="spec-modal-header">
+      <div style="width:28px;height:28px;border-radius:6px;border:1px solid #10b98130;background:#10b98110;display:flex;align-items:center;justify-content:center;color:#10b981;flex-shrink:0;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3l8 3.5v5c0 4.5-3.5 8.5-8 9.5-4.5-1-8-5-8-9.5v-5L12 3z"/><path d="M9 12l2 2 4-4"/></svg></div>
+      <span class="spec-modal-ac" id="sm-ac">—</span>
+      <span class="spec-modal-desc" id="sm-desc"></span>
+      <button type="button" class="close-btn" onclick="closeSpecModal()" style="width:26px;height:26px;border-radius:6px;border:1px solid #1e293b;background:transparent;color:#475569;cursor:pointer;display:flex;align-items:center;justify-content:center;"><svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1 1l10 10M11 1L1 11"/></svg></button>
+    </div>
+    <div class="evidence-area" id="sm-evidence-area">
+      <div class="evidence-empty" id="sm-no-evidence">
+        <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="8.5" cy="10.5" r="1.5"/><path d="M21 15l-5-5L5 19"/></svg>
+        <span>Sin evidencia adjunta</span>
+      </div>
+      <img id="sm-img" src="" alt="" style="display:none;" onerror="this.style.display='none';var ne=document.getElementById('sm-no-evidence');if(ne){ne.style.display='flex';ne.querySelector('span').textContent='Sin evidencia adjunta';}">
+    </div>
+    <div class="spec-files-area">
+      <div class="spec-files-label">Spec Files</div>
+      <div id="sm-files"></div>
+    </div>
+    <div class="spec-modal-footer">
+      <button type="button" class="close-btn" onclick="closeSpecModal()" style="width:auto;padding:0 14px;gap:6px;font-size:10px;font-family:'JetBrains Mono',monospace;color:#475569;">Cerrar</button>
+    </div>
+  </div>
+</div>
+<div class="overlay-modal" id="overlay-legend">
+  <div class="legend-modal-box" onclick="event.stopPropagation()">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+      <span style="font-size:13px;font-weight:600;color:#e2e8f0;">Guía de Indicadores</span>
+      <button type="button" class="close-btn" onclick="closeLegendModal()" style="width:26px;height:26px;border-radius:6px;border:1px solid #1e293b;background:transparent;color:#475569;cursor:pointer;display:flex;align-items:center;justify-content:center;"><svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1 1l10 10M11 1L1 11"/></svg></button>
+    </div>
+    <div class="legend-group-title">Criterios — Dot</div>
+    <div class="legend-row"><div class="legend-dot" style="background:#10b981;box-shadow:0 0 6px #10b98160;"></div><span class="legend-label">Validado + spec + evidence</span><span class="legend-desc">100% demostrado</span></div>
+    <div class="legend-row"><div class="legend-dot" style="background:#3b82f6;box-shadow:0 0 6px #3b82f660;"></div><span class="legend-label">Validado + spec</span><span class="legend-desc">cubierto en tests</span></div>
+    <div class="legend-row"><div class="legend-dot" style="background:#f59e0b;box-shadow:0 0 6px #f59e0b60;"></div><span class="legend-label">Validado sin respaldo</span><span class="legend-desc">marcado manual</span></div>
+    <div class="legend-row"><div class="legend-dot" style="background:#334155;"></div><span class="legend-label">Pendiente</span><span class="legend-desc">sin validar</span></div>
+    <div class="legend-group-title">Flujos — Sprint Status</div>
+    <div class="legend-row"><div class="legend-dot" style="background:#475569;"></div><span class="legend-label">todo</span><span class="legend-desc">sin iniciar</span></div>
+    <div class="legend-row"><div class="legend-dot" style="background:#3b82f6;box-shadow:0 0 6px #3b82f660;"></div><span class="legend-label">doing</span><span class="legend-desc">en desarrollo</span></div>
+    <div class="legend-row"><div class="legend-dot" style="background:#8b5cf6;box-shadow:0 0 6px #8b5cf660;"></div><span class="legend-label">review</span><span class="legend-desc">en revisión</span></div>
+    <div class="legend-row"><div class="legend-dot" style="background:#10b981;box-shadow:0 0 6px #10b98160;"></div><span class="legend-label">done</span><span class="legend-desc">completado</span></div>
+    <div class="legend-group-title">Ícono de Criterio</div>
+    <div class="legend-row"><div style="width:22px;height:22px;border-radius:5px;border:1px solid #10b98130;background:#10b98110;display:flex;align-items:center;justify-content:center;color:#10b981;flex-shrink:0;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3l8 3.5v5c0 4.5-3.5 8.5-8 9.5-4.5-1-8-5-8-9.5v-5L12 3z"/><path d="M9 12l2 2 4-4"/></svg></div><span class="legend-label">Shield check</span><span class="legend-desc">click → spec + evidence</span></div>
+    <div class="legend-group-title">Chips de Flujo</div>
+    <div class="legend-row"><span class="chip-sprint todo" style="min-width:64px;text-align:center;">FLOW-001</span><span class="legend-label" style="margin-left:4px;">todo</span></div>
+    <div class="legend-row"><span class="chip-sprint doing" style="min-width:64px;text-align:center;">FLOW-002</span><span class="legend-label" style="margin-left:4px;">doing</span></div>
+    <div class="legend-row"><span class="chip-sprint review" style="min-width:64px;text-align:center;">FLOW-003</span><span class="legend-label" style="margin-left:4px;">review</span></div>
+    <div class="legend-row"><span class="chip-sprint done" style="min-width:64px;text-align:center;">FLOW-004</span><span class="legend-label" style="margin-left:4px;">done</span></div>
   </div>
 </div>
 
@@ -764,6 +889,24 @@ function flowsForCriterion(c, storyFlows) {
   const validatedBy = typeof c === 'object' && c !== null ? c.validated_by : null;
   if (!validatedBy) return [];
   return storyFlows.filter(f => (f.test_files || []).some(tf => tf === validatedBy || (tf && tf.includes(validatedBy))));
+}
+/** Spec files para un criterio: validated_by (string) o test_files de los flujos que lo cubren */
+function getSpecsForCriterion(c, storyFlows) {
+  const by = typeof c === 'object' && c !== null ? c.validated_by : null;
+  if (by) return [by];
+  const flows = flowsForCriterion(c, storyFlows);
+  const files = flows.flatMap(f => f.test_files || []);
+  return [...new Set(files)];
+}
+/** Estilo del dot del criterio: validated+spec+evidence=verde, validated+spec=azul, validated=amber, else gris */
+function criterionDotStyle(c, storyFlows) {
+  const { implemented, evidence } = normCriterion(c, storyFlows);
+  const specs = getSpecsForCriterion(c, storyFlows);
+  const hasSpec = specs.length > 0;
+  if (!implemented) return { bg: '#334155', glow: 'none' };
+  if (hasSpec && evidence && evidence.length) return { bg: '#10b981', glow: '0 0 5px #10b98155' };
+  if (hasSpec) return { bg: '#3b82f6', glow: '0 0 5px #3b82f655' };
+  return { bg: '#f59e0b', glow: '0 0 5px #f59e0b55' };
 }
 const flowTagColors = ['#14532d','#3b1f5e','#1e3a5f','#713f12','#134e4a'];
 function flowTagPills(flows) {
@@ -1291,58 +1434,156 @@ function buildStoryDocPrompt(s) {
 Sigue @evidence.md para la estructura de carpetas. Un solo paso: tests (crear o documentar existentes), evidencia (capturas/vídeo en .flowdocs/evidence/), y actualización del YAML (test_files, test_evidence, validated, evidence, meta.stats).`;
 }
 
+function openSpecModalFromBtn(btn) {
+  const acId = btn.getAttribute('data-ac-id') || '—';
+  const desc = btn.getAttribute('data-desc') || '';
+  let specs = []; try { specs = JSON.parse(btn.getAttribute('data-specs') || '[]'); } catch (_) {}
+  let evidence = []; try { evidence = JSON.parse(btn.getAttribute('data-evidence') || '[]'); } catch (_) {}
+  document.getElementById('sm-ac').textContent = acId;
+  document.getElementById('sm-desc').textContent = desc;
+  const img = document.getElementById('sm-img');
+  const noEv = document.getElementById('sm-no-evidence');
+  if (evidence.length) {
+    img.src = evidence[0];
+    img.style.display = 'block';
+    noEv.style.display = 'none';
+  } else {
+    img.src = '';
+    img.style.display = 'none';
+    noEv.style.display = 'flex';
+  }
+  const shieldSvg = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3l8 3.5v5c0 4.5-3.5 8.5-8 9.5-4.5-1-8-5-8-9.5v-5L12 3z"/><path d="M9 12l2 2 4-4"/></svg>';
+  document.getElementById('sm-files').innerHTML = specs.length ? specs.map(s => '<div class="spec-file-row">' + shieldSvg + s + '</div>').join('') : '<div style="font-size:11px;color:#334155;font-family:\'JetBrains Mono\',monospace;">Sin spec asignado</div>';
+  document.getElementById('overlay-spec').classList.add('open');
+}
+function closeSpecModal() { document.getElementById('overlay-spec').classList.remove('open'); }
+function closeLegendModal() { document.getElementById('overlay-legend').classList.remove('open'); }
+
 function openStoryPanel(storyId) {
   const s = data.stories.find(x=>x.id===storyId);
   if(!s) return;
   const promptImplement = buildStoryPrompt(s);
   const promptDoc = buildStoryDocPrompt(s);
-  document.getElementById('panel-id').textContent = `${s.id} · Prompts para el agente`;
-  const storyFlowsForCriteria = data.flows.filter(f => (s.flow_ids || []).includes(f.id));
-  const flowCovered = storyFlowsForCriteria.filter(f => (f.test_status === 'covered' || f.test_status === 'partial') && (f.test_files || []).length > 0).length;
-  const flowTotal = storyFlowsForCriteria.length;
-  const criteriaList = (s.acceptance_criteria || []).map(c => normCriterion(c, storyFlowsForCriteria));
-  const criteriaDone = criteriaList.filter(x => x.implemented).length;
-  const criteriaTotal = criteriaList.length;
-  const coverageLine = flowTotal || criteriaTotal ? `<div style="font-size:11px;color:#64748b;margin-bottom:10px;"><span style="color:#6366f1;">Cobertura por flujo:</span> ${flowCovered}/${flowTotal} flujos con tests &nbsp;|&nbsp; <span style="color:#14b8a6;">Cobertura por criterios:</span> ${criteriaDone}/${criteriaTotal} validados</div>` : '';
-  const criteriaHtml = (s.acceptance_criteria && s.acceptance_criteria.length)
-    ? s.acceptance_criteria.map((c,i)=>criterionRow(c,i,storyFlowsForCriteria)).join('')
-    : '<div style="font-size:12px;color:#475569;">Sin criterios aún. Añádelos con @update.md.</div>';
-  document.getElementById('panel-content').innerHTML = `
-    <div style="margin-bottom:16px;">
-      <div style="font-size:16px;font-weight:700;color:#e2e8f0;margin-bottom:8px;">${s.title || s.id}</div>
-      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;">
-        ${priorityBadge(s.priority)}
-        <span class="badge badge-gray">${moduleName(s.module)}</span>
-        <span style="font-size:11px;color:#64748b;">${(s.flow_ids||[]).join(', ')}</span>
-      </div>
-      ${coverageLine}
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
-        <span style="font-size:11px;color:#475569;text-transform:uppercase;letter-spacing:.08em;">Criterios de aceptación (✓ = prueba e2e)</span>
-        ${criteriaTotal ? `<span style="font-size:11px;font-family:'JetBrains Mono';color:${criteriaDone===criteriaTotal?'#22c55e':'#94a3b8'}">✓ ${criteriaDone}/${criteriaTotal}</span>` : ''}
-      </div>
-      ${criteriaHtml}
-    </div>
-    <div style="background:#0f0f17;border:1px solid #6366f130;border-radius:8px;padding:14px;margin-bottom:14px;">
-      <div style="font-size:11px;color:#6366f1;margin-bottom:6px;text-transform:uppercase;letter-spacing:.08em;">1. Implementar (copia y pega en el chat)</div>
-      <div style="font-size:10px;color:#475569;margin-bottom:8px;">Solo implementación. Al terminar, usa el bloque 2 para documentar.</div>
-      <pre id="story-prompt-text" style="margin:0;font-size:11px;line-height:1.5;color:#cbd5e1;white-space:pre-wrap;word-break:break-word;max-height:220px;overflow-y:auto;">${promptImplement.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</pre>
-      <button type="button" onclick="copyStoryPrompt(1)" style="margin-top:10px;padding:8px 14px;border-radius:6px;border:1px solid #6366f150;background:#6366f118;color:#818cf8;font-size:12px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;">
-        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-2M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
-        <span id="copy-btn-label-1">Copiar</span>
-      </button>
-    </div>
-    <div style="background:#0f1717;border:1px solid #0f766e30;border-radius:8px;padding:14px;margin-bottom:14px;">
-      <div style="font-size:11px;color:#14b8a6;margin-bottom:6px;text-transform:uppercase;letter-spacing:.08em;">2. Generar documentación (después de implementar)</div>
-      <div style="font-size:10px;color:#475569;margin-bottom:8px;">Un solo prompt: tests, evidencia y actualización del YAML. Equivale a @document.md.</div>
-      <pre id="story-prompt-e2e" style="margin:0;font-size:11px;line-height:1.5;color:#cbd5e1;white-space:pre-wrap;word-break:break-word;max-height:200px;overflow-y:auto;">${promptDoc.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</pre>
-      <button type="button" onclick="copyStoryPrompt(2)" style="margin-top:10px;padding:8px 14px;border-radius:6px;border:1px solid #0f766e50;background:#0f766e18;color:#2dd4bf;font-size:12px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;">
-        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-2M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
-        <span id="copy-btn-label-2">Copiar</span>
-      </button>
-    </div>
-  `;
   window.__currentStoryPrompt = promptImplement;
   window.__currentStoryPromptE2E = promptDoc;
+
+  const storyFlows = data.flows.filter(f => (s.flow_ids || []).includes(f.id));
+  const flowCovered = storyFlows.filter(f => (f.test_status === 'covered' || f.test_status === 'partial') && (f.test_files || []).length > 0).length;
+  const flowDone = storyFlows.filter(f => (f.sprint_status || '') === 'done').length;
+  const flowTotal = storyFlows.length;
+  const criteriaList = (s.acceptance_criteria || []).map(c => normCriterion(c, storyFlows));
+  const criteriaDone = criteriaList.filter(x => x.implemented).length;
+  const criteriaTotal = criteriaList.length;
+
+  const priorityCls = s.priority === 'critical' ? 'badge badge-err' : s.priority === 'high' ? 'badge badge-warn' : 'badge badge-gray';
+  function sprintClass(st) { const v = st || 'todo'; return v === 'in_progress' ? 'doing' : v; }
+
+  let criteriaRowsHtml = '';
+  (s.acceptance_criteria || []).forEach((c, i) => {
+    const text = normCriterion(c, storyFlows).text;
+    const acId = (typeof c === 'object' && c && c.id) ? c.id : ('AC-' + String(i + 1).padStart(3, '0'));
+    const dot = criterionDotStyle(c, storyFlows);
+    const flows = flowsForCriterion(c, storyFlows);
+    const specs = getSpecsForCriterion(c, storyFlows);
+    const ev = (typeof c === 'object' && c && Array.isArray(c.evidence)) ? c.evidence : [];
+    const chipClass = (f) => 'chip-sprint ' + sprintClass(f.sprint_status);
+    const chips = flows.map(f => `<span class="${chipClass(f)}" data-flow-id="${f.id}" onclick="event.stopPropagation();openPanel('${f.id}')">${f.id}</span>`).join('');
+    const shieldCls = specs.length ? 'shield-btn' : 'shield-btn no-spec';
+    const specsJson = JSON.stringify(specs).replace(/"/g, '&quot;');
+    const evidenceJson = JSON.stringify(ev).replace(/"/g, '&quot;');
+    const descEsc = String(text).replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    const descAttr = String(text).replace(/"/g,'&quot;');
+    criteriaRowsHtml += `<div class="flow-row"><div class="status-dot" style="background:${dot.bg};box-shadow:${dot.glow};"></div><span class="ac-id">${acId}</span><span class="ac-desc" title="${descAttr}">${descEsc}</span><button type="button" class="${shieldCls}" data-ac-id="${acId}" data-desc="${descAttr}" data-specs="${specsJson}" data-evidence="${evidenceJson}" onclick="openSpecModalFromBtn(this)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3l8 3.5v5c0 4.5-3.5 8.5-8 9.5-4.5-1-8-5-8-9.5v-5L12 3z"/><path d="M9 12l2 2 4-4"/></svg></button>${chips}</div>`;
+  });
+
+  let flowsRowsHtml = '';
+  storyFlows.forEach(f => {
+    const st = f.sprint_status || 'todo';
+    const stCls = sprintClass(st);
+    const dotColor = st === 'done' ? '#10b981' : st === 'in_progress' || st === 'doing' || st === 'review' ? (st === 'review' ? '#8b5cf6' : '#3b82f6') : '#475569';
+    const glow = st !== 'todo' ? '0 0 5px ' + dotColor + '55' : 'none';
+    const sbClass = 'sprint-badge ' + stCls;
+    const sbLabel = st === 'in_progress' || st === 'doing' ? 'en curso' : st === 'todo' ? 'todo' : st;
+    const testBadge = (f.test_status === 'covered' || f.test_status === 'partial') && (f.test_files || []).length ? '<span style="font-size:10px;font-family:\'JetBrains Mono\',monospace;color:#10b981;background:#10b98112;border:1px solid #10b98125;padding:2px 6px;border-radius:4px;">✓ tests</span>' : '';
+    const pts = f.story_points != null ? `<span style="font-size:10px;font-family:'JetBrains Mono',monospace;color:#334155;">${f.story_points}pts</span>` : '';
+    flowsRowsHtml += `<div class="flow-row clickable" onclick="openPanel('${f.id}')"><div class="status-dot" style="background:${dotColor};box-shadow:${glow};"></div><span class="flow-id">${f.id}</span><span class="flow-name">${f.name}</span><span class="${sbClass}">${sbLabel}</span>${testBadge}${pts}</div>`;
+  });
+
+  const specFilesMap = {};
+  (s.acceptance_criteria || []).forEach(c => {
+    getSpecsForCriterion(c, storyFlows).forEach(spec => { specFilesMap[spec] = (specFilesMap[spec] || 0) + 1; });
+  });
+  const specFilesEntries = Object.entries(specFilesMap);
+  const specListHtml = specFilesEntries.length ? specFilesEntries.map(([path, count]) => `<div class="spec-list-item"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3l8 3.5v5c0 4.5-3.5 8.5-8 9.5-4.5-1-8-5-8-9.5v-5L12 3z"/><path d="M9 12l2 2 4-4"/></svg>${path}<span style="margin-left:auto;color:#334155;">${count} criterios</span></div>`).join('') : '';
+
+  const wrapper = document.getElementById('panel-wrapper');
+  wrapper.innerHTML = `
+    <div class="story-panel-header">
+      <div class="header-actions">
+        <button type="button" class="legend-btn" title="Guía de indicadores">?</button>
+        <button type="button" class="close-btn" onclick="closePanel()"><svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1 1l10 10M11 1L1 11"/></svg></button>
+      </div>
+      <div class="story-meta-row">
+        <span class="story-meta-id">${s.id}</span>
+        <span class="story-meta-module">· ${moduleName(s.module)}</span>
+        ${s.sprint != null ? `<span class="story-meta-sprint">Sprint ${s.sprint}</span>` : ''}
+      </div>
+      <div class="story-panel-title">${String(s.title || s.id).replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div>
+      <div class="story-header-badges">
+        <span class="${priorityCls}">${s.priority || 'medium'}</span>
+        <span class="story-badge-status">● ${s.status || 'pending'}</span>
+        <span class="story-badge-module">${(data.modules.find(m=>m.id===s.module)||{}).name || s.module}</span>
+      </div>
+    </div>
+    <div class="progress-strip">
+      <span class="progress-label">AC</span>
+      <div class="progress-track"><div class="progress-fill-bar" style="width:${criteriaTotal ? (criteriaDone/criteriaTotal*100) : 0}%;background:#10b981;"></div></div>
+      <span class="progress-count" style="color:#10b981;">${criteriaDone}/${criteriaTotal} ✓</span>
+      <div style="width:1px;height:18px;background:#1e293b;"></div>
+      <span class="progress-label">Flujos</span>
+      <div class="progress-track narrow"><div class="progress-fill-bar" style="width:${flowTotal ? (flowDone/flowTotal*100) : 0}%;background:${flowDone===flowTotal ? '#10b981' : '#f59e0b'};"></div></div>
+      <span class="progress-count" style="color:${flowDone===flowTotal ? '#10b981' : '#f59e0b'};">${flowDone}/${flowTotal}</span>
+    </div>
+    <div class="story-panel-body">
+      <div class="story-section">
+        <div class="section-title">Criterios de Aceptación</div>
+        <div style="display:flex;flex-direction:column;gap:4px;">${criteriaRowsHtml || '<div style="font-size:12px;color:#475569;">Sin criterios. Añádelos con @update.md.</div>'}</div>
+      </div>
+      <div class="story-section">
+        <div class="section-title">Flujos (${flowTotal})</div>
+        <div style="display:flex;flex-direction:column;gap:4px;">${flowsRowsHtml || '<div style="font-size:12px;color:#475569;">Sin flujos asignados.</div>'}</div>
+      </div>
+      ${specFilesEntries.length ? `
+      <div class="story-section">
+        <div class="spec-list-toggle" id="toggle-specs">
+          <div class="section-title" style="margin-bottom:0;">Test Files (${specFilesEntries.length})</div>
+          <svg id="specs-chevron" width="12" height="12" fill="none" stroke="#475569" stroke-width="2" viewBox="0 0 24 24" style="transition:transform .2s;"><path d="M6 9l6 6 6-6"/></svg>
+        </div>
+        <div class="spec-list-content" id="specs-list">${specListHtml}</div>
+      </div>` : ''}
+      <div class="story-section" style="margin-top:16px;">
+        <div style="font-size:11px;color:#6366f1;margin-bottom:6px;text-transform:uppercase;letter-spacing:.08em;">1. Implementar</div>
+        <pre id="story-prompt-text" style="margin:0;font-size:11px;line-height:1.5;color:#cbd5e1;white-space:pre-wrap;word-break:break-word;max-height:180px;overflow-y:auto;">${promptImplement.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</pre>
+        <button type="button" onclick="copyStoryPrompt(1)" style="margin-top:8px;padding:6px 12px;border-radius:6px;border:1px solid #6366f150;background:#6366f118;color:#818cf8;font-size:11px;cursor:pointer;"><span id="copy-btn-label-1">Copiar</span></button>
+      </div>
+      <div class="story-section">
+        <div style="font-size:11px;color:#14b8a6;margin-bottom:6px;text-transform:uppercase;letter-spacing:.08em;">2. Generar documentación</div>
+        <pre id="story-prompt-e2e" style="margin:0;font-size:11px;line-height:1.5;color:#cbd5e1;white-space:pre-wrap;word-break:break-word;max-height:160px;overflow-y:auto;">${promptDoc.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</pre>
+        <button type="button" onclick="copyStoryPrompt(2)" style="margin-top:8px;padding:6px 12px;border-radius:6px;border:1px solid #0f766e50;background:#0f766e18;color:#2dd4bf;font-size:11px;cursor:pointer;"><span id="copy-btn-label-2">Copiar</span></button>
+      </div>
+    </div>
+  `;
+  const legendBtn = wrapper.querySelector('.legend-btn');
+  if (legendBtn) legendBtn.onclick = function() { document.getElementById('overlay-legend').classList.add('open'); };
+  const toggleSpecs = document.getElementById('toggle-specs');
+  if (toggleSpecs) toggleSpecs.onclick = function() { const list = document.getElementById('specs-list'); const chev = document.getElementById('specs-chevron'); if (!list || !chev) return; list.classList.toggle('open'); chev.style.transform = list.classList.contains('open') ? 'rotate(180deg)' : 'rotate(0)'; };
+  if (!window.__modalsBound) {
+    window.__modalsBound = true;
+    document.getElementById('overlay-spec').addEventListener('click', function(e) { if (e.target === this) closeSpecModal(); });
+    document.getElementById('overlay-legend').addEventListener('click', function(e) { if (e.target === this) closeLegendModal(); });
+    document.addEventListener('keydown', function(e) { if (e.key === 'Escape') { closeSpecModal(); closeLegendModal(); } });
+  }
+
   document.getElementById('detail-panel').classList.add('open');
   document.getElementById('overlay').classList.add('open');
 }
@@ -1379,11 +1620,18 @@ function copyStoryPrompt(which) {
 // ============================================================
 // DETAIL PANEL (flujo)
 // ============================================================
+var PANEL_WRAPPER_DEFAULT = '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;"><div id="panel-id" style="font-family:\'JetBrains Mono\';font-size:12px;color:#475569;"></div><button onclick="closePanel()" style="background:none;border:none;color:#475569;cursor:pointer;padding:4px;"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg></button></div><div id="panel-content"></div>';
+
 function openPanel(flowId) {
   const f = data.flows.find(x=>x.id===flowId);
   if(!f) return;
   selectedFlow = f;
   window.__currentStoryPrompt = null;
+
+  const wrapper = document.getElementById('panel-wrapper');
+  if (!document.getElementById('panel-id')) {
+    wrapper.innerHTML = PANEL_WRAPPER_DEFAULT;
+  }
 
   const story = data.stories.find(s=>s.id===f.story);
 
