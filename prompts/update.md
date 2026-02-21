@@ -48,7 +48,8 @@ Para un rellenado guiado de todas las stories de una vez, el usuario puede ejecu
 - **No cambies el `name` ni los `steps`** de ningún flujo a menos que se te pida explícitamente
 - **No cambies `story_points`** sin que se te indique
 - **`test_files`** — agrega la ruta real del archivo de test solo si se mencionó explícitamente
-- **`acceptance_criteria`** (en stories) — puedes añadir, quitar o editar criterios. Formatos admitidos: (1) string; (2) `{ text: "...", validated_by: "ruta/al/spec.ts" }` — el viewer marca ✓ cuando esa ruta está en `test_files` de algún flujo de la historia; (3) formato extendido `{ id: "AC-XXX", description: "...", validated: true|false, flow_ids: ["FLOW-001", ...] }` — `flow_ids` = flujos que implementan ese criterio, HU done cuando todos tienen `validated: true`. No cambies el formato existente de un criterio a menos que se pida.
+- **`acceptance_criteria`** (en stories) — formatos: (1) string; (2) `{ text: "...", validated_by: "ruta/al/spec.ts" }`; (3) extendido `{ id, description, validated, flow_ids, evidence: ["evidence/stories/US-001/AC-001.png"] }`. `evidence` = rutas relativas a `.flowdocs/` (capturas/vídeo). Ver **@evidence.md** para estructura de carpetas. Cobertura por criterio = criterios con `validated: true`; cobertura por flujo = flujos con `test_status: covered` y `test_files`.
+- **`test_evidence`** (en flujos) — opcional, array de rutas relativas a `.flowdocs/` (ej. `evidence/flows/FLOW-001/run.png`). Evidencia de ejecución del test del flujo. Ver @evidence.md.
 - **Un flujo es `implemented`** cuando todo su código core funciona. Si hay features menores pendientes, usa `partial`
 - **Un flujo tiene `test_status: covered`** cuando tiene tests que cubren el camino principal (happy path)
 

@@ -24,6 +24,9 @@ const FILES = {
     'prompts/expand.md',
     'prompts/acceptance.md',
     'prompts/backlog.md',
+    'prompts/evidence.md',
+    'prompts/run-tests.md',
+    'prompts/document.md',
   ]
 };
 

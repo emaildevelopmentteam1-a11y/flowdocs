@@ -743,7 +743,7 @@ function moduleName(id) {
   return m ? m.name : id;
 }
 
-// Criterio: formato nuevo { id, description, validated, flow_ids } o legacy string / { text, validated_by }.
+// Criterio: formato nuevo { id, description, validated, flow_ids, evidence } o legacy string / { text, validated_by }.
 // HU está done cuando todos los criterios tienen validated: true.
 function normCriterion(c, storyFlows) {
   const text = typeof c === 'string' ? c : (c.description || c.text || '');
@@ -753,7 +753,8 @@ function normCriterion(c, storyFlows) {
   } else if (typeof c === 'object' && c !== null && c.validated_by && storyFlows && storyFlows.length) {
     implemented = storyFlows.some(f => (f.test_files || []).some(tf => tf === c.validated_by || (tf && tf.includes(c.validated_by))));
   }
-  return { text, implemented };
+  const evidence = (typeof c === 'object' && c !== null && Array.isArray(c.evidence)) ? c.evidence : [];
+  return { text, implemented, evidence };
 }
 // Flujos que implementan/validan este criterio: ac.flow_ids (nuevo) o legacy por validated_by en test_files.
 function flowsForCriterion(c, storyFlows) {
@@ -785,28 +786,41 @@ function flowChipsHtml(flows) {
   }).join('');
 }
 const checkSvg = '<svg width="9" height="9" viewBox="0 0 10 10" fill="none"><path d="M2 5l2.5 2.5L8 3" stroke="white" stroke-width="1.5" stroke-linecap="round"/></svg>';
+function evidenceHtml(evidenceList) {
+  if (!evidenceList || !evidenceList.length) return '';
+  return evidenceList.map(ev => {
+    const ext = (ev.split('.').pop() || '').toLowerCase();
+    const isVideo = ['mp4','webm'].includes(ext);
+    const safe = String(ev).replace(/"/g,'&quot;');
+    if (isVideo) return `<a href="${safe}" target="_blank" rel="noopener" style="font-size:10px;color:#14b8a6;margin-right:8px;">🎬 Vídeo</a>`;
+    return `<a href="${safe}" target="_blank" rel="noopener" style="display:inline-block;margin-right:6px;"><img src="${safe}" alt="Evidencia" style="max-width:80px;max-height:50px;object-fit:cover;border-radius:4px;border:1px solid #334155;" onerror="this.style.display='none'"/></a>`;
+  }).join('');
+}
 function criterionRow(c, i, storyFlows) {
-  const { text, implemented } = normCriterion(c, storyFlows);
+  const { text, implemented, evidence } = normCriterion(c, storyFlows);
   const safe = String(text).replace(/</g,'&lt;').replace(/>/g,'&gt;');
   const icon = implemented
     ? '<span style="color:#22c55e;font-weight:bold;" title="Cubierto por prueba e2e">✓</span>'
     : '<span style="color:#475569;" title="Sin prueba e2e que lo valide">○</span>';
-  return `<div style="display:flex;align-items:flex-start;gap:8px;font-size:12px;padding:4px 0;padding-left:8px;border-left:2px solid ${implemented?'#22c55e40':'#6366f140'};"><span style="flex-shrink:0;width:14px;">${icon}</span><span style="color:${implemented?'#64748b':'#94a3b8'}">${i+1}. ${safe}</span></div>`;
+  const evBlock = evidence.length ? `<div style="margin-top:6px;">${evidenceHtml(evidence)}</div>` : '';
+  return `<div style="padding:4px 0;padding-left:8px;border-left:2px solid ${implemented?'#22c55e40':'#6366f140'};"><div style="display:flex;align-items:flex-start;gap:8px;font-size:12px;"><span style="flex-shrink:0;width:14px;">${icon}</span><span style="color:${implemented?'#64748b':'#94a3b8'}">${i+1}. ${safe}</span></div>${evBlock}</div>`;
 }
-// Fila de criterio para la tarjeta del backlog (estructura referencia: checkbox + texto + chips por estado).
+// Fila de criterio para la tarjeta del backlog (checkbox + texto + chips + evidencia).
 function criterionCardRow(c, i, storyFlows) {
-  const { text, implemented } = normCriterion(c, storyFlows);
+  const { text, implemented, evidence } = normCriterion(c, storyFlows);
   const safe = String(text).replace(/</g,'&lt;').replace(/>/g,'&gt;');
   const flows = flowsForCriterion(c, storyFlows);
   const checkbox = implemented
     ? `<div class="story-checkbox checked">${checkSvg}</div>`
     : '<div class="story-checkbox"></div>';
   const chips = flowChipsHtml(flows);
+  const evBlock = evidence.length ? `<div style="margin-top:4px;">${evidenceHtml(evidence)}</div>` : '';
   return `<div class="story-criterion">
     ${checkbox}
     <div style="flex:1;">
       <div class="story-criterion-text ${implemented ? 'done' : ''}">${safe}</div>
       ${chips ? `<div class="story-chips">${chips}</div>` : ''}
+      ${evBlock}
     </div>
   </div>`;
 }
@@ -955,6 +969,8 @@ function renderBacklog() {
   let html = '';
   sorted.forEach(s => {
     const flows = data.flows.filter(f => (s.flow_ids || []).includes(f.id));
+    const flowWithTests = flows.filter(f => (f.test_status === 'covered' || f.test_status === 'partial') && (f.test_files || []).length > 0).length;
+    const flowTotal = flows.length;
     const criteriaCount = (s.acceptance_criteria || []).length;
     const list = (s.acceptance_criteria || []).map(c => normCriterion(c, flows));
     const criteriaDone = list.filter(x => x.implemented).length;
@@ -963,6 +979,7 @@ function renderBacklog() {
     const acColor = allDone ? '#10b981' : criteriaDone > 0 ? '#f59e0b' : '#475569';
     const barColor = allDone ? '#10b981' : '#f59e0b';
     const criteriaBadge = criteriaCount ? `${criteriaDone}/${criteriaCount} ✓` : '—';
+    const coverageHint = flowTotal || criteriaCount ? `<span style="font-size:10px;color:#64748b;">Flujos ${flowWithTests}/${flowTotal} · Criterios ${criteriaDone}/${criteriaCount}</span>` : '';
     const safeId = String(s.id).replace(/"/g, '&quot;');
 
     const criteriaHtml = (s.acceptance_criteria && s.acceptance_criteria.length)
@@ -982,6 +999,7 @@ function renderBacklog() {
         </div>
         <span class="story-ac-badge" style="color:${acColor};background:${acColor}18;border:1px solid ${acColor}30;">${criteriaBadge}</span>
       </div>
+      ${coverageHint ? `<div style="padding:0 16px 8px;font-size:10px;">${coverageHint}</div>` : ''}
       <div class="story-progress-bar">
         <div class="story-progress-fill" style="width:${pct}%;background:${barColor};"></div>
       </div>
@@ -1259,33 +1277,33 @@ Usa .flowdocs/flows.yaml como referencia. Tu implementación debe cumplir estos 
 
 ${criteria}
 
-Al terminar, comprueba que tu implementación cumple cada criterio. Si falta algún criterio en el YAML, proponlo y sugiere actualizar con @update.md.`;
+Al terminar, comprueba que tu implementación cumple cada criterio. Si falta algún criterio en el YAML, proponlo y sugiere actualizar con @update.md.
+
+Al terminar, ejecuta un solo prompt para la documentación: el bloque "2. Generar documentación" (o @document.md). No uses varios prompts; ese uno cubre tests, evidencia y actualización del YAML.`;
 }
 
-function buildStoryE2EPrompt(s) {
+/** Prompt único para generar documentación (tests + evidencia + YAML) después de implementar. Se extrae y usa como segundo paso. */
+function buildStoryDocPrompt(s) {
   const flowIds = s.flow_ids || [];
-  const flowIdsStr = flowIds.join(' ');
-  const criteria = (s.acceptance_criteria || []).length
-    ? (s.acceptance_criteria || []).map(c => `- ${normCriterion(c, null).text}`).join('\n')
-    : '';
-  if (!criteria) return null;
-  return `Añade o completa pruebas e2e para la historia ${s.id} (${s.title || ''}).
+  const flowIdsStr = flowIds.length ? flowIds.join(', ') : '—';
+  return `@document.md — para la historia ${s.id} (${s.title || ''}). Flujos: ${flowIdsStr}.
 
-Flujos: ${flowIdsStr || '—'}
-
-Criterios de aceptación que deben quedar cubiertos por los tests:
-${criteria}
-
-Crea o amplía los specs e2e que validen cada criterio. Luego actualiza .flowdocs/flows.yaml: añade las rutas en test_files de cada flujo y, en la story ${s.id}, en cada criterio cubierto por tests — si usa formato simple pon validated_by: "ruta/al/spec.ts"; si usa formato extendido pon validated: true y flow_ids con los flujos que incluyen ese spec. Usa @update.md para aplicar esos cambios.`;
+Sigue @evidence.md para la estructura de carpetas. Un solo paso: tests (crear o documentar existentes), evidencia (capturas/vídeo en .flowdocs/evidence/), y actualización del YAML (test_files, test_evidence, validated, evidence, meta.stats).`;
 }
 
 function openStoryPanel(storyId) {
   const s = data.stories.find(x=>x.id===storyId);
   if(!s) return;
   const promptImplement = buildStoryPrompt(s);
-  const promptE2E = buildStoryE2EPrompt(s);
+  const promptDoc = buildStoryDocPrompt(s);
   document.getElementById('panel-id').textContent = `${s.id} · Prompts para el agente`;
   const storyFlowsForCriteria = data.flows.filter(f => (s.flow_ids || []).includes(f.id));
+  const flowCovered = storyFlowsForCriteria.filter(f => (f.test_status === 'covered' || f.test_status === 'partial') && (f.test_files || []).length > 0).length;
+  const flowTotal = storyFlowsForCriteria.length;
+  const criteriaList = (s.acceptance_criteria || []).map(c => normCriterion(c, storyFlowsForCriteria));
+  const criteriaDone = criteriaList.filter(x => x.implemented).length;
+  const criteriaTotal = criteriaList.length;
+  const coverageLine = flowTotal || criteriaTotal ? `<div style="font-size:11px;color:#64748b;margin-bottom:10px;"><span style="color:#6366f1;">Cobertura por flujo:</span> ${flowCovered}/${flowTotal} flujos con tests &nbsp;|&nbsp; <span style="color:#14b8a6;">Cobertura por criterios:</span> ${criteriaDone}/${criteriaTotal} validados</div>` : '';
   const criteriaHtml = (s.acceptance_criteria && s.acceptance_criteria.length)
     ? s.acceptance_criteria.map((c,i)=>criterionRow(c,i,storyFlowsForCriteria)).join('')
     : '<div style="font-size:12px;color:#475569;">Sin criterios aún. Añádelos con @update.md.</div>';
@@ -1297,34 +1315,34 @@ function openStoryPanel(storyId) {
         <span class="badge badge-gray">${moduleName(s.module)}</span>
         <span style="font-size:11px;color:#64748b;">${(s.flow_ids||[]).join(', ')}</span>
       </div>
+      ${coverageLine}
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
         <span style="font-size:11px;color:#475569;text-transform:uppercase;letter-spacing:.08em;">Criterios de aceptación (✓ = prueba e2e)</span>
-        ${(s.acceptance_criteria && s.acceptance_criteria.length) ? (()=>{ const list=(s.acceptance_criteria||[]).map(c=>normCriterion(c,storyFlowsForCriteria)); const done=list.filter(x=>x.implemented).length; const total=list.length; return `<span style="font-size:11px;font-family:'JetBrains Mono';color:${done===total?'#22c55e':'#94a3b8'}">✓ ${done}/${total}</span>`; })() : ''}
+        ${criteriaTotal ? `<span style="font-size:11px;font-family:'JetBrains Mono';color:${criteriaDone===criteriaTotal?'#22c55e':'#94a3b8'}">✓ ${criteriaDone}/${criteriaTotal}</span>` : ''}
       </div>
       ${criteriaHtml}
     </div>
     <div style="background:#0f0f17;border:1px solid #6366f130;border-radius:8px;padding:14px;margin-bottom:14px;">
       <div style="font-size:11px;color:#6366f1;margin-bottom:6px;text-transform:uppercase;letter-spacing:.08em;">1. Implementar (copia y pega en el chat)</div>
-      <div style="font-size:10px;color:#475569;margin-bottom:8px;">Instrucciones para la IA: solo implementación; las pruebas e2e son fase 2.</div>
+      <div style="font-size:10px;color:#475569;margin-bottom:8px;">Solo implementación. Al terminar, usa el bloque 2 para documentar.</div>
       <pre id="story-prompt-text" style="margin:0;font-size:11px;line-height:1.5;color:#cbd5e1;white-space:pre-wrap;word-break:break-word;max-height:220px;overflow-y:auto;">${promptImplement.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</pre>
       <button type="button" onclick="copyStoryPrompt(1)" style="margin-top:10px;padding:8px 14px;border-radius:6px;border:1px solid #6366f150;background:#6366f118;color:#818cf8;font-size:12px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;">
         <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-2M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
         <span id="copy-btn-label-1">Copiar</span>
       </button>
     </div>
-    ${promptE2E ? `
     <div style="background:#0f1717;border:1px solid #0f766e30;border-radius:8px;padding:14px;margin-bottom:14px;">
-      <div style="font-size:11px;color:#14b8a6;margin-bottom:6px;text-transform:uppercase;letter-spacing:.08em;">2. Validar con e2e (después de implementar)</div>
-      <div style="font-size:10px;color:#475569;margin-bottom:8px;">Copia y pega cuando quieras que la IA añada tests y actualice criterios (validated_by en formato simple, o validated + flow_ids en formato extendido).</div>
-      <pre id="story-prompt-e2e" style="margin:0;font-size:11px;line-height:1.5;color:#cbd5e1;white-space:pre-wrap;word-break:break-word;max-height:200px;overflow-y:auto;">${promptE2E.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</pre>
+      <div style="font-size:11px;color:#14b8a6;margin-bottom:6px;text-transform:uppercase;letter-spacing:.08em;">2. Generar documentación (después de implementar)</div>
+      <div style="font-size:10px;color:#475569;margin-bottom:8px;">Un solo prompt: tests, evidencia y actualización del YAML. Equivale a @document.md.</div>
+      <pre id="story-prompt-e2e" style="margin:0;font-size:11px;line-height:1.5;color:#cbd5e1;white-space:pre-wrap;word-break:break-word;max-height:200px;overflow-y:auto;">${promptDoc.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</pre>
       <button type="button" onclick="copyStoryPrompt(2)" style="margin-top:10px;padding:8px 14px;border-radius:6px;border:1px solid #0f766e50;background:#0f766e18;color:#2dd4bf;font-size:12px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;">
         <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-2M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
         <span id="copy-btn-label-2">Copiar</span>
       </button>
-    </div>` : ''}
+    </div>
   `;
   window.__currentStoryPrompt = promptImplement;
-  window.__currentStoryPromptE2E = promptE2E || '';
+  window.__currentStoryPromptE2E = promptDoc;
   document.getElementById('detail-panel').classList.add('open');
   document.getElementById('overlay').classList.add('open');
 }
@@ -1392,6 +1410,8 @@ function openPanel(flowId) {
   const precondHtml = f.preconditions?.map(p=>`<div style="font-size:12px;color:#94a3b8;padding:3px 0;">· ${p}</div>`).join('')||'';
   const postcondHtml = f.postconditions?.map(p=>`<div style="font-size:12px;color:#94a3b8;padding:3px 0;">· ${p}</div>`).join('')||'';
   const testFilesHtml = f.test_files?.length ? f.test_files.map(t=>`<div style="font-family:'JetBrains Mono';font-size:11px;color:#6366f1;padding:2px 0;">${t}</div>`).join('') : '<div style="font-size:12px;color:#334155;">Sin archivos de test</div>';
+  const testEvidenceList = Array.isArray(f.test_evidence) ? f.test_evidence : [];
+  const testEvidenceHtml = testEvidenceList.length ? `<div style="margin-top:8px;"><div style="font-size:10px;color:#64748b;margin-bottom:4px;">Evidencia (capturas/vídeo)</div>${testEvidenceList.map(ev => { const ext = (ev.split('.').pop()||'').toLowerCase(); const isV = ['mp4','webm'].includes(ext); return isV ? `<a href="${ev}" target="_blank" rel="noopener" style="font-size:11px;color:#14b8a6;">🎬 ${ev.split('/').pop()}</a>` : `<a href="${ev}" target="_blank" rel="noopener"><img src="${ev}" alt="Evidencia" style="max-width:120px;max-height:80px;object-fit:cover;border-radius:6px;border:1px solid #334155;margin-right:6px;margin-bottom:6px;" onerror="this.style.display='none'"/></a>`; }).join('')}</div>` : '';
 
   const taskIcons = { done:'✓', doing:'◎', todo:'○' };
   const taskColors = { done:'#10b981', doing:'#60a5fa', todo:'#475569' };
@@ -1468,8 +1488,9 @@ function openPanel(flowId) {
     </div>
 
     <div style="margin-bottom:16px;">
-      <div style="font-size:11px;color:#475569;margin-bottom:8px;text-transform:uppercase;letter-spacing:.08em;">Archivos de Test</div>
+      <div style="font-size:11px;color:#475569;margin-bottom:8px;text-transform:uppercase;letter-spacing:.08em;">Archivos de Test (cobertura por flujo)</div>
       ${testFilesHtml}
+      ${testEvidenceHtml}
     </div>
 
     ${f.notes?`

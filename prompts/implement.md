@@ -54,7 +54,7 @@ Cuando termines, actualiza `.flowdocs/flows.yaml`:
 - `status`: `implemented` si completaste todo y los criterios de aceptación se cumplen, `partial` si falta algo
 - `sprint_status`: `review` — listo para revisión
 - Las tasks completadas: `status: done`
-- Si creaste archivos de test: agrega las rutas a `test_files` del flujo. Para que el viewer marque ✓: en formato simple, asocia cada criterio cubierto con `validated_by: "ruta/al/spec.ts"` en la story; en formato extendido, pon `validated: true` y los flujos correspondientes en `flow_ids` del criterio. Usa @update.md si hace falta.
+- Si creaste archivos de test: (1) Agrega las rutas a `test_files` del flujo. (2) **Evidencia obligatoria**: guarda capturas de pantalla o vídeo de la ejecución de los tests en la estructura de **@evidence.md** (`.flowdocs/evidence/flows/<FLOW-ID>/` para el flujo; `.flowdocs/evidence/stories/<US-ID>/<AC-ID>.<ext>` por criterio si aplica). Añade al YAML `test_evidence` en el flujo y `evidence` en cada criterio con evidencia. (3) Deja claro qué es cobertura por flujo (`test_status`, `test_files`) y qué por criterio (`validated: true`, `flow_ids`). En formato simple asocia `validated_by`; en extendido `validated` + `flow_ids`. Usa @update.md si hace falta.
 
 ---
 
@@ -76,6 +76,8 @@ Cuando termines, actualiza `.flowdocs/flows.yaml`:
 3. Instrucciones para probar manualmente el flujo
 4. El YAML actualizado con el nuevo estado
 5. Si quedó algo pendiente, describe exactamente qué y por qué
+
+**Al terminar la implementación**, el usuario debe ejecutar **un solo prompt** para la documentación: **@document.md**. Ese prompt genera tests (o documenta los existentes), evidencia y actualiza el YAML en un solo paso. No hace falta usar @run-tests.md ni @update.md por separado; @document.md cubre todo el paso de documentación.
 
 ---
 

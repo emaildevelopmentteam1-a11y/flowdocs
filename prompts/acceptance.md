@@ -44,7 +44,7 @@ No cambies el formato de criterios que ya existen; si la story usa strings o tex
    - Si ya tiene `acceptance_criteria` con al menos 8 criterios, opcionalmente revisa redacción y, en formato simple, que donde exista un spec en `test_files` de algún flujo de la story los criterios que cubra tengan `validated_by: "ruta/al/spec.ts"`.
    - Si le faltan criterios o tiene menos de 8: genera **mínimo 8** criterios comprobables. Usa el mismo formato que ya tenga la story (string o text/validated_by), o formato extendido si el usuario lo pidió. Deriva los criterios de los `steps` y del `name` de los flujos.
 3. **Formato simple:** cada criterio puede ser `- "Texto"` o `- text: "..."` con `validated_by` cuando el spec ya exista y esté en `test_files` de algún flujo de la story.
-4. **Formato extendido:** cada criterio con `id`, `description`, `validated` (true si ya hay test que lo cubra), `flow_ids` (flujos que implementan ese criterio, solo IDs de la story).
+4. **Formato extendido:** cada criterio con `id`, `description`, `validated`, `flow_ids`, y opcionalmente `evidence: ["evidence/stories/US-001/AC-001.png"]` (rutas relativas a `.flowdocs/`). La estructura de evidencia es obligatoria: ver **@evidence.md**.
 5. **Actualiza `updated_at`** en `meta`. **No cambies** `name`, `steps`, `flow_ids` ni otros campos que no sean `acceptance_criteria` y `updated_at`.
 
 ---

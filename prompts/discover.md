@@ -136,8 +136,8 @@ meta:
     implemented: 0
     partial: 0
     pending: 0
-    with_tests: 0
-    coverage_pct: 0
+    with_tests: 0      # número de flujos con test_status covered o partial (cobertura por flujo)
+    coverage_pct: 0    # (with_tests / total) * 100. Cobertura por criterios = criterios con validated: true (el viewer lo muestra aparte).
 
 modules:
   - id: "snake_case_unico"
@@ -166,11 +166,12 @@ stories:
         description: "Criterio comprobable 1 (Given/When/Then)"
         validated: false
         flow_ids: ["FLOW-001"]            # flujos que satisfacen ESTE criterio
+        # evidence: ["evidence/stories/US-001/AC-001.png"]   # opcional: captura o vídeo. Ver prompts/evidence.md
       - id: "AC-002"
         description: "Criterio 2"
         validated: true
         flow_ids: ["FLOW-001", "FLOW-002"]
-      # ... mínimo 8 criterios. HU → flow_ids = flujos de la historia. Criterio → flow_ids = flujos que implementan ese criterio. La HU está done cuando todos los criterios tienen validated: true.
+      # ... mínimo 8 criterios. validated = criterio cubierto por test. evidence = rutas relativas a .flowdocs/. La HU está done cuando todos tienen validated: true.
 
 flows:
   - id: "FLOW-001"
@@ -180,11 +181,12 @@ flows:
     actor: "admin | cajero | system | usuario"
     priority: "critical | high | medium | low"
     status: "implemented | partial | pending"
-    test_status: "covered | partial | none"
+    test_status: "covered | partial | none"   # cobertura por flujo: hay tests que ejercitan este flujo
+    test_files: []                            # rutas a specs (ej. src/tests/e2e/checkout.spec.ts)
+    test_evidence: []                         # opcional: capturas/vídeo de ejecución. Rutas relativas a .flowdocs/ (ej. evidence/flows/FLOW-001/run.png). Ver prompts/evidence.md
     sprint_status: "todo | doing | review | done"
     story: "US-001"
     story_points: 1
-    test_files: []
     entities: []
     trigger: "Qué inicia este flujo"
     preconditions: []
