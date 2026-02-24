@@ -2,10 +2,11 @@
 
 'use strict';
 
-const https = require('https');
-const http  = require('http');
-const fs    = require('fs');
-const path  = require('path');
+const https     = require('https');
+const http      = require('http');
+const fs        = require('fs');
+const path      = require('path');
+const readline  = require('readline');
 const { execSync } = require('child_process');
 
 // ─── Configuración ────────────────────────────────────────────────────────────
@@ -494,13 +495,15 @@ function cmdUsage() {
   console.log(`    ${c.cyan}@update.md — FLOW-003 implementado, tests en spec/e2e/checkout.spec.ts${c.reset}`);
   console.log('');
   console.log(`  ${c.bold}4. Ver tablero visual${c.reset}`);
-  console.log(`    ${c.cyan}flowdocs open${c.reset}`);
+  console.log(`    ${c.cyan}flowdocs open${c.reset}  (navegador)  o  ${c.cyan}flowdocs tui${c.reset}  (terminal)`);
   console.log('');
   console.log(`  ${c.bold}Comandos de terminal:${c.reset}`);
   console.log(`    ${c.cyan}flowdocs status${c.reset}   resumen del proyecto`);
   console.log(`    ${c.cyan}flowdocs update${c.reset}   actualizar viewer y prompts (bajar)`);
   console.log(`    ${c.cyan}flowdocs update --from ../flowdocs${c.reset}   bajar desde el repo flowdocs local`);
   console.log(`    ${c.cyan}flowdocs open${c.reset}     abrir viewer en el navegador`);
+  console.log(`    ${c.cyan}flowdocs tui${c.reset}         navegar historias, flujos y prompts en la terminal`);
+  console.log(`    ${c.cyan}flowdocs plan-sprint${c.reset} generar task_plan.md y swarm-plan.yaml para antigravity-swarm`);
   console.log(`    ${c.cyan}flowdocs usage${c.reset}   ver esta descripción`);
   console.log(`  ${c.bold}En el repo flowdocs:${c.reset}`);
   console.log(`    ${c.cyan}flowdocs publish${c.reset}   subir cambios (git add, commit, push)`);
@@ -518,12 +521,14 @@ function cmdHelp() {
   console.log(`    ${c.cyan}update --from <path>${c.reset}  Bajar desde el repo flowdocs local (ej. ../flowdocs)`);
   console.log(`    ${c.cyan}status${c.reset}    Muestra el resumen del proyecto en la terminal`);
   console.log(`    ${c.cyan}open${c.reset}     Abre el viewer (tablero visual) en el navegador`);
-  console.log(`    ${c.cyan}publish${c.reset}   (solo en repo flowdocs) Sube cambios: git add, commit, push`);
+  console.log(`    ${c.cyan}tui${c.reset}          Modo terminal: navegar historias, flujos, prompts y estados`);
+  console.log(`    ${c.cyan}plan-sprint${c.reset}  Genera task_plan.md y swarm-plan.yaml para cerrar el sprint con antigravity-swarm`);
+  console.log(`    ${c.cyan}publish${c.reset}     (solo en repo flowdocs) Sube cambios: git add, commit, push`);
   console.log(`    ${c.cyan}usage${c.reset}    Muestra la descripción de uso completa`);
   console.log('');
   console.log(`  ${c.bold}Uso:${c.reset}`);
   console.log('');
-  console.log(`    flowdocs init | update | status | open | publish | usage`);
+  console.log(`    flowdocs init | update | status | open | tui | plan-sprint | publish | usage`);
   console.log('');
   console.log(`  ${c.bold}Primer paso:${c.reset} En Cursor/Antigravity escribe ${c.cyan}@discover.md${c.reset}`);
   console.log(`  ${c.bold}Ver protocolo:${c.reset} ${c.cyan}flowdocs usage${c.reset}`);
@@ -607,6 +612,424 @@ function buildBar(pct, width) {
   return `${color}${'█'.repeat(filled)}${c.gray}${'░'.repeat(empty)}${c.reset}`;
 }
 
+/** Parse básico de flows.yaml para el TUI (sin dependencias YAML). */
+function parseYamlForTui(content) {
+  const meta = {};
+  const appMatch   = content.match(/^\s+app:\s*["']?([^"\n]+)["']?/m);
+  const totalMatch = content.match(/^\s+total:\s+(\d+)/m);
+  const implMatch  = content.match(/^\s+implemented:\s+(\d+)/m);
+  const partMatch  = content.match(/^\s+partial:\s+(\d+)/m);
+  const pendMatch  = content.match(/^\s+pending:\s+(\d+)/m);
+  const testsMatch = content.match(/^\s+with_tests:\s+(\d+)/m);
+  const coverMatch = content.match(/^\s+coverage_pct:\s+(\d+)/m);
+  const sprintMatch= content.match(/^\s+number:\s+(\d+)/m);
+  const goalMatch  = content.match(/^\s+goal:\s*["']?([^"\n]+)["']?/m);
+  const daysMatch  = content.match(/^\s+days_left:\s+(\d+)/m);
+  meta.app     = appMatch?.[1]?.trim() || 'Sin nombre';
+  meta.total   = parseInt(totalMatch?.[1] || '0');
+  meta.impl    = parseInt(implMatch?.[1] || '0');
+  meta.partial = parseInt(partMatch?.[1] || '0');
+  meta.pending = parseInt(pendMatch?.[1] || '0');
+  meta.tests   = parseInt(testsMatch?.[1] || '0');
+  meta.cover   = parseInt(coverMatch?.[1] || '0');
+  meta.sprint  = sprintMatch?.[1] || '?';
+  meta.goal    = goalMatch?.[1]?.trim() || '';
+  meta.days    = daysMatch?.[1] || '?';
+
+  const flows = [];
+  const flowIdRe = /^\s+-\s+id:\s*["']?(FLOW-[^\s"']+)["']?\s*$/gm;
+  let m;
+  while ((m = flowIdRe.exec(content)) !== null) {
+    const start = m.index;
+    const next = content.indexOf('\n  - ', start + 1);
+    const block = next === -1 ? content.slice(start, start + 2000) : content.slice(start, next);
+    const name  = block.match(/name:\s*["']?([^"\n]+)["']?/)?.[1]?.trim() || '';
+    const status = block.match(/status:\s*["']?(\w+)["']?/)?.[1] || 'pending';
+    const test_status = block.match(/test_status:\s*["']?(\w+)["']?/)?.[1] || 'none';
+    const sprint_status = block.match(/sprint_status:\s*["']?(\w+)["']?/)?.[1] || 'todo';
+    const module = block.match(/module:\s*["']?([^"\n]+)["']?/)?.[1]?.trim() || '';
+    const story = block.match(/story:\s*["']?([^"\n]+)["']?/)?.[1]?.trim() || '';
+    const trigger = block.match(/trigger:\s*["']?([^"\n]+)["']?/)?.[1]?.trim() || '';
+    const stepsBlock = block.match(/steps:\s*\[([\s\S]*?)\]/);
+    let steps = [];
+    if (stepsBlock) {
+      try {
+        steps = stepsBlock[1].split(/,\s*/).map(s => s.replace(/^["'\s]+|["'\s]+$/g, '').slice(0, 10));
+      } catch (_) {}
+    }
+    flows.push({ id: m[1], name, status, test_status, sprint_status, module, story, trigger, steps });
+  }
+
+  const stories = [];
+  const storyIdRe = /^\s+-\s+id:\s*["']?(US-\d+)["']?\s*$/gm;
+  while ((m = storyIdRe.exec(content)) !== null) {
+    const start = m.index;
+    const next = content.indexOf('\n  - ', start + 1);
+    const block = next === -1 ? content.slice(start, start + 3000) : content.slice(start, next);
+    const title = block.match(/title:\s*["']?([^"\n]+)["']?/)?.[1]?.trim() || '';
+    const status = block.match(/status:\s*["']?(\w+)["']?/)?.[1] || 'pending';
+    const flowIdsBlock = block.match(/flow_ids:\s*\[([^\]]*)\]/);
+    const flow_ids = flowIdsBlock ? (flowIdsBlock[1].match(/FLOW-[^\s,"']+/g) || []) : [];
+    const criteriaBlock = block.match(/acceptance_criteria:\s*\[([\s\S]*?)\](?=\s*\n\s+\w+:|\s*\n\s+-\s+id:|\s*$)/);
+    let criteria = [];
+    if (criteriaBlock) {
+      const descRe = /description:\s*["']?([^"\n]+)["']?/g;
+      let dm;
+      while ((dm = descRe.exec(criteriaBlock[1])) !== null) criteria.push(dm[1].trim());
+    }
+    stories.push({ id: m[1], title, status, flow_ids, criteria });
+  }
+
+  return { meta, flows, stories };
+}
+
+/** Flujos con id FLOW-xxx o FUT-xxx. */
+const FLOW_ID_RE = /^\s+-\s+id:\s*["']?((?:FLOW|FUT)-[^\s"']+)["']?\s*$/gm;
+
+/** Parsea flows.yaml para plan de sprint: active_sprint, goal, flujos pendientes/parciales. */
+function parseYamlForSprintPlan(content) {
+  const activeSprintMatch = content.match(/\bactive_sprint:\s*(\d+)/);
+  const sprintNumMatch    = content.match(/\bsprint:\s*[\n\s]*number:\s*(\d+)/);
+  const goalMatch         = content.match(/\bgoal:\s*["']?([^"\n]+)["']?/);
+  const appMatch          = content.match(/^\s+app:\s*["']?([^"\n]+)["']?/m);
+  const activeSprint      = activeSprintMatch ? parseInt(activeSprintMatch[1], 10) : (sprintNumMatch ? parseInt(sprintNumMatch[1], 10) : 1);
+  const goal              = goalMatch ? goalMatch[1].trim() : 'Sprint ' + activeSprint;
+  const app               = appMatch ? appMatch[1].trim() : 'Proyecto';
+
+  const flows = [];
+  let m;
+  FLOW_ID_RE.lastIndex = 0;
+  while ((m = FLOW_ID_RE.exec(content)) !== null) {
+    const start = m.index;
+    const next  = content.indexOf('\n  - ', start + 1);
+    const block = next === -1 ? content.slice(start, start + 2500) : content.slice(start, next);
+    const status = block.match(/status:\s*["']?(\w+)["']?/)?.[1] || 'pending';
+    if (status !== 'pending' && status !== 'partial') continue;
+    const sprint_status = block.match(/sprint_status:\s*["']?(\w+)["']?/)?.[1] || 'todo';
+    const name    = block.match(/name:\s*["']?([^"\n]+)["']?/)?.[1]?.trim() || '';
+    const story   = block.match(/story:\s*["']?([^"\n]+)["']?/)?.[1]?.trim() || '';
+    const module  = block.match(/module:\s*["']?([^"\n]+)["']?/)?.[1]?.trim() || '';
+    const trigger = block.match(/trigger:\s*["']?([^"\n]+)["']?/)?.[1]?.trim() || '';
+    const stepsBlock = block.match(/steps:\s*\[([\s\S]*?)\]/);
+    let steps = [];
+    if (stepsBlock) {
+      try {
+        steps = stepsBlock[1].split(/,\s*/).map(s => s.replace(/^["'\s]+|["'\s]+$/g, '').trim()).filter(Boolean).slice(0, 12);
+      } catch (_) {}
+    }
+    flows.push({
+      id: m[1],
+      name,
+      story,
+      module,
+      status,
+      sprint_status,
+      trigger,
+      steps
+    });
+  }
+  return { activeSprint, goal, app, flows };
+}
+
+function cmdPlanSprint() {
+  const cwd = process.cwd();
+  const yamlPath = path.join(cwd, '.flowdocs', 'flows.yaml');
+  const outDir = cwd;
+  const flowdocsDir = path.join(cwd, '.flowdocs');
+
+  if (!fileExists(yamlPath)) {
+    err('flows.yaml no encontrado. Ejecuta: flowdocs init');
+    console.log('');
+    process.exit(1);
+  }
+
+  const content = fs.readFileSync(yamlPath, 'utf8');
+  const { activeSprint, goal, app, flows } = parseYamlForSprintPlan(content);
+
+  console.log('');
+  console.log(`  ${c.bold}${c.cyan}FlowDocs — Plan de sprint para swarm${c.reset}`);
+  console.log(`  ${c.bold}${app}${c.reset}  Sprint ${activeSprint} — ${c.dim}${goal}${c.reset}`);
+  console.log('');
+
+  if (flows.length === 0) {
+    warn('No hay flujos pendientes o parciales en flows.yaml.');
+    info('Actualiza status/sprint_status en los flujos o añade flujos al sprint.');
+    console.log('');
+    process.exit(0);
+  }
+
+  ensureDir(flowdocsDir);
+
+  const taskPlanPath = path.join(outDir, 'task_plan.md');
+  const swarmPlanPath = path.join(flowdocsDir, 'swarm-plan.yaml');
+
+  const taskLines = [
+    `# Sprint ${activeSprint} — ${goal}`,
+    '',
+    `Proyecto: **${app}**. Cerrar flujos pendientes/parciales usando los prompts de FlowDocs.`,
+    'Cada ítem = un subagente ejecuta el prompt indicado (mismo que usarías en el chat).',
+    '',
+    '## Tareas por flujo',
+    ''
+  ];
+
+  const swarmTasks = [];
+
+  for (const f of flows) {
+    const prompt = `@implement.md ${f.id}`;
+    taskLines.push(`- [ ] **${f.id}** — ${f.name}`);
+    taskLines.push(`  - Historia: ${f.story || '—'} · Módulo: ${f.module || '—'}`);
+    taskLines.push(`  - Prompt: \`${prompt}\``);
+    if (f.trigger) taskLines.push(`  - Trigger: ${f.trigger}`);
+    if (f.steps.length) taskLines.push(`  - Pasos: ${f.steps.slice(0, 3).join(' → ')}${f.steps.length > 3 ? '…' : ''}`);
+    taskLines.push('');
+
+    swarmTasks.push({
+      id: f.id,
+      name: f.name,
+      story: f.story || null,
+      module: f.module || null,
+      status: f.status,
+      sprint_status: f.sprint_status,
+      prompt,
+      trigger: f.trigger || null,
+      steps: f.steps
+    });
+  }
+
+  taskLines.push('---');
+  taskLines.push('');
+  taskLines.push('## Cómo usar con antigravity-swarm');
+  taskLines.push('');
+  taskLines.push('1. Este archivo (`task_plan.md`) es el plan que el orquestador puede usar como checklist.');
+  taskLines.push('2. Copia el contenido de cada ítem (o el `swarm-plan.yaml` en `.flowdocs/`) para asignar tareas a subagentes.');
+  taskLines.push('3. Cada tarea = ejecutar en el chat/agente el **Prompt** indicado (ej. `@implement.md FLOW-009`).');
+  taskLines.push('4. Al final, ejecuta `@update.md` con los flujos implementados y tests.');
+  taskLines.push('');
+
+  const taskPlanMd = taskLines.join('\n');
+  fs.writeFileSync(taskPlanPath, taskPlanMd, 'utf8');
+  ok(`task_plan.md escrito en ${path.relative(cwd, taskPlanPath)}`);
+
+  const swarmYaml = [
+    '# Plan de sprint generado por FlowDocs — para antigravity-swarm',
+    `# Sprint ${activeSprint} — ${goal}`,
+    '',
+    'sprint: ' + activeSprint,
+    'goal: "' + goal.replace(/"/g, '\\"') + '"',
+    'app: "' + app.replace(/"/g, '\\"') + '"',
+    '',
+    'tasks:',
+    ...swarmTasks.map(t => {
+      const lines = [
+        `  - id: "${t.id}"`,
+        `    name: "${(t.name || '').replace(/"/g, '\\"')}"`,
+        `    prompt: "${t.prompt}"`,
+        `    story: "${t.story || ''}"`,
+        `    module: "${t.module || ''}"`,
+        `    status: "${t.status}"`,
+        `    sprint_status: "${t.sprint_status}"`
+      ];
+      if (t.trigger) lines.push(`    trigger: "${(t.trigger || '').replace(/"/g, '\\"')}"`);
+      if (t.steps && t.steps.length) lines.push('    steps: [' + t.steps.map(s => '"' + String(s).replace(/"/g, '\\"') + '"').join(', ') + ']');
+      return lines.join('\n');
+    })
+  ].join('\n');
+
+  fs.writeFileSync(swarmPlanPath, swarmYaml, 'utf8');
+  ok(`swarm-plan.yaml escrito en .flowdocs/swarm-plan.yaml`);
+
+  console.log('');
+  dim(`  Flujos en el plan: ${flows.length}`);
+  dim(`  Siguiente: usa task_plan.md con el orquestador de antigravity-swarm o asigna cada prompt a un subagente.`);
+  console.log('');
+}
+
+function cmdTui() {
+  const cwd = process.cwd();
+  const yamlPath = path.join(cwd, '.flowdocs', 'flows.yaml');
+  const promptsDir = path.join(cwd, '.flowdocs', 'prompts');
+
+  if (!fileExists(yamlPath)) {
+    err('flows.yaml no encontrado. Ejecuta: flowdocs init');
+    console.log('');
+    process.exit(1);
+  }
+
+  const content = fs.readFileSync(yamlPath, 'utf8');
+  const { meta, flows, stories } = parseYamlForTui(content);
+
+  const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+
+  function ask(question) {
+    return new Promise(resolve => rl.question(question, resolve));
+  }
+
+  function pause() {
+    return ask(`\n  ${c.dim}[Enter para continuar]${c.reset} `);
+  }
+
+  function showDashboard() {
+    console.clear();
+    console.log('');
+    console.log(`  ${c.bold}${c.cyan}FlowDocs TUI${c.reset} — ${c.bold}${meta.app}${c.reset}`);
+    console.log(`  ${c.dim}Sprint ${meta.sprint} · ${meta.days} días · ${meta.goal}${c.reset}`);
+    console.log('');
+    const total = meta.total || 1;
+    const pct = Math.round((meta.impl / total) * 100);
+    const bar = buildBar(pct, 28);
+    console.log(`  Progreso  ${bar} ${c.bold}${pct}%${c.reset}`);
+    console.log(`  ${c.green}${meta.impl}${c.reset} implementados  ${c.yellow}${meta.partial}${c.reset} parciales  ${c.gray}${meta.pending}${c.reset} pendientes  ${c.cyan}${meta.tests}${c.reset} con tests  ${c.bold}${meta.cover}%${c.reset} cobertura`);
+    console.log('');
+    console.log(`  ${c.dim}Historias: ${stories.length}  ·  Flujos: ${flows.length}${c.reset}`);
+    console.log('');
+  }
+
+  function showStoriesList() {
+    console.clear();
+    console.log(`\n  ${c.bold}Historias de usuario${c.reset}\n`);
+    if (stories.length === 0) {
+      dim('  (ninguna en flows.yaml)');
+      return [];
+    }
+    stories.forEach((s, i) => {
+      const st = s.status === 'implemented' ? c.green : s.status === 'partial' ? c.yellow : c.gray;
+      console.log(`  ${c.cyan}${i + 1}.${c.reset} ${s.id} ${st}${s.status}${c.reset}  ${s.title.slice(0, 50)}${s.title.length > 50 ? '…' : ''}`);
+    });
+    console.log(`\n  ${c.dim}0. Volver al menú${c.reset}`);
+    return stories;
+  }
+
+  function showFlowsList() {
+    console.clear();
+    console.log(`\n  ${c.bold}Flujos${c.reset}\n`);
+    if (flows.length === 0) {
+      dim('  (ninguno en flows.yaml)');
+      return [];
+    }
+    flows.forEach((f, i) => {
+      const st = f.status === 'implemented' ? c.green : f.status === 'partial' ? c.yellow : c.gray;
+      console.log(`  ${c.cyan}${i + 1}.${c.reset} ${f.id} ${st}${f.status}${c.reset}  ${f.name.slice(0, 45)}${f.name.length > 45 ? '…' : ''}`);
+    });
+    console.log(`\n  ${c.dim}0. Volver al menú${c.reset}`);
+    return flows;
+  }
+
+  function showPromptsList() {
+    console.clear();
+    console.log(`\n  ${c.bold}Prompts (copiar en el chat)${c.reset}\n`);
+    let files = [];
+    try {
+      if (fileExists(promptsDir)) {
+        files = fs.readdirSync(promptsDir).filter(f => f.endsWith('.md')).sort();
+      }
+    } catch (_) {}
+    if (files.length === 0) {
+      dim('  (no hay .flowdocs/prompts/*.md)');
+      return [];
+    }
+    files.forEach((f, i) => {
+      console.log(`  ${c.cyan}${i + 1}.${c.reset} ${f}`);
+    });
+    console.log(`\n  ${c.dim}0. Volver al menú${c.reset}`);
+    return files;
+  }
+
+  function showStoryDetail(s) {
+    console.log(`\n  ${c.bold}${s.id}${c.reset}  ${s.title}`);
+    console.log(`  ${c.dim}Estado: ${s.status}  ·  Flujos: ${s.flow_ids.join(', ') || '—'}${c.reset}`);
+    if (s.criteria.length) {
+      console.log(`\n  ${c.bold}Criterios de aceptación:${c.reset}`);
+      s.criteria.slice(0, 8).forEach((ac, i) => console.log(`    ${i + 1}. ${ac}`));
+    }
+    const prompt = s.flow_ids.length ? `@implement.md ${s.flow_ids[0]}` : `@implement.md`;
+    console.log(`\n  ${c.cyan}Prompt para implementar:${c.reset}  ${c.bold}${prompt}${c.reset}`);
+  }
+
+  function showFlowDetail(f) {
+    console.log(`\n  ${c.bold}${f.id}${c.reset}  ${f.name}`);
+    console.log(`  ${c.dim}Módulo: ${f.module}  ·  Historia: ${f.story || '—'}  ·  ${f.status} / ${f.test_status}${c.reset}`);
+    if (f.trigger) console.log(`  ${c.dim}Trigger: ${f.trigger}${c.reset}`);
+    if (f.steps.length) {
+      console.log(`\n  ${c.bold}Pasos:${c.reset}`);
+      f.steps.forEach((step, i) => console.log(`    ${i + 1}. ${step}`));
+    }
+    console.log(`\n  ${c.cyan}Prompt:${c.reset}  ${c.bold}@implement.md ${f.id}${c.reset}`);
+  }
+
+  function showPromptDetail(filename) {
+    const fullPath = path.join(promptsDir, filename);
+    if (!fileExists(fullPath)) return;
+    const text = fs.readFileSync(fullPath, 'utf8');
+    const lines = text.split('\n').slice(0, 25);
+    console.log(`\n  ${c.bold}${filename}${c.reset}`);
+    console.log(`  ${c.dim}Ruta: .flowdocs/prompts/${filename}${c.reset}\n`);
+    console.log(lines.join('\n'));
+    if (lines.length >= 25) console.log('\n  ...');
+    const copyCmd = process.platform === 'darwin' ? `cat .flowdocs/prompts/${filename} | pbcopy` : process.platform === 'win32' ? `type .flowdocs\\prompts\\${filename} | clip` : `cat .flowdocs/prompts/${filename} | xclip -selection clipboard`;
+    console.log(`\n  ${c.cyan}Para copiar:${c.reset} ${c.dim}${copyCmd}${c.reset}`);
+    console.log(`  ${c.cyan}En el chat:${c.reset} @${filename}`);
+  }
+
+  async function mainMenu() {
+    showDashboard();
+    console.log(`  ${c.bold}1.${c.reset} Dashboard (resumen)`);
+    console.log(`  ${c.bold}2.${c.reset} Historias de usuario`);
+    console.log(`  ${c.bold}3.${c.reset} Flujos`);
+    console.log(`  ${c.bold}4.${c.reset} Prompts a copiar`);
+    console.log(`  ${c.bold}q.${c.reset} Salir`);
+    const a = await ask(`\n  Opción: `);
+    const choice = (a || '').trim().toLowerCase();
+    if (choice === 'q' || choice === '0') {
+      rl.close();
+      process.exit(0);
+    }
+    if (choice === '1') { await pause(); return mainMenu(); }
+    if (choice === '2') { await submenuStories(); return mainMenu(); }
+    if (choice === '3') { await submenuFlows(); return mainMenu(); }
+    if (choice === '4') { await submenuPrompts(); return mainMenu(); }
+    return mainMenu();
+  }
+
+  async function submenuStories() {
+    showStoriesList();
+    const a = await ask(`\n  Opción: `);
+    const n = parseInt(a, 10);
+    if (n === 0 || isNaN(n)) return;
+    const s = stories[n - 1];
+    if (!s) return submenuStories();
+    showStoryDetail(s);
+    await pause();
+    await submenuStories();
+  }
+
+  async function submenuFlows() {
+    showFlowsList();
+    const a = await ask(`\n  Opción: `);
+    const n = parseInt(a, 10);
+    if (n === 0 || isNaN(n)) return;
+    const f = flows[n - 1];
+    if (!f) return submenuFlows();
+    showFlowDetail(f);
+    await pause();
+    await submenuFlows();
+  }
+
+  async function submenuPrompts() {
+    const files = showPromptsList();
+    const a = await ask(`\n  Opción: `);
+    const n = parseInt(a, 10);
+    if (n === 0 || isNaN(n)) return;
+    const filename = files[n - 1];
+    if (!filename) return submenuPrompts();
+    showPromptDetail(filename);
+    await pause();
+    await submenuPrompts();
+  }
+
+  mainMenu();
+}
+
 // ─── Entry point ──────────────────────────────────────────────────────────────
 
 const cmd = process.argv[2];
@@ -617,7 +1040,9 @@ const cmd = process.argv[2];
     case 'update':  await cmdUpdate();  break;
     case 'status':  cmdStatus();       break;
     case 'open':    cmdOpen();         break;
-    case 'publish': await cmdPublish(); break;
+    case 'tui':         cmdTui();           break;
+    case 'plan-sprint': cmdPlanSprint();     break;
+    case 'publish':     await cmdPublish();  break;
     case 'usage':   cmdUsage();        break;
     default:        cmdHelp();         break;
   }

@@ -24,8 +24,34 @@ if [ ! -f "package.json" ] && [ ! -f "Gemfile" ] && [ ! -f "composer.json" ] && 
 fi
 
 if [ -d "$FLOWDOCS_DIR" ]; then
-  warn ".flowdocs/ ya existe — usa 'flowdocs update' para actualizar"
-  echo ""; exit 0
+  warn ".flowdocs/ ya existe — no se sobrescribirá nada del proyecto"
+  echo ""
+  echo -e "  ${DIM}Configurando solo el comando global 'flowdocs' y tu shell (PATH)...${RESET}"
+  echo ""
+  if command -v node &>/dev/null && [ -f "$FLOWDOCS_DIR/bin/flowdocs.js" ]; then
+    mkdir -p "$HOME/.flowdocs/bin" "$HOME/.local/bin"
+    cp "$FLOWDOCS_DIR/bin/flowdocs.js" "$HOME/.flowdocs/bin/flowdocs.js"
+    printf '#!/usr/bin/env bash\nnode "$HOME/.flowdocs/bin/flowdocs.js" "$@"\n' > "$HOME/.local/bin/flowdocs"
+    chmod +x "$HOME/.local/bin/flowdocs"
+    SHELL_RC="${HOME}/.zshrc"
+    [ ! -f "$SHELL_RC" ] && SHELL_RC="${HOME}/.bashrc"
+    if [ -f "$SHELL_RC" ] && ! grep -q '\.local/bin' "$SHELL_RC" 2>/dev/null; then
+      printf '\n# FlowDocs CLI\nexport PATH="$HOME/.local/bin:$PATH"\n' >> "$SHELL_RC"
+      ok "Añadido export PATH a $SHELL_RC"
+    else
+      ok "PATH ya contenía .local/bin o no se modificó $SHELL_RC"
+    fi
+    export PATH="$HOME/.local/bin:$PATH"
+    ok "comando 'flowdocs' instalado globalmente"
+  else
+    err "Node no encontrado o falta .flowdocs/bin/flowdocs.js — instala Node y vuelve a ejecutar."
+    exit 1
+  fi
+  echo ""
+  echo -e "  ${BOLD}Listo.${RESET} Ejecuta: ${CYAN}source ~/.zshrc${RESET} (o ~/.bashrc) o abre una terminal nueva."
+  echo -e "  Luego podrás usar: ${CYAN}flowdocs status${RESET}, ${CYAN}flowdocs open${RESET}, ${CYAN}flowdocs tui${RESET}, etc."
+  echo ""
+  exit 0
 fi
 
 echo ""
@@ -218,7 +244,7 @@ echo ""
 echo -e "  ${BOLD}4. Comandos de terminal:${RESET}"
 echo -e "  ${CYAN}flowdocs status${RESET}   resumen del proyecto"
 echo -e "  ${CYAN}flowdocs update${RESET}   actualizar viewer y prompts"
-echo -e "  ${CYAN}flowdocs open${RESET}     abrir tablero visual en el navegador"
+echo -e "  ${CYAN}flowdocs open${RESET}     abrir tablero en el navegador   ${CYAN}flowdocs tui${RESET}   en la terminal"
 echo -e "  ${CYAN}flowdocs usage${RESET}   ver esta descripción en cualquier momento"
 echo ""
 echo -e "  ${YELLOW}Nota:${RESET} reinicia la terminal o ejecuta: ${GRAY}source ~/.zshrc${RESET}"
