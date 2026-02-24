@@ -863,7 +863,7 @@ function cmdPlanSprint() {
   taskLines.push('   python3 ~/.gemini/skills/antigravity-swarm/scripts/orchestrator.py');
   taskLines.push('   ```');
   taskLines.push('2. Confirma con `y` cuando pregunte. Cada subagente implementa un flujo (leyendo .flowdocs/).');
-  taskLines.push('3. Al final, ejecuta `@update.md` con los flujos implementados y rutas de tests.');
+  taskLines.push('3. El Quality_Validator al final: verifica, actualiza .flowdocs/flows.yaml (como @update.md) y ejecuta flowdocs open para que veas la documentación actualizada.');
   taskLines.push('');
 
   const taskPlanMd = taskLines.join('\n');
@@ -920,7 +920,7 @@ function cmdPlanSprint() {
       (f.trigger ? 'Trigger: ' + f.trigger + '.' : ''),
       'Steps for this flow:',
       stepsList,
-      'Implement the flow in the codebase. When done, append to progress.md: "' + f.id + ' implemented".'
+      'Implement the flow in the codebase. When done, append to progress.md: "' + f.id + ' implemented" and, if you added tests, the path to the test file (e.g. "tests: src/tests/foo.spec.ts").'
     ].filter(Boolean).join('\n');
     const promptEscaped = promptBlock.split('\n').map(l => '      ' + l).join('\n');
     subagentLines.push(`  - name: "${roleName}"`);
@@ -934,14 +934,19 @@ function cmdPlanSprint() {
   });
 
   subagentLines.push('  - name: "Quality_Validator"');
-  subagentLines.push('    description: "Verify all flows in task_plan.md were implemented"');
+  subagentLines.push('    description: "Verify, update flows.yaml and run flowdocs open"');
   subagentLines.push('    color: "green"');
   subagentLines.push('    model: "auto-gemini-3"');
   subagentLines.push('    mode: "validator"');
   subagentLines.push('    prompt: |');
-  subagentLines.push('      You are Quality_Validator. Check that every flow listed in task_plan.md has');
-  subagentLines.push('      "implemented" in progress.md or that the codebase reflects the implementation.');
-  subagentLines.push('      Run tests if present. Report any missing or failed items.');
+  subagentLines.push('      You are Quality_Validator. 1) Verify every flow in task_plan.md was implemented');
+  subagentLines.push('      (check progress.md and codebase). Run tests if present. 2) Update .flowdocs/flows.yaml:');
+  subagentLines.push('      for each flow that appears in progress.md as implemented, set that flow\'s status to');
+  subagentLines.push('      "implemented", sprint_status to "done", and test_status to "covered" or "none"');
+  subagentLines.push('      (use test file paths from progress.md if the Junior noted them). Follow the YAML');
+  subagentLines.push('      structure and .flowdocs/prompts/update.md. 3) Run: flowdocs open (or');
+  subagentLines.push('      node .flowdocs/bin/flowdocs.js open) so the user can view the updated documentation.');
+  subagentLines.push('      If you cannot run the viewer (e.g. headless), tell the user to run flowdocs open.');
 
   fs.writeFileSync(subagentsPath, subagentLines.join('\n'), 'utf8');
   ok(`subagents.yaml escrito en ${path.relative(cwd, subagentsPath)} (para antigravity-swarm)`);
