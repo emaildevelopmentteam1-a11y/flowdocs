@@ -329,20 +329,20 @@ async function cmdInstallSwarm() {
     if (!fileExists(path.join(swarmDir, '.git'))) {
       ensureDir(path.dirname(swarmDir));
       try {
-        execSync('git', ['clone', '--depth', '1', SWARM_REPO, swarmDir], { stdio: 'inherit' });
+        execSync(`git clone --depth 1 "${SWARM_REPO}" "${swarmDir}"`, { stdio: 'inherit', shell: true });
         ok('antigravity-swarm clonado');
       } catch (gitErr) {
         err('git clone falló. ¿Tienes git instalado y acceso a GitHub?');
         throw gitErr;
       }
     } else {
-      execSync('git', ['pull'], { cwd: swarmDir, stdio: 'inherit' });
+      execSync('git pull', { cwd: swarmDir, stdio: 'inherit', shell: true });
       ok('antigravity-swarm actualizado');
     }
     const reqPath = path.join(swarmDir, 'requirements.txt');
     if (fileExists(reqPath)) {
       try {
-        execSync('pip', ['install', '-r', 'requirements.txt'], { cwd: swarmDir, stdio: 'inherit' });
+        execSync('pip install -r requirements.txt', { cwd: swarmDir, stdio: 'inherit', shell: true });
         ok('Dependencias Python instaladas (pip -r requirements.txt)');
       } catch (pipErr) {
         warn('pip install falló. Ejecuta manualmente: cd ' + swarmDir + ' && pip install -r requirements.txt');
