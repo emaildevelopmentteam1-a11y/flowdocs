@@ -6,6 +6,7 @@ const https     = require('https');
 const http      = require('http');
 const fs        = require('fs');
 const path      = require('path');
+const os        = require('os');
 const readline  = require('readline');
 const { execSync } = require('child_process');
 
@@ -14,6 +15,73 @@ const { execSync } = require('child_process');
 const REPO_BASE = 'https://raw.githubusercontent.com/emaildevelopmentteam1-a11y/flowdocs/main';
 const SWARM_REPO = 'https://github.com/wjgoarxiv/antigravity-swarm.git';
 const SWARM_DIR_DEFAULT = '.gemini/skills/antigravity-swarm'; // relativo a HOME
+
+// Prompts base del AGENT_POOL de antigravity-swarm (Oh-My-Opencode) — dan contexto real al rol, no solo el nombre
+const SWARM_AGENT_PROMPTS = {
+  Oracle: 'You are Oracle. Your role is to provide deep architectural insights, debug complex issues, and find root causes. You do not write simple code; you solve hard problems.',
+  Frontend: 'You are Frontend. Your role is to implement the user interface. You care about pixel-perfect design, accessibility, and smooth interactions. Apply UX/UI best practices: accessibility (a11y), responsive layout, clear feedback, and consistent design system.',
+  Junior: 'You are Junior. Your role is to do the work. You write the code, run the commands, and fix the bugs.',
+  Quality_Validator: 'You are Quality_Validator. Your role is to verify the work. You run tests, check files, and ensure the mission is complete. You are the final gatekeeper.'
+};
+const SWARM_AGENT_COLORS = { Oracle: 'magenta', Frontend: 'green', Junior: 'yellow', Quality_Validator: 'green' };
+const UI_MODULES = ['pos', 'catalog', 'orders', 'customers', 'reports', 'settings', 'auth']; // módulos que suelen tener UI
+
+// Keywords que deben aparecer en el nombre del skill (carpeta) para considerarlo UX/UI — así no se cuelan skills genéricos
+const UX_UI_SKILL_NAME_KEYWORDS = ['ux', 'ui', 'a11y', 'accessibility', 'usability', 'frontend', 'design-system', 'usabilidad', 'diseño', 'accesibilidad'];
+// Además se comprueba el contenido: si el nombre no coincide, pero el body tiene 2+ de estos, también cuenta
+const UX_UI_SKILL_BODY_KEYWORDS = ['ux', 'ui', 'accessibility', 'a11y', 'frontend', 'usability', 'user experience', 'figma', 'usabilidad', 'diseño', 'accesibilidad'];
+
+/** Descubre skills registrados en el sistema que tratan de UX/UI y devuelve su contenido para inyectar en agentes Frontend. */
+function getUxUiSkillsContent(cwd) {
+  const home = os.homedir();
+  const base = cwd || process.cwd();
+  const skillsDirs = [
+    path.join(base, '.agent', 'skills'),   // gravity / antigravity (p. ej. sarchi)
+    path.join(home, '.cursor', 'skills-cursor'),
+    path.join(base, '.cursor', 'skills')
+  ].filter(dir => fs.existsSync(dir));
+
+  const collected = [];
+  for (const dir of skillsDirs) {
+    let entries = [];
+    try {
+      entries = fs.readdirSync(dir, { withFileTypes: true });
+    } catch (_) {
+      continue;
+    }
+    for (const ent of entries) {
+      if (!ent.isDirectory()) continue;
+      const skillPath = path.join(dir, ent.name, 'SKILL.md');
+      if (!fs.existsSync(skillPath)) continue;
+      let raw = '';
+      try {
+        raw = fs.readFileSync(skillPath, 'utf8');
+      } catch (_) {
+        continue;
+      }
+      const lowerName = ent.name.toLowerCase();
+      const lower = raw.toLowerCase();
+      const nameMatches = UX_UI_SKILL_NAME_KEYWORDS.some(kw => lowerName.includes(kw));
+      const bodyKeywordCount = UX_UI_SKILL_BODY_KEYWORDS.filter(kw => lower.includes(kw)).length;
+      const isUxUi = nameMatches || bodyKeywordCount >= 3;
+      if (!isUxUi) continue;
+      const maxPerSkill = 10000;
+      const excerpt = raw.length > maxPerSkill ? raw.slice(0, maxPerSkill) + '\n\n[... truncado ...]' : raw;
+      collected.push({ name: ent.name, text: `### Skill: ${ent.name}\n\n${excerpt}` });
+    }
+  }
+  const maxSkills = 5;
+  const maxTotalChars = 35000;
+  let total = 0;
+  const selected = [];
+  for (const item of collected) {
+    if (selected.length >= maxSkills || total + item.text.length > maxTotalChars) break;
+    selected.push(item.text);
+    total += item.text.length;
+  }
+  if (selected.length === 0) return '';
+  return '\n\n## Registered UX/UI skills (read and apply when relevant)\n\n' + selected.join('\n\n---\n\n');
+}
 
 const FILES = {
   viewer:   'viewer.html',
@@ -898,64 +966,88 @@ function cmdPlanSprint() {
   fs.writeFileSync(swarmPlanPath, swarmYaml, 'utf8');
   ok(`swarm-plan.yaml escrito en .flowdocs/swarm-plan.yaml`);
 
-  // Generar subagents.yaml para antigravity-swarm (un subagente por flujo + Quality_Validator)
+  // Generar subagents.yaml: Oracle (arquitecto) → Juniors/Frontends (serial, según módulo UI) → Quality_Validator
   const subagentsPath = path.join(outDir, 'subagents.yaml');
   const subagentLines = [
-    '# Generado por flowdocs plan-sprint — formato antigravity-swarm',
-    '# Un subagente por flujo (parallel) + Quality_Validator al final.',
+    '# Generado por flowdocs plan-sprint — prompts del AGENT_POOL de antigravity-swarm (Oh-My-Opencode)',
+    '# Orden: Oracle (fase arquitecto) → implementadores en serial (Frontend para UI, Junior para resto) → Quality_Validator',
     '',
     'subagents:'
   ];
 
+  // 1. Oracle: corre primero (parallel), analiza dependencias y migraciones, escribe findings.md
+  const oracleMission = [
+    'Mission (run FIRST): Read task_plan.md and .flowdocs/flows.yaml.',
+    'Identify: 1) Dependencies between stories/flows (same module, shared entities, story order).',
+    '2) Migration and backend touch points (schema, APIs, shared files) that could conflict if done in parallel.',
+    '3) Recommended execution order so implementers do not clash.',
+    'Write everything to findings.md: section "Execution order" (list FLOW-IDs in order), "Migration strategy", "Constraints for implementers".',
+    'Implementers will read findings.md before starting.'
+  ].join(' ');
+  const oraclePrompt = SWARM_AGENT_PROMPTS.Oracle + '\n\n' + oracleMission;
+  subagentLines.push('  - name: "Oracle"');
+  subagentLines.push('    description: "Analizar dependencias entre historias/flujos y estrategia de migraciones"');
+  subagentLines.push('    color: "magenta"');
+  subagentLines.push('    model: "auto-gemini-3"');
+  subagentLines.push('    mode: "parallel"');
+  subagentLines.push('    prompt: |');
+  subagentLines.push('      ' + oraclePrompt.split('\n').join('\n      '));
+  subagentLines.push('');
+
+  const uxUiSkillsBlock = getUxUiSkillsContent(cwd);
+  let frontendCount = 0;
+  let juniorCount = 0;
   const colors = ['yellow', 'cyan', 'green', 'blue', 'magenta'];
   flows.forEach((f, i) => {
+    const isUI = UI_MODULES.indexOf((f.module || '').toLowerCase()) >= 0;
+    const role = isUI ? 'Frontend' : 'Junior';
+    if (isUI) frontendCount++; else juniorCount++;
     const safeName = f.id.replace(/[^a-zA-Z0-9-]/g, '_');
-    const roleName = `Junior_${safeName}`;
-    const color = colors[i % colors.length];
+    const roleName = `${role}_${safeName}`;
+    const color = SWARM_AGENT_COLORS[role] || colors[i % colors.length];
     const stepsList = f.steps.length ? f.steps.slice(0, 8).map(s => '  - ' + s.replace(/"/g, "'")).join('\n') : '  (ver .flowdocs/flows.yaml)';
-    const promptBlock = [
-      'You are Junior. Your ONLY task is to implement the FlowDocs flow ' + f.id + '.',
-      'Read .flowdocs/flows.yaml for the flow definition and .flowdocs/prompts/implement.md for the implementation protocol.',
-      'Flow name: ' + (f.name || f.id) + '. Module: ' + (f.module || '') + '. Story: ' + (f.story || '') + '.',
+    const implementMission = [
+      'Read findings.md FIRST (Oracle wrote execution order and migration/backend constraints). Follow them.',
+      'Your ONLY task is to implement the FlowDocs flow ' + f.id + '.',
+      'Read .flowdocs/flows.yaml and .flowdocs/prompts/implement.md.',
+      'Flow: ' + (f.name || f.id) + '. Module: ' + (f.module || '') + '. Story: ' + (f.story || '') + '.',
       (f.trigger ? 'Trigger: ' + f.trigger + '.' : ''),
-      'Steps for this flow:',
-      stepsList,
-      'Implement the flow in the codebase. When done, append to progress.md: "' + f.id + ' implemented" and, if you added tests, the path to the test file (e.g. "tests: src/tests/foo.spec.ts").'
+      'Steps:', stepsList,
+      'When done, append to progress.md: "' + f.id + ' implemented" and, if you added tests, the test file path (e.g. "tests: src/tests/foo.spec.ts").'
     ].filter(Boolean).join('\n');
-    const promptEscaped = promptBlock.split('\n').map(l => '      ' + l).join('\n');
+    const basePrompt = SWARM_AGENT_PROMPTS[role] + (role === 'Frontend' && uxUiSkillsBlock ? uxUiSkillsBlock : '');
+    const fullPrompt = basePrompt + '\n\n' + implementMission;
+    const promptEscaped = fullPrompt.split('\n').map(l => '      ' + l).join('\n');
     subagentLines.push(`  - name: "${roleName}"`);
     subagentLines.push(`    description: "Implement ${f.id} — ${(f.name || '').slice(0, 50)}"`);
     subagentLines.push(`    color: "${color}"`);
     subagentLines.push(`    model: "auto-gemini-3"`);
-    subagentLines.push(`    mode: "parallel"`);
+    subagentLines.push(`    mode: "serial"`);
     subagentLines.push(`    prompt: |`);
     subagentLines.push(promptEscaped);
     subagentLines.push('');
   });
 
+  const validatorMission = [
+    '1) Verify every flow in task_plan.md was implemented (check progress.md and codebase). Run tests if present.',
+    '2) Update .flowdocs/flows.yaml: for each flow in progress.md as implemented, set status to "implemented", sprint_status to "done", test_status to "covered" or "none" (use test paths from progress.md). Follow .flowdocs/prompts/update.md.',
+    '3) Run: flowdocs open (or node .flowdocs/bin/flowdocs.js open) so the user sees the updated documentation. If headless, tell the user to run flowdocs open.'
+  ].join(' ');
+  const validatorPrompt = SWARM_AGENT_PROMPTS.Quality_Validator + '\n\n' + validatorMission;
   subagentLines.push('  - name: "Quality_Validator"');
   subagentLines.push('    description: "Verify, update flows.yaml and run flowdocs open"');
   subagentLines.push('    color: "green"');
   subagentLines.push('    model: "auto-gemini-3"');
   subagentLines.push('    mode: "validator"');
   subagentLines.push('    prompt: |');
-  subagentLines.push('      You are Quality_Validator. 1) Verify every flow in task_plan.md was implemented');
-  subagentLines.push('      (check progress.md and codebase). Run tests if present. 2) Update .flowdocs/flows.yaml:');
-  subagentLines.push('      for each flow that appears in progress.md as implemented, set that flow\'s status to');
-  subagentLines.push('      "implemented", sprint_status to "done", and test_status to "covered" or "none"');
-  subagentLines.push('      (use test file paths from progress.md if the Junior noted them). Follow the YAML');
-  subagentLines.push('      structure and .flowdocs/prompts/update.md. 3) Run: flowdocs open (or');
-  subagentLines.push('      node .flowdocs/bin/flowdocs.js open) so the user can view the updated documentation.');
-  subagentLines.push('      If you cannot run the viewer (e.g. headless), tell the user to run flowdocs open.');
+  subagentLines.push('      ' + validatorPrompt.split('\n').join('\n      '));
 
   fs.writeFileSync(subagentsPath, subagentLines.join('\n'), 'utf8');
   ok(`subagents.yaml escrito en ${path.relative(cwd, subagentsPath)} (para antigravity-swarm)`);
 
   console.log('');
-  dim(`  Flujos en el plan: ${flows.length} → ${flows.length} subagentes Junior + 1 Quality_Validator`);
-  dim(`  Siguiente: desde la raíz del proyecto ejecuta el orquestador del swarm:`);
-  dim(`    python3 ~/.gemini/skills/antigravity-swarm/scripts/orchestrator.py`);
-  dim(`  (o la ruta donde tengas instalado antigravity-swarm)`);
+  dim(`  Flujos: ${flows.length} → 1 Oracle + ${frontendCount} Frontend (UI) + ${juniorCount} Junior (serial) + 1 Quality_Validator`);
+  dim(`  Siguiente: python3 ~/.gemini/skills/antigravity-swarm/scripts/orchestrator.py`);
   console.log('');
 }
 

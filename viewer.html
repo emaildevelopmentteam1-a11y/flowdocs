@@ -104,8 +104,12 @@ tr:hover td { background: #ffffff04; }
 .story-priority-low      { background: rgba(71,85,105,.2); color: #64748b; }
 .story-module { font-size: 10px; color: #475569; font-family: 'JetBrains Mono', monospace; }
 
-/* Story panel (modal de historias) */
-.story-panel-header { padding: 20px 22px 16px; border-bottom: 1px solid #1a1f2e; background: linear-gradient(160deg,#0f1225 0%,#0d0f18 60%); position: relative; }
+/* Story panel (modal de historias) — estructura única: .detail-panel envuelve todo, mismo fondo */
+#panel-wrapper.story-panel-active { padding: 0; }
+.detail-panel { background: #0d0f18; min-height: 100%; }
+.detail-panel .story-panel-header { padding: 20px 22px 16px; border-bottom: 1px solid #1a1f2e; background: #0d0f18; position: relative; }
+.detail-panel .progress-strip { background: #0d0f18; }
+.story-panel-header { padding: 20px 22px 16px; border-bottom: 1px solid #1a1f2e; background: #0d0f18; position: relative; }
 .story-panel-header .header-actions { position: absolute; top: 14px; right: 14px; display: flex; align-items: center; gap: 6px; }
 .story-panel-header .legend-btn { width: 22px; height: 22px; border-radius: 50%; border: 1px solid #334155; background: transparent; color: #475569; font-size: 11px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all .15s; }
 .story-panel-header .legend-btn:hover { border-color: #6366f1; color: #6366f1; background: #6366f110; }
@@ -125,7 +129,7 @@ tr:hover td { background: #ffffff04; }
 .story-badge-priority { font-size: 10px; font-family: 'JetBrains Mono',monospace; padding: 3px 8px; border-radius: 4px; }
 .story-badge-status { font-size: 10px; font-family: 'JetBrains Mono',monospace; padding: 3px 8px; border-radius: 4px; color: #34d399; background: #10b98115; border: 1px solid #10b98130; }
 .story-badge-module { font-size: 10px; font-family: 'JetBrains Mono',monospace; padding: 3px 8px; border-radius: 4px; color: #94a3b8; background: #1e293b; border: 1px solid #334155; }
-.progress-strip { padding: 12px 22px; border-bottom: 1px solid #1a1f2e; background: #0a0c15; display: flex; align-items: center; gap: 12px; }
+.progress-strip { padding: 12px 22px; border-bottom: 1px solid #1a1f2e; background: #0d0f18; display: flex; align-items: center; gap: 12px; }
 .progress-label { font-size: 11px; color: #475569; font-family: 'JetBrains Mono',monospace; white-space: nowrap; }
 .progress-track { flex: 1; height: 4px; background: #1e293b; border-radius: 2px; overflow: hidden; }
 .progress-track.narrow { max-width: 56px; }
@@ -1534,8 +1538,11 @@ function openStoryPanel(storyId) {
 
   const moduleDisplayName = (data.modules.find(m=>m.id===s.module)||{}).name || moduleName(s.module);
   const wrapper = document.getElementById('panel-wrapper');
+  wrapper.classList.add('story-panel-active');
   wrapper.innerHTML = `
-    <div class="story-panel-header">
+    <div class="detail-panel">
+  <!-- HEADER -->
+  <div class="story-panel-header">
       <div class="header-actions">
         <button type="button" class="legend-btn" id="btn-legend" title="Guía de indicadores">?</button>
         <button type="button" class="close-btn-panel" onclick="closePanel()"><svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M1 1l10 10M11 1L1 11"/></svg></button>
@@ -1552,7 +1559,9 @@ function openStoryPanel(storyId) {
         <span class="badge-module">${moduleDisplayName}</span>
       </div>
     </div>
-    <div class="progress-strip">
+
+  <!-- PROGRESS -->
+  <div class="progress-strip">
       <span class="progress-label">AC</span>
       <div class="progress-track"><div class="progress-fill-bar" style="width:${criteriaTotal ? (criteriaDone/criteriaTotal*100) : 0}%;background:#10b981;"></div></div>
       <span class="progress-count" style="color:#10b981;">${criteriaDone}/${criteriaTotal} ✓</span>
@@ -1561,7 +1570,9 @@ function openStoryPanel(storyId) {
       <div class="progress-track narrow"><div class="progress-fill-bar" style="width:${flowTotal ? (flowDone/flowTotal*100) : 0}%;background:${flowDone===flowTotal ? '#10b981' : '#f59e0b'};"></div></div>
       <span class="progress-count" style="color:${flowDone===flowTotal ? '#10b981' : '#f59e0b'};">${flowDone}/${flowTotal}</span>
     </div>
-    <div class="story-panel-body">
+
+  <!-- BODY -->
+  <div class="story-panel-body">
       <div class="story-section">
         <div class="section-title">Criterios de Aceptación</div>
         <div style="display:flex;flex-direction:column;gap:3px;">${criteriaRowsHtml || '<div style="font-size:12px;color:#475569;">Sin criterios. Añádelos con @update.md.</div>'}</div>
@@ -1601,6 +1612,8 @@ function openStoryPanel(storyId) {
         </button>
       </div>
     </div>
+  </div><!-- /body -->
+</div><!-- /detail-panel -->
   `;
   const legendBtn = wrapper.querySelector('.legend-btn');
   if (legendBtn) legendBtn.onclick = function() { document.getElementById('overlay-legend').classList.add('open'); };
@@ -1658,6 +1671,7 @@ function openPanel(flowId) {
   window.__currentStoryPrompt = null;
 
   const wrapper = document.getElementById('panel-wrapper');
+  wrapper.classList.remove('story-panel-active');
   if (!document.getElementById('panel-id')) {
     wrapper.innerHTML = PANEL_WRAPPER_DEFAULT;
   }
