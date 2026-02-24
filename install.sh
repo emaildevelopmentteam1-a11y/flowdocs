@@ -249,3 +249,27 @@ echo -e "  ${CYAN}flowdocs usage${RESET}   ver esta descripción en cualquier mo
 echo ""
 echo -e "  ${YELLOW}Nota:${RESET} reinicia la terminal o ejecuta: ${GRAY}source ~/.zshrc${RESET}"
 echo ""
+if command -v git &>/dev/null; then
+  read -p "  ¿Instalar antigravity-swarm para ejecución multiagente (flowdocs plan-sprint)? [y/N] " -n 1 -r
+  echo ""
+  if [[ $REPLY =~ ^[Yy]$ ]]; then
+    SWARM_DIR="${HOME}/.gemini/skills/antigravity-swarm"
+    if [ -d "$SWARM_DIR/.git" ]; then
+      (cd "$SWARM_DIR" && git pull) && ok "antigravity-swarm actualizado"
+    else
+      mkdir -p "$(dirname "$SWARM_DIR")"
+      if git clone --depth 1 https://github.com/wjgoarxiv/antigravity-swarm.git "$SWARM_DIR" 2>/dev/null; then
+        ok "antigravity-swarm clonado en $SWARM_DIR"
+        if [ -f "$SWARM_DIR/requirements.txt" ] && command -v pip &>/dev/null; then
+          (cd "$SWARM_DIR" && pip install -r requirements.txt) 2>/dev/null && ok "Dependencias Python instaladas" || warn "Ejecuta manualmente: cd $SWARM_DIR && pip install -r requirements.txt"
+        fi
+      else
+        err "No se pudo clonar. Instala después con: flowdocs install-swarm"
+      fi
+    fi
+    echo ""
+    dim "  Para usar: flowdocs plan-sprint luego python3 $SWARM_DIR/scripts/orchestrator.py"
+    echo ""
+  fi
+fi
+echo ""

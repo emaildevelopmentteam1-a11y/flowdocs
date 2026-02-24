@@ -12,6 +12,8 @@ const { execSync } = require('child_process');
 // ─── Configuración ────────────────────────────────────────────────────────────
 
 const REPO_BASE = 'https://raw.githubusercontent.com/emaildevelopmentteam1-a11y/flowdocs/main';
+const SWARM_REPO = 'https://github.com/wjgoarxiv/antigravity-swarm.git';
+const SWARM_DIR_DEFAULT = '.gemini/skills/antigravity-swarm'; // relativo a HOME
 
 const FILES = {
   viewer:   'viewer.html',
@@ -304,6 +306,54 @@ async function cmdUpdate() {
     dim('  Comprueba conexión a internet y que GitHub esté accesible.');
   }
   dim('  Para bajar desde el repo flowdocs local: flowdocs update --from ../flowdocs');
+  if (process.argv.includes('--with-swarm')) {
+    await cmdInstallSwarm();
+  }
+  console.log('');
+}
+
+async function cmdInstallSwarm() {
+  const home = process.env.HOME || process.env.USERPROFILE || '';
+  if (!home) {
+    err('No se pudo determinar HOME');
+    return;
+  }
+  const swarmDir = process.env.FLOWDOCS_SWARM_DIR || path.join(home, SWARM_DIR_DEFAULT);
+
+  console.log('');
+  console.log(`  ${c.bold}${c.cyan}FlowDocs${c.reset} — instalar antigravity-swarm`);
+  console.log(`  ${c.dim}Destino: ${swarmDir}${c.reset}`);
+  console.log('');
+
+  try {
+    if (!fileExists(path.join(swarmDir, '.git'))) {
+      ensureDir(path.dirname(swarmDir));
+      try {
+        execSync('git', ['clone', '--depth', '1', SWARM_REPO, swarmDir], { stdio: 'inherit' });
+        ok('antigravity-swarm clonado');
+      } catch (gitErr) {
+        err('git clone falló. ¿Tienes git instalado y acceso a GitHub?');
+        throw gitErr;
+      }
+    } else {
+      execSync('git', ['pull'], { cwd: swarmDir, stdio: 'inherit' });
+      ok('antigravity-swarm actualizado');
+    }
+    const reqPath = path.join(swarmDir, 'requirements.txt');
+    if (fileExists(reqPath)) {
+      try {
+        execSync('pip', ['install', '-r', 'requirements.txt'], { cwd: swarmDir, stdio: 'inherit' });
+        ok('Dependencias Python instaladas (pip -r requirements.txt)');
+      } catch (pipErr) {
+        warn('pip install falló. Ejecuta manualmente: cd ' + swarmDir + ' && pip install -r requirements.txt');
+      }
+    }
+    info(`Orquestador: ${c.bold}python3 ${path.join(swarmDir, 'scripts', 'orchestrator.py')}${c.reset}`);
+    dim('  Después de flowdocs plan-sprint, ejecuta el orquestador desde la raíz del proyecto.');
+  } catch (e) {
+    err('Fallo al instalar antigravity-swarm: ' + (e.message || e));
+    dim('  Comprueba: git instalado, pip instalado, acceso a GitHub.');
+  }
   console.log('');
 }
 
@@ -500,6 +550,8 @@ function cmdUsage() {
   console.log(`  ${c.bold}Comandos de terminal:${c.reset}`);
   console.log(`    ${c.cyan}flowdocs status${c.reset}   resumen del proyecto`);
   console.log(`    ${c.cyan}flowdocs update${c.reset}   actualizar viewer y prompts (bajar)`);
+  console.log(`    ${c.cyan}flowdocs update --with-swarm${c.reset}   actualizar e instalar/actualizar antigravity-swarm`);
+  console.log(`    ${c.cyan}flowdocs install-swarm${c.reset}   instalar antigravity-swarm en ~/.gemini/skills/antigravity-swarm`);
   console.log(`    ${c.cyan}flowdocs update --from ../flowdocs${c.reset}   bajar desde el repo flowdocs local`);
   console.log(`    ${c.cyan}flowdocs open${c.reset}     abrir viewer en el navegador`);
   console.log(`    ${c.cyan}flowdocs tui${c.reset}         navegar historias, flujos y prompts en la terminal`);
@@ -518,6 +570,8 @@ function cmdHelp() {
   console.log('');
   console.log(`    ${c.cyan}init${c.reset}      Instala FlowDocs en el proyecto actual`);
   console.log(`    ${c.cyan}update${c.reset}    Actualiza viewer y prompts (no toca flows.yaml)`);
+  console.log(`    ${c.cyan}update --with-swarm${c.reset}  Actualizar e instalar/actualizar antigravity-swarm`);
+  console.log(`    ${c.cyan}install-swarm${c.reset}  Instala antigravity-swarm (clone + pip) en ~/.gemini/skills/antigravity-swarm`);
   console.log(`    ${c.cyan}update --from <path>${c.reset}  Bajar desde el repo flowdocs local (ej. ../flowdocs)`);
   console.log(`    ${c.cyan}status${c.reset}    Muestra el resumen del proyecto en la terminal`);
   console.log(`    ${c.cyan}open${c.reset}     Abre el viewer (tablero visual) en el navegador`);
@@ -528,7 +582,7 @@ function cmdHelp() {
   console.log('');
   console.log(`  ${c.bold}Uso:${c.reset}`);
   console.log('');
-  console.log(`    flowdocs init | update | status | open | tui | plan-sprint | publish | usage`);
+  console.log(`    flowdocs init | update | install-swarm | status | open | tui | plan-sprint | publish | usage`);
   console.log('');
   console.log(`  ${c.bold}Primer paso:${c.reset} En Cursor/Antigravity escribe ${c.cyan}@discover.md${c.reset}`);
   console.log(`  ${c.bold}Ver protocolo:${c.reset} ${c.cyan}flowdocs usage${c.reset}`);
@@ -799,12 +853,17 @@ function cmdPlanSprint() {
 
   taskLines.push('---');
   taskLines.push('');
-  taskLines.push('## Cómo usar con antigravity-swarm');
+  taskLines.push('## Cómo usar con antigravity-swarm (multiagente)');
   taskLines.push('');
-  taskLines.push('1. Este archivo (`task_plan.md`) es el plan que el orquestador puede usar como checklist.');
-  taskLines.push('2. Copia el contenido de cada ítem (o el `swarm-plan.yaml` en `.flowdocs/`) para asignar tareas a subagentes.');
-  taskLines.push('3. Cada tarea = ejecutar en el chat/agente el **Prompt** indicado (ej. `@implement.md FLOW-009`).');
-  taskLines.push('4. Al final, ejecuta `@update.md` con los flujos implementados y tests.');
+  taskLines.push('Se generó también **subagents.yaml** en la raíz: un subagente por flujo + Quality_Validator.');
+  taskLines.push('El orquestador del swarm lo lee y lanza todos en paralelo (o según modo).');
+  taskLines.push('');
+  taskLines.push('1. Desde la raíz del proyecto:');
+  taskLines.push('   ```');
+  taskLines.push('   python3 ~/.gemini/skills/antigravity-swarm/scripts/orchestrator.py');
+  taskLines.push('   ```');
+  taskLines.push('2. Confirma con `y` cuando pregunte. Cada subagente implementa un flujo (leyendo .flowdocs/).');
+  taskLines.push('3. Al final, ejecuta `@update.md` con los flujos implementados y rutas de tests.');
   taskLines.push('');
 
   const taskPlanMd = taskLines.join('\n');
@@ -839,9 +898,59 @@ function cmdPlanSprint() {
   fs.writeFileSync(swarmPlanPath, swarmYaml, 'utf8');
   ok(`swarm-plan.yaml escrito en .flowdocs/swarm-plan.yaml`);
 
+  // Generar subagents.yaml para antigravity-swarm (un subagente por flujo + Quality_Validator)
+  const subagentsPath = path.join(outDir, 'subagents.yaml');
+  const subagentLines = [
+    '# Generado por flowdocs plan-sprint — formato antigravity-swarm',
+    '# Un subagente por flujo (parallel) + Quality_Validator al final.',
+    '',
+    'subagents:'
+  ];
+
+  const colors = ['yellow', 'cyan', 'green', 'blue', 'magenta'];
+  flows.forEach((f, i) => {
+    const safeName = f.id.replace(/[^a-zA-Z0-9-]/g, '_');
+    const roleName = `Junior_${safeName}`;
+    const color = colors[i % colors.length];
+    const stepsList = f.steps.length ? f.steps.slice(0, 8).map(s => '  - ' + s.replace(/"/g, "'")).join('\n') : '  (ver .flowdocs/flows.yaml)';
+    const promptBlock = [
+      'You are Junior. Your ONLY task is to implement the FlowDocs flow ' + f.id + '.',
+      'Read .flowdocs/flows.yaml for the flow definition and .flowdocs/prompts/implement.md for the implementation protocol.',
+      'Flow name: ' + (f.name || f.id) + '. Module: ' + (f.module || '') + '. Story: ' + (f.story || '') + '.',
+      (f.trigger ? 'Trigger: ' + f.trigger + '.' : ''),
+      'Steps for this flow:',
+      stepsList,
+      'Implement the flow in the codebase. When done, append to progress.md: "' + f.id + ' implemented".'
+    ].filter(Boolean).join('\n');
+    const promptEscaped = promptBlock.split('\n').map(l => '      ' + l).join('\n');
+    subagentLines.push(`  - name: "${roleName}"`);
+    subagentLines.push(`    description: "Implement ${f.id} — ${(f.name || '').slice(0, 50)}"`);
+    subagentLines.push(`    color: "${color}"`);
+    subagentLines.push(`    model: "auto-gemini-3"`);
+    subagentLines.push(`    mode: "parallel"`);
+    subagentLines.push(`    prompt: |`);
+    subagentLines.push(promptEscaped);
+    subagentLines.push('');
+  });
+
+  subagentLines.push('  - name: "Quality_Validator"');
+  subagentLines.push('    description: "Verify all flows in task_plan.md were implemented"');
+  subagentLines.push('    color: "green"');
+  subagentLines.push('    model: "auto-gemini-3"');
+  subagentLines.push('    mode: "validator"');
+  subagentLines.push('    prompt: |');
+  subagentLines.push('      You are Quality_Validator. Check that every flow listed in task_plan.md has');
+  subagentLines.push('      "implemented" in progress.md or that the codebase reflects the implementation.');
+  subagentLines.push('      Run tests if present. Report any missing or failed items.');
+
+  fs.writeFileSync(subagentsPath, subagentLines.join('\n'), 'utf8');
+  ok(`subagents.yaml escrito en ${path.relative(cwd, subagentsPath)} (para antigravity-swarm)`);
+
   console.log('');
-  dim(`  Flujos en el plan: ${flows.length}`);
-  dim(`  Siguiente: usa task_plan.md con el orquestador de antigravity-swarm o asigna cada prompt a un subagente.`);
+  dim(`  Flujos en el plan: ${flows.length} → ${flows.length} subagentes Junior + 1 Quality_Validator`);
+  dim(`  Siguiente: desde la raíz del proyecto ejecuta el orquestador del swarm:`);
+  dim(`    python3 ~/.gemini/skills/antigravity-swarm/scripts/orchestrator.py`);
+  dim(`  (o la ruta donde tengas instalado antigravity-swarm)`);
   console.log('');
 }
 
@@ -1036,15 +1145,16 @@ const cmd = process.argv[2];
 
 (async () => {
   switch (cmd) {
-    case 'init':    await cmdInit();    break;
-    case 'update':  await cmdUpdate();  break;
-    case 'status':  cmdStatus();       break;
-    case 'open':    cmdOpen();         break;
-    case 'tui':         cmdTui();           break;
-    case 'plan-sprint': cmdPlanSprint();     break;
-    case 'publish':     await cmdPublish();  break;
-    case 'usage':   cmdUsage();        break;
-    default:        cmdHelp();         break;
+    case 'init':         await cmdInit();         break;
+    case 'update':       await cmdUpdate();      break;
+    case 'install-swarm': await cmdInstallSwarm(); break;
+    case 'status':       cmdStatus();            break;
+    case 'open':         cmdOpen();              break;
+    case 'tui':          cmdTui();               break;
+    case 'plan-sprint':  cmdPlanSprint();        break;
+    case 'publish':      await cmdPublish();     break;
+    case 'usage':        cmdUsage();             break;
+    default:             cmdHelp();              break;
   }
 })().catch(e => {
   console.error(`\n  ${c.red}Error:${c.reset} ${e.message}\n`);
