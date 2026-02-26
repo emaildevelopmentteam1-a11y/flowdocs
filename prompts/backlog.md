@@ -1,5 +1,12 @@
 # FlowDocs — BACKLOG (añadir historias y flujos desde requisitos en lenguaje natural)
-> El usuario describe requisitos o necesidades en texto libre. Tú interpretas, decides si corresponde a historia nueva, flujo nuevo o complemento a algo existente, y generas/actualizas el YAML.
+> El usuario describe requisitos o necesidades en texto libre. Tú interpretas, decides si corresponde a historia nueva, flujo nuevo o complemento a algo existente, y generas/actualizas la documentación.
+
+---
+
+## DETECCIÓN DE MODO
+
+- **Si existe `.flowdocs/project.yaml`** → Modo **modular**. Crea archivos individuales en `stories/`, `flows/`. Actualiza `manifest.yaml`.
+- **Si NO existe** → Modo **legacy**. Todo se edita en `.flowdocs/flows.yaml`.
 
 ---
 
@@ -36,11 +43,13 @@ y que quede registrado en la venta.
 1. **Leer** el mensaje del usuario: requisitos, features, mejoras, reportes, permisos, etc.
 2. **Leer** `.flowdocs/flows.yaml` completo para saber: últimos IDs (US-XXX, FLOW-XXX, AC-XXX), módulos existentes, historias y sus `flow_ids`.
 3. **Decidir por cada requisito:**
-   - **Nueva historia:** si es una capacidad o epic nuevo → crea una story nueva (siguiente US-XXX), sus flujos (FLOW-XXX) y mínimo 8 criterios de aceptación (formato simple o extendido según el resto del YAML).
-   - **Nuevo flujo en historia existente:** si encaja en una story ya existente → añade el/los flujo(s) a esa story (en `flow_ids` de la story y en cada criterio que corresponda con `flow_ids`), y crea los criterios de aceptación que cubran el nuevo flujo.
-   - **Solo criterios o pasos:** si es un matiz o condición sobre algo ya documentado → añade criterios a la story existente o steps/alternatives/errors al flujo existente.
-4. **Generar** el YAML en el mismo formato que el archivo actual (stories con `id`, `title`, `module`, `priority`, `status`, `flow_ids`, `acceptance_criteria`; opcionalmente `sprint: N` para asignar la historia a un sprint y filtrar en el viewer; flows con `id`, `name`, `type`, `module`, `actor`, `priority`, `status`, `test_status`, `sprint_status`, `story`, `story_points`, `entities`, `trigger`, `preconditions`, `steps`, etc.). Continuar la numeración de IDs.
-5. **Actualizar** `meta.stats` (total, implemented, partial, pending, with_tests, coverage_pct) y `meta.updated_at`.
+   - **Nueva historia:** crea story nueva (siguiente US-XXX), sus flujos (FLOW-XXX) y mínimo 8 criterios.
+   - **Nuevo flujo en historia existente:** añade el/los flujo(s) a esa story.
+   - **Solo criterios o pasos:** añade criterios o steps a lo existente.
+4. **Generar** la documentación:
+   - **Modular:** crea `.flowdocs/stories/US-XXX.yaml` y `.flowdocs/flows/FLOW-XXX.yaml` como archivos nuevos. Actualiza `manifest.yaml` añadiendo los nuevos IDs. Actualiza `project.yaml` (`updated_at`, y agrega módulos nuevos si aplica).
+   - **Legacy:** edita `.flowdocs/flows.yaml` (secciones `stories:` y `flows:`). Actualiza `meta.stats` y `meta.updated_at`.
+5. Continúa la numeración de IDs.
 
 ---
 
@@ -57,11 +66,17 @@ y que quede registrado en la venta.
 
 ## ENTREGA
 
-1. **Edita** `.flowdocs/flows.yaml`: añade las nuevas stories, flujos y criterios (o las modificaciones a existentes).
-2. **Incluye** en tu respuesta el YAML completo actualizado dentro de un bloque `` ```yaml `` (o al menos las secciones `stories:` y `flows:` que cambiaste).
-3. **Resumen:** qué interpretaste, qué creaste (US-XXX, FLOW-XXX, criterios) y qué complementaste (story/flujo existente).
+### Modo modular:
+1. **Crea** nuevos archivos `.flowdocs/stories/US-XXX.yaml` y `.flowdocs/flows/FLOW-XXX.yaml`.
+2. **Actualiza** `manifest.yaml`, `project.yaml` (módulos, `updated_at`).
+3. **Resumen:** qué creaste/complementaste.
 
-Así el usuario puede revisar en el viewer y seguir con @implement.md cuando quiera desarrollar un flujo.
+### Modo legacy:
+1. **Edita** `.flowdocs/flows.yaml`.
+2. **Incluye** el YAML completo o las secciones modificadas.
+3. **Resumen:** qué creaste/complementaste.
+
+El usuario puede revisar en el viewer.
 
 ---
 

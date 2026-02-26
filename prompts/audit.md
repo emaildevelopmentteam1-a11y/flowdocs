@@ -1,5 +1,12 @@
 # FlowDocs — AUDIT
-> Revisa `.flowdocs/flows.yaml` y el código del proyecto. Encuentra todo lo que está mal, incompleto o inconsistente.
+> Revisa la documentación FlowDocs y el código del proyecto. Encuentra todo lo que está mal, incompleto o inconsistente.
+
+---
+
+## DETECCIÓN DE MODO
+
+- **Si existe `.flowdocs/project.yaml`** → Modo **modular**. Lee `project.yaml`, archivos en `stories/`, `flows/`, `sprints/`.
+- **Si NO existe** → Modo **legacy**. Lee `.flowdocs/flows.yaml`.
 
 ---
 
@@ -16,7 +23,7 @@
 
 ## LO QUE DEBES HACER
 
-Lee `.flowdocs/flows.yaml` completo y el código del proyecto. Luego reporta:
+Lee la documentación FlowDocs (modular: archivos individuales; legacy: `flows.yaml`) y el código del proyecto. Luego reporta:
 
 ### 1. Inconsistencias YAML vs Código
 

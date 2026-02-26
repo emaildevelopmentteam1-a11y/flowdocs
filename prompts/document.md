@@ -1,8 +1,13 @@
 # FlowDocs — Generar documentación (tests + evidencia + YAML)
 
-> **Un solo prompt** para después de implementar: crea o ejecuta tests, guarda evidencia en la estructura acordada y actualiza el YAML. También sirve para documentar tests ya existentes en una historia o flujo.
+> **Un solo prompt** para después de implementar: crea o ejecuta tests, guarda evidencia y actualiza la documentación FlowDocs.
 
-Usa este prompt **después de @implement.md** (o cuando la implementación ya está hecha y quieres registrar tests y evidencia). No hace falta ejecutar run-tests ni update por separado; este prompt cubre todo el paso de documentación.
+---
+
+## DETECCIÓN DE MODO
+
+- **Si existe `.flowdocs/project.yaml`** → Modo **modular**. Flujos en `.flowdocs/flows/`, stories en `.flowdocs/stories/`, sprints en `.flowdocs/sprints/`.
+- **Si NO existe** → Modo **legacy**. Todo en `.flowdocs/flows.yaml`.
 
 ---
 
@@ -29,16 +34,13 @@ Sigue **@evidence.md** siempre. No inventes otras carpetas.
 
 ## LO QUE DEBES HACER (en un solo paso)
 
-1. **Lee** `.flowdocs/flows.yaml` y, si el usuario indicó una story o flujo, céntrate en esa.
-2. **Tests:**
-   - Si hay que crear tests: escribe o amplía los specs e2e que validen los criterios de aceptación de la historia.
-   - Si los tests ya existen: mapea cada spec a los flujos y criterios que cubre.
-3. **Ejecuta** los tests y **guarda evidencia** (capturas de pantalla o vídeo) en `.flowdocs/evidence/` según la estructura anterior. Si no puedes ejecutar, documenta al menos `test_files` y `validated_by`/`validated`.
-4. **Actualiza** `.flowdocs/flows.yaml` en un solo paso:
-   - En cada flujo: `test_files`, `test_status: covered` (o `partial`), y `test_evidence` con las rutas a las capturas/vídeo.
-   - En cada criterio cubierto: formato simple `validated_by: "ruta/al/spec.ts"`; formato extendido `validated: true`, `flow_ids`, y `evidence: ["evidence/stories/US-XXX/AC-XXX.png"]`.
-   - Recalcula `meta.stats` (with_tests, coverage_pct) y `meta.updated_at`.
-5. Opcional: usa @update.md solo si necesitas aplicar cambios más amplios; para este paso de documentación suele bastar con editar el YAML directamente.
+1. **Lee** la documentación FlowDocs (modular: archivos individuales; legacy: `flows.yaml`) y céntrate en la story/flujo indicado.
+2. **Tests:** escribe/ejecuta tests o mapea specs existentes.
+3. **Ejecuta** los tests y **guarda evidencia** en `.flowdocs/evidence/`.
+4. **Actualiza** la documentación FlowDocs:
+   - **Modular:** edita `.flowdocs/flows/FLOW-XXX.yaml` (`test_files`, `test_status`, `test_evidence`), `.flowdocs/stories/US-XXX.yaml` (criterios `validated`, `evidence`), `.flowdocs/project.yaml` (`updated_at`).
+   - **Legacy:** edita `.flowdocs/flows.yaml` (flujos, criterios, `meta.stats`, `meta.updated_at`).
+5. Opcional: usa @update.md solo si necesitas cambios más amplios.
 
 ---
 

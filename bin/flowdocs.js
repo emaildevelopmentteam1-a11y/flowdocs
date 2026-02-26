@@ -2,12 +2,12 @@
 
 'use strict';
 
-const https     = require('https');
-const http      = require('http');
-const fs        = require('fs');
-const path      = require('path');
-const os        = require('os');
-const readline  = require('readline');
+const https = require('https');
+const http = require('http');
+const fs = require('fs');
+const path = require('path');
+const os = require('os');
+const readline = require('readline');
 const { execSync } = require('child_process');
 
 // ─── Configuración ────────────────────────────────────────────────────────────
@@ -84,7 +84,7 @@ function getUxUiSkillsContent(cwd) {
 }
 
 const FILES = {
-  viewer:   'viewer.html',
+  viewer: 'viewer.html',
   cursorrules: '.cursorrules',
   prompts: [
     'prompts/adapt.md',
@@ -114,22 +114,22 @@ function getLocalSourcePath() {
 // ─── Colores ──────────────────────────────────────────────────────────────────
 
 const c = {
-  reset:  '\x1b[0m',
-  bold:   '\x1b[1m',
-  dim:    '\x1b[2m',
-  green:  '\x1b[32m',
-  blue:   '\x1b[34m',
+  reset: '\x1b[0m',
+  bold: '\x1b[1m',
+  dim: '\x1b[2m',
+  green: '\x1b[32m',
+  blue: '\x1b[34m',
   yellow: '\x1b[33m',
-  red:    '\x1b[31m',
-  cyan:   '\x1b[36m',
-  gray:   '\x1b[90m',
+  red: '\x1b[31m',
+  cyan: '\x1b[36m',
+  gray: '\x1b[90m',
 };
 
-const ok  = (msg) => console.log(`  ${c.green}✓${c.reset} ${msg}`);
+const ok = (msg) => console.log(`  ${c.green}✓${c.reset} ${msg}`);
 const err = (msg) => console.log(`  ${c.red}✗${c.reset} ${msg}`);
 const info = (msg) => console.log(`  ${c.blue}→${c.reset} ${msg}`);
 const warn = (msg) => console.log(`  ${c.yellow}!${c.reset} ${msg}`);
-const dim  = (msg) => console.log(`${c.gray}${msg}${c.reset}`);
+const dim = (msg) => console.log(`${c.gray}${msg}${c.reset}`);
 
 // ─── Utilidades ───────────────────────────────────────────────────────────────
 
@@ -197,7 +197,7 @@ function isFlowdocsRepoRoot(dir) {
 async function cmdInit() {
   const cwd = process.cwd();
   const flowdocsDir = path.join(cwd, '.flowdocs');
-  const promptsDir  = path.join(flowdocsDir, 'prompts');
+  const promptsDir = path.join(flowdocsDir, 'prompts');
 
   console.log('');
   console.log(`${c.bold}${c.cyan}  FlowDocs${c.reset} — inicializando en este proyecto`);
@@ -278,7 +278,7 @@ async function cmdInit() {
       const rulesContent = fs.readFileSync(path.join(flowdocsDir, '.cursorrules'), 'utf8');
       writeFile(rootRules, rulesContent);
       ok('.cursorrules copiado a la raíz del proyecto');
-    } catch(e) {
+    } catch (e) {
       warn('No se pudo copiar .cursorrules a la raíz');
     }
   } else {
@@ -315,7 +315,7 @@ async function cmdUpdate() {
 
   const localSource = getLocalSourcePath();
   let updated = 0;
-  let failed  = 0;
+  let failed = 0;
 
   if (localSource) {
     if (!fileExists(path.join(localSource, 'viewer.html'))) {
@@ -331,9 +331,9 @@ async function cmdUpdate() {
   } else {
     // Actualizar viewer, prompts, CLI (NO flows.yaml) desde la red
     const toUpdate = [
-      { remote: 'viewer.html',           local: path.join(flowdocsDir, 'viewer.html') },
-      { remote: '.cursorrules',          local: path.join(flowdocsDir, '.cursorrules') },
-      { remote: 'bin/flowdocs.js',       local: path.join(flowdocsDir, 'bin', 'flowdocs.js') },
+      { remote: 'viewer.html', local: path.join(flowdocsDir, 'viewer.html') },
+      { remote: '.cursorrules', local: path.join(flowdocsDir, '.cursorrules') },
+      { remote: 'bin/flowdocs.js', local: path.join(flowdocsDir, 'bin', 'flowdocs.js') },
       ...FILES.prompts.map(p => ({
         remote: p,
         local: path.join(flowdocsDir, p)
@@ -361,7 +361,7 @@ async function cmdUpdate() {
       try {
         fs.copyFileSync(localCli, globalCli);
         ok('Comando global flowdocs actualizado');
-      } catch (e) {}
+      } catch (e) { }
     }
   }
 
@@ -467,13 +467,15 @@ async function cmdPublish() {
 
 function cmdStatus() {
   const cwd = process.cwd();
-  const yamlPath = path.join(cwd, '.flowdocs', 'flows.yaml');
+  const flowdocsDir = path.join(cwd, '.flowdocs');
 
   console.log('');
   console.log(`${c.bold}${c.cyan}  FlowDocs Status${c.reset}`);
   console.log('');
 
-  if (!fileExists(yamlPath)) {
+  const project = loadProjectData(cwd);
+
+  if (project.source === 'none') {
     err('flows.yaml no encontrado');
     info('Ejecuta: flowdocs init');
     console.log('');
@@ -481,37 +483,66 @@ function cmdStatus() {
   }
 
   try {
-    const content = fs.readFileSync(yamlPath, 'utf8');
+    let app, version, total, impl, partial, pending, tests, cover, sprint, goal, days;
+    let criticalNoTestList = [];
 
-    // Parse básico sin dependencias externas
-    const appMatch      = content.match(/^\s+app:\s+"?([^"\n]+)"?/m);
-    const versionMatch  = content.match(/^\s+version:\s+"?([^"\n]+)"?/m);
-    const totalMatch    = content.match(/^\s+total:\s+(\d+)/m);
-    const implMatch     = content.match(/^\s+implemented:\s+(\d+)/m);
-    const partialMatch  = content.match(/^\s+partial:\s+(\d+)/m);
-    const pendingMatch  = content.match(/^\s+pending:\s+(\d+)/m);
-    const testsMatch    = content.match(/^\s+with_tests:\s+(\d+)/m);
-    const coverMatch    = content.match(/^\s+coverage_pct:\s+(\d+)/m);
-    const sprintMatch   = content.match(/^\s+number:\s+(\d+)/m);
-    const goalMatch     = content.match(/^\s+goal:\s+"?([^"\n]+)"?/m);
-    const daysMatch     = content.match(/^\s+days_left:\s+(\d+)/m);
+    if (project.source === 'modular' && project.data) {
+      // Modo modular: datos ya ensamblados
+      const d = project.data;
+      app = d.meta?.app || 'Sin nombre';
+      version = d.meta?.version || '?';
+      total = d.meta?.stats?.total || 0;
+      impl = d.meta?.stats?.implemented || 0;
+      partial = d.meta?.stats?.partial || 0;
+      pending = d.meta?.stats?.pending || 0;
+      tests = d.meta?.stats?.with_tests || 0;
+      cover = d.meta?.stats?.coverage_pct || 0;
+      sprint = d.meta?.sprint?.number || '?';
+      goal = d.meta?.sprint?.goal || 'Sin objetivo';
+      days = d.meta?.sprint?.days_left != null ? d.meta.sprint.days_left : '?';
 
-    const app      = appMatch?.[1]     || 'Sin nombre';
-    const version  = versionMatch?.[1] || '?';
-    const total    = parseInt(totalMatch?.[1]   || '0');
-    const impl     = parseInt(implMatch?.[1]    || '0');
-    const partial  = parseInt(partialMatch?.[1] || '0');
-    const pending  = parseInt(pendingMatch?.[1] || '0');
-    const tests    = parseInt(testsMatch?.[1]   || '0');
-    const cover    = parseInt(coverMatch?.[1]   || '0');
-    const sprint   = sprintMatch?.[1]  || '?';
-    const goal     = goalMatch?.[1]    || 'Sin objetivo';
-    const days     = daysMatch?.[1]    || '?';
+      // Flujos críticos sin tests
+      criticalNoTestList = (d.flows || []).filter(f => f.priority === 'critical' && (f.test_status === 'none' || !f.test_status));
+    } else {
+      // Modo legacy: regex sobre flows.yaml
+      const content = project.raw;
+      const appMatch = content.match(/^\s+app:\s+"?([^"\n]+)"?/m);
+      const versionMatch = content.match(/^\s+version:\s+"?([^"\n]+)"?/m);
+      const totalMatch = content.match(/^\s+total:\s+(\d+)/m);
+      const implMatch = content.match(/^\s+implemented:\s+(\d+)/m);
+      const partialMatch = content.match(/^\s+partial:\s+(\d+)/m);
+      const pendingMatch = content.match(/^\s+pending:\s+(\d+)/m);
+      const testsMatch = content.match(/^\s+with_tests:\s+(\d+)/m);
+      const coverMatch = content.match(/^\s+coverage_pct:\s+(\d+)/m);
+      const sprintMatch = content.match(/^\s+number:\s+(\d+)/m);
+      const goalMatch = content.match(/^\s+goal:\s+"?([^"\n]+)"?/m);
+      const daysMatch = content.match(/^\s+days_left:\s+(\d+)/m);
+
+      app = appMatch?.[1] || 'Sin nombre';
+      version = versionMatch?.[1] || '?';
+      total = parseInt(totalMatch?.[1] || '0');
+      impl = parseInt(implMatch?.[1] || '0');
+      partial = parseInt(partialMatch?.[1] || '0');
+      pending = parseInt(pendingMatch?.[1] || '0');
+      tests = parseInt(testsMatch?.[1] || '0');
+      cover = parseInt(coverMatch?.[1] || '0');
+      sprint = sprintMatch?.[1] || '?';
+      goal = goalMatch?.[1] || 'Sin objetivo';
+      days = daysMatch?.[1] || '?';
+
+      // Flujos críticos sin tests (regex)
+      const criticalNoTest = [...content.matchAll(/id:\s*"?(FLOW-\d+)"?[\s\S]*?priority:\s*"?critical"?[\s\S]*?test_status:\s*"?none"?/gm)];
+      criticalNoTestList = criticalNoTest.map(m => {
+        const nameMatch = content.slice(m.index).match(/name:\s*"?([^"\n]+)"?/);
+        return { id: m[1], name: nameMatch?.[1] || '' };
+      });
+    }
 
     const impPct = total > 0 ? Math.round(impl / total * 100) : 0;
     const bar = buildBar(impPct, 30);
 
     console.log(`  ${c.bold}${app}${c.reset} ${c.gray}v${version}${c.reset}`);
+    if (project.source === 'modular') dim(`  Modo: estructura modular`);
     console.log('');
     console.log(`  ${c.bold}Sprint ${sprint}${c.reset} ${c.gray}— ${days} días restantes${c.reset}`);
     console.log(`  ${c.dim}${goal}${c.reset}`);
@@ -520,22 +551,28 @@ function cmdStatus() {
     console.log('');
     console.log(`  ${c.green}${impl}${c.reset} implementados   ${c.yellow}${partial}${c.reset} parciales   ${c.gray}${pending}${c.reset} pendientes   de ${c.bold}${total}${c.reset} flujos`);
     console.log(`  ${c.cyan}${tests}${c.reset} con tests   ${c.bold}${cover}%${c.reset} cobertura`);
+
+    // Bugs abiertos
+    let openBugs = 0;
+    if (project.source === 'modular' && project.data) {
+      openBugs = (project.data.bugs || []).filter(b => b.status === 'open' || b.status === 'in_progress').length;
+    }
+    if (openBugs > 0) {
+      console.log(`  ${c.red}${openBugs}${c.reset} bugs abiertos`);
+    }
     console.log('');
 
-    // Flujos críticos sin tests
-    const criticalNoTest = [...content.matchAll(/id:\s*"?(FLOW-\d+)"?[\s\S]*?priority:\s*"?critical"?[\s\S]*?test_status:\s*"?none"?/gm)];
-    if (criticalNoTest.length > 0) {
-      warn(`${criticalNoTest.length} flujos críticos sin tests:`);
-      criticalNoTest.slice(0, 5).forEach(m => {
-        const nameMatch = content.slice(m.index).match(/name:\s*"?([^"\n]+)"?/);
-        console.log(`    ${c.red}•${c.reset} ${m[1]} ${c.gray}${nameMatch?.[1] || ''}${c.reset}`);
+    if (criticalNoTestList.length > 0) {
+      warn(`${criticalNoTestList.length} flujos críticos sin tests:`);
+      criticalNoTestList.slice(0, 5).forEach(f => {
+        console.log(`    ${c.red}•${c.reset} ${f.id} ${c.gray}${f.name || ''}${c.reset}`);
       });
-      if (criticalNoTest.length > 5) dim(`    ... y ${criticalNoTest.length - 5} más`);
+      if (criticalNoTestList.length > 5) dim(`    ... y ${criticalNoTestList.length - 5} más`);
       console.log('');
     }
 
   } catch (e) {
-    err(`Error leyendo flows.yaml: ${e.message}`);
+    err(`Error leyendo datos: ${e.message}`);
   }
 
   console.log('');
@@ -554,9 +591,29 @@ function cmdOpen() {
     process.exit(1);
   }
   const flowdocsDirResolved = path.resolve(flowdocsDir);
+  const modular = isModular(flowdocsDir);
+
   const server = http.createServer((req, res) => {
-    const subPath = (req.url === '/' ? '/viewer.html' : req.url).split('?')[0].replace(/^\/+/, '');
+    const urlPath = (req.url || '/').split('?')[0];
+
+    // API: /api/project-data — devuelve datos ensamblados (modular o legacy)
+    if (urlPath === '/api/project-data') {
+      res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+      const result = loadProjectData(cwd);
+      if (result.source === 'modular' && result.data) {
+        res.end(JSON.stringify(result.data));
+      } else if (result.source === 'legacy') {
+        // El viewer parseará el YAML él mismo en modo legacy
+        res.end(JSON.stringify({ _legacy: true }));
+      } else {
+        res.end(JSON.stringify({ error: 'no data' }));
+      }
+      return;
+    }
+
+    const subPath = (urlPath === '/' ? '/viewer.html' : urlPath).replace(/^\/+/, '');
     let filePath = path.resolve(flowdocsDirResolved, subPath);
+    // Seguridad: no salir del directorio .flowdocs
     if (!filePath.startsWith(flowdocsDirResolved)) filePath = viewerPath;
     if (!fileExists(filePath) || !fs.statSync(filePath).isFile()) {
       res.writeHead(404, { 'Content-Type': 'text/plain' });
@@ -565,7 +622,7 @@ function cmdOpen() {
     }
     const ext = path.extname(filePath);
     const contentType = MIME[ext] || 'application/octet-stream';
-    res.writeHead(200, { 'Content-Type': contentType });
+    res.writeHead(200, { 'Content-Type': contentType, 'Access-Control-Allow-Origin': '*' });
     res.end(fs.readFileSync(filePath));
   });
   server.listen(FLOWDOCS_PORT, '127.0.0.1', () => {
@@ -576,9 +633,14 @@ function cmdOpen() {
         else if (process.platform === 'win32') execSync(`start "" "${url}"`, { stdio: 'ignore' });
         else execSync(`xdg-open "${url}"`, { stdio: 'ignore' });
       }, 300);
-    } catch (_) {}
+    } catch (_) { }
     ok('Viewer abierto — ' + url);
-    dim('  El servidor sirve tu flows.yaml automáticamente. Ctrl+C para cerrar.');
+    if (modular) {
+      info('Modo: estructura modular (project.yaml + carpetas)');
+    } else {
+      info('Modo: legacy (flows.yaml)');
+    }
+    dim('  Ctrl+C para cerrar.');
     console.log('');
   });
   server.on('error', (e) => {
@@ -624,6 +686,7 @@ function cmdUsage() {
   console.log(`    ${c.cyan}flowdocs open${c.reset}     abrir viewer en el navegador`);
   console.log(`    ${c.cyan}flowdocs tui${c.reset}         navegar historias, flujos y prompts en la terminal`);
   console.log(`    ${c.cyan}flowdocs plan-sprint${c.reset} generar task_plan.md y swarm-plan.yaml para antigravity-swarm`);
+  console.log(`    ${c.cyan}flowdocs migrate${c.reset}     migrar flows.yaml a estructura modular`);
   console.log(`    ${c.cyan}flowdocs usage${c.reset}   ver esta descripción`);
   console.log(`  ${c.bold}En el repo flowdocs:${c.reset}`);
   console.log(`    ${c.cyan}flowdocs publish${c.reset}   subir cambios (git add, commit, push)`);
@@ -641,6 +704,7 @@ function cmdHelp() {
   console.log(`    ${c.cyan}update --with-swarm${c.reset}  Actualizar e instalar/actualizar antigravity-swarm`);
   console.log(`    ${c.cyan}install-swarm${c.reset}  Instala antigravity-swarm (clone + pip) en ~/.gemini/skills/antigravity-swarm`);
   console.log(`    ${c.cyan}update --from <path>${c.reset}  Bajar desde el repo flowdocs local (ej. ../flowdocs)`);
+  console.log(`    ${c.cyan}migrate${c.reset}   Migra flows.yaml a estructura modular (project.yaml + carpetas)`);
   console.log(`    ${c.cyan}status${c.reset}    Muestra el resumen del proyecto en la terminal`);
   console.log(`    ${c.cyan}open${c.reset}     Abre el viewer (tablero visual) en el navegador`);
   console.log(`    ${c.cyan}tui${c.reset}          Modo terminal: navegar historias, flujos, prompts y estados`);
@@ -650,7 +714,7 @@ function cmdHelp() {
   console.log('');
   console.log(`  ${c.bold}Uso:${c.reset}`);
   console.log('');
-  console.log(`    flowdocs init | update | install-swarm | status | open | tui | plan-sprint | publish | usage`);
+  console.log(`    flowdocs init | update | migrate | status | open | tui | plan-sprint | publish | usage`);
   console.log('');
   console.log(`  ${c.bold}Primer paso:${c.reset} En Cursor/Antigravity escribe ${c.cyan}@discover.md${c.reset}`);
   console.log(`  ${c.bold}Ver protocolo:${c.reset} ${c.cyan}flowdocs usage${c.reset}`);
@@ -662,11 +726,11 @@ function cmdHelp() {
 function detectProjectName(cwd) {
   // Intenta leer el nombre desde package.json, Gemfile, composer.json, etc.
   const files = [
-    { path: 'package.json',    parse: (c) => JSON.parse(c).name },
-    { path: 'composer.json',   parse: (c) => JSON.parse(c).name },
-    { path: 'pubspec.yaml',    parse: (c) => c.match(/^name:\s+(.+)/m)?.[1] },
-    { path: 'Cargo.toml',      parse: (c) => c.match(/^name\s*=\s*"(.+)"/m)?.[1] },
-    { path: 'pyproject.toml',  parse: (c) => c.match(/^name\s*=\s*"(.+)"/m)?.[1] },
+    { path: 'package.json', parse: (c) => JSON.parse(c).name },
+    { path: 'composer.json', parse: (c) => JSON.parse(c).name },
+    { path: 'pubspec.yaml', parse: (c) => c.match(/^name:\s+(.+)/m)?.[1] },
+    { path: 'Cargo.toml', parse: (c) => c.match(/^name\s*=\s*"(.+)"/m)?.[1] },
+    { path: 'pyproject.toml', parse: (c) => c.match(/^name\s*=\s*"(.+)"/m)?.[1] },
   ];
 
   for (const f of files) {
@@ -674,7 +738,7 @@ function detectProjectName(cwd) {
       const content = fs.readFileSync(path.join(cwd, f.path), 'utf8');
       const name = f.parse(content);
       if (name) return name;
-    } catch {}
+    } catch { }
   }
 
   // Fallback: nombre de la carpeta
@@ -724,39 +788,39 @@ function updateGitignore(cwd) {
         ok('.gitignore actualizado — viewer y prompts ignorados, flows.yaml se commitea');
       }
     }
-  } catch {}
+  } catch { }
 }
 
 function buildBar(pct, width) {
   const filled = Math.round(pct / 100 * width);
-  const empty  = width - filled;
-  const color  = pct === 100 ? c.green : pct > 50 ? c.cyan : c.yellow;
+  const empty = width - filled;
+  const color = pct === 100 ? c.green : pct > 50 ? c.cyan : c.yellow;
   return `${color}${'█'.repeat(filled)}${c.gray}${'░'.repeat(empty)}${c.reset}`;
 }
 
 /** Parse básico de flows.yaml para el TUI (sin dependencias YAML). */
 function parseYamlForTui(content) {
   const meta = {};
-  const appMatch   = content.match(/^\s+app:\s*["']?([^"\n]+)["']?/m);
+  const appMatch = content.match(/^\s+app:\s*["']?([^"\n]+)["']?/m);
   const totalMatch = content.match(/^\s+total:\s+(\d+)/m);
-  const implMatch  = content.match(/^\s+implemented:\s+(\d+)/m);
-  const partMatch  = content.match(/^\s+partial:\s+(\d+)/m);
-  const pendMatch  = content.match(/^\s+pending:\s+(\d+)/m);
+  const implMatch = content.match(/^\s+implemented:\s+(\d+)/m);
+  const partMatch = content.match(/^\s+partial:\s+(\d+)/m);
+  const pendMatch = content.match(/^\s+pending:\s+(\d+)/m);
   const testsMatch = content.match(/^\s+with_tests:\s+(\d+)/m);
   const coverMatch = content.match(/^\s+coverage_pct:\s+(\d+)/m);
-  const sprintMatch= content.match(/^\s+number:\s+(\d+)/m);
-  const goalMatch  = content.match(/^\s+goal:\s*["']?([^"\n]+)["']?/m);
-  const daysMatch  = content.match(/^\s+days_left:\s+(\d+)/m);
-  meta.app     = appMatch?.[1]?.trim() || 'Sin nombre';
-  meta.total   = parseInt(totalMatch?.[1] || '0');
-  meta.impl    = parseInt(implMatch?.[1] || '0');
+  const sprintMatch = content.match(/^\s+number:\s+(\d+)/m);
+  const goalMatch = content.match(/^\s+goal:\s*["']?([^"\n]+)["']?/m);
+  const daysMatch = content.match(/^\s+days_left:\s+(\d+)/m);
+  meta.app = appMatch?.[1]?.trim() || 'Sin nombre';
+  meta.total = parseInt(totalMatch?.[1] || '0');
+  meta.impl = parseInt(implMatch?.[1] || '0');
   meta.partial = parseInt(partMatch?.[1] || '0');
   meta.pending = parseInt(pendMatch?.[1] || '0');
-  meta.tests   = parseInt(testsMatch?.[1] || '0');
-  meta.cover   = parseInt(coverMatch?.[1] || '0');
-  meta.sprint  = sprintMatch?.[1] || '?';
-  meta.goal    = goalMatch?.[1]?.trim() || '';
-  meta.days    = daysMatch?.[1] || '?';
+  meta.tests = parseInt(testsMatch?.[1] || '0');
+  meta.cover = parseInt(coverMatch?.[1] || '0');
+  meta.sprint = sprintMatch?.[1] || '?';
+  meta.goal = goalMatch?.[1]?.trim() || '';
+  meta.days = daysMatch?.[1] || '?';
 
   const flows = [];
   const flowIdRe = /^\s+-\s+id:\s*["']?(FLOW-[^\s"']+)["']?\s*$/gm;
@@ -765,7 +829,7 @@ function parseYamlForTui(content) {
     const start = m.index;
     const next = content.indexOf('\n  - ', start + 1);
     const block = next === -1 ? content.slice(start, start + 2000) : content.slice(start, next);
-    const name  = block.match(/name:\s*["']?([^"\n]+)["']?/)?.[1]?.trim() || '';
+    const name = block.match(/name:\s*["']?([^"\n]+)["']?/)?.[1]?.trim() || '';
     const status = block.match(/status:\s*["']?(\w+)["']?/)?.[1] || 'pending';
     const test_status = block.match(/test_status:\s*["']?(\w+)["']?/)?.[1] || 'none';
     const sprint_status = block.match(/sprint_status:\s*["']?(\w+)["']?/)?.[1] || 'todo';
@@ -777,7 +841,7 @@ function parseYamlForTui(content) {
     if (stepsBlock) {
       try {
         steps = stepsBlock[1].split(/,\s*/).map(s => s.replace(/^["'\s]+|["'\s]+$/g, '').slice(0, 10));
-      } catch (_) {}
+      } catch (_) { }
     }
     flows.push({ id: m[1], name, status, test_status, sprint_status, module, story, trigger, steps });
   }
@@ -811,33 +875,33 @@ const FLOW_ID_RE = /^\s+-\s+id:\s*["']?((?:FLOW|FUT)-[^\s"']+)["']?\s*$/gm;
 /** Parsea flows.yaml para plan de sprint: active_sprint, goal, flujos pendientes/parciales. */
 function parseYamlForSprintPlan(content) {
   const activeSprintMatch = content.match(/\bactive_sprint:\s*(\d+)/);
-  const sprintNumMatch    = content.match(/\bsprint:\s*[\n\s]*number:\s*(\d+)/);
-  const goalMatch         = content.match(/\bgoal:\s*["']?([^"\n]+)["']?/);
-  const appMatch          = content.match(/^\s+app:\s*["']?([^"\n]+)["']?/m);
-  const activeSprint      = activeSprintMatch ? parseInt(activeSprintMatch[1], 10) : (sprintNumMatch ? parseInt(sprintNumMatch[1], 10) : 1);
-  const goal              = goalMatch ? goalMatch[1].trim() : 'Sprint ' + activeSprint;
-  const app               = appMatch ? appMatch[1].trim() : 'Proyecto';
+  const sprintNumMatch = content.match(/\bsprint:\s*[\n\s]*number:\s*(\d+)/);
+  const goalMatch = content.match(/\bgoal:\s*["']?([^"\n]+)["']?/);
+  const appMatch = content.match(/^\s+app:\s*["']?([^"\n]+)["']?/m);
+  const activeSprint = activeSprintMatch ? parseInt(activeSprintMatch[1], 10) : (sprintNumMatch ? parseInt(sprintNumMatch[1], 10) : 1);
+  const goal = goalMatch ? goalMatch[1].trim() : 'Sprint ' + activeSprint;
+  const app = appMatch ? appMatch[1].trim() : 'Proyecto';
 
   const flows = [];
   let m;
   FLOW_ID_RE.lastIndex = 0;
   while ((m = FLOW_ID_RE.exec(content)) !== null) {
     const start = m.index;
-    const next  = content.indexOf('\n  - ', start + 1);
+    const next = content.indexOf('\n  - ', start + 1);
     const block = next === -1 ? content.slice(start, start + 2500) : content.slice(start, next);
     const status = block.match(/status:\s*["']?(\w+)["']?/)?.[1] || 'pending';
     if (status !== 'pending' && status !== 'partial') continue;
     const sprint_status = block.match(/sprint_status:\s*["']?(\w+)["']?/)?.[1] || 'todo';
-    const name    = block.match(/name:\s*["']?([^"\n]+)["']?/)?.[1]?.trim() || '';
-    const story   = block.match(/story:\s*["']?([^"\n]+)["']?/)?.[1]?.trim() || '';
-    const module  = block.match(/module:\s*["']?([^"\n]+)["']?/)?.[1]?.trim() || '';
+    const name = block.match(/name:\s*["']?([^"\n]+)["']?/)?.[1]?.trim() || '';
+    const story = block.match(/story:\s*["']?([^"\n]+)["']?/)?.[1]?.trim() || '';
+    const module = block.match(/module:\s*["']?([^"\n]+)["']?/)?.[1]?.trim() || '';
     const trigger = block.match(/trigger:\s*["']?([^"\n]+)["']?/)?.[1]?.trim() || '';
     const stepsBlock = block.match(/steps:\s*\[([\s\S]*?)\]/);
     let steps = [];
     if (stepsBlock) {
       try {
         steps = stepsBlock[1].split(/,\s*/).map(s => s.replace(/^["'\s]+|["'\s]+$/g, '').trim()).filter(Boolean).slice(0, 12);
-      } catch (_) {}
+      } catch (_) { }
     }
     flows.push({
       id: m[1],
@@ -855,18 +919,36 @@ function parseYamlForSprintPlan(content) {
 
 function cmdPlanSprint() {
   const cwd = process.cwd();
-  const yamlPath = path.join(cwd, '.flowdocs', 'flows.yaml');
   const outDir = cwd;
   const flowdocsDir = path.join(cwd, '.flowdocs');
 
-  if (!fileExists(yamlPath)) {
+  const project = loadProjectData(cwd);
+
+  if (project.source === 'none') {
     err('flows.yaml no encontrado. Ejecuta: flowdocs init');
     console.log('');
     process.exit(1);
   }
 
-  const content = fs.readFileSync(yamlPath, 'utf8');
-  const { activeSprint, goal, app, flows } = parseYamlForSprintPlan(content);
+  let activeSprint, goal, app, flows;
+
+  if (project.source === 'modular' && project.data) {
+    // Modo modular
+    const d = project.data;
+    activeSprint = d.meta?.active_sprint || 1;
+    goal = d.meta?.sprint?.goal || 'Sprint ' + activeSprint;
+    app = d.meta?.app || 'Proyecto';
+    // Solo flujos pendientes o parciales
+    flows = (d.flows || []).filter(f => f.status === 'pending' || f.status === 'partial').map(f => ({
+      id: f.id, name: f.name || '', story: f.story || '', module: f.module || '',
+      status: f.status || 'pending', sprint_status: f.sprint_status || 'todo',
+      trigger: f.trigger || '', steps: Array.isArray(f.steps) ? f.steps.slice(0, 12) : []
+    }));
+  } else {
+    // Modo legacy
+    const content = project.raw;
+    ({ activeSprint, goal, app, flows } = parseYamlForSprintPlan(content));
+  }
 
   console.log('');
   console.log(`  ${c.bold}${c.cyan}FlowDocs — Plan de sprint para swarm${c.reset}`);
@@ -1053,17 +1135,51 @@ function cmdPlanSprint() {
 
 function cmdTui() {
   const cwd = process.cwd();
-  const yamlPath = path.join(cwd, '.flowdocs', 'flows.yaml');
   const promptsDir = path.join(cwd, '.flowdocs', 'prompts');
 
-  if (!fileExists(yamlPath)) {
+  const project = loadProjectData(cwd);
+
+  if (project.source === 'none') {
     err('flows.yaml no encontrado. Ejecuta: flowdocs init');
     console.log('');
     process.exit(1);
   }
 
-  const content = fs.readFileSync(yamlPath, 'utf8');
-  const { meta, flows, stories } = parseYamlForTui(content);
+  let meta, flows, stories;
+
+  if (project.source === 'modular' && project.data) {
+    // Modo modular: convertir datos ensamblados al formato del TUI
+    const d = project.data;
+    meta = {
+      app: d.meta?.app || 'Sin nombre',
+      total: d.meta?.stats?.total || 0,
+      impl: d.meta?.stats?.implemented || 0,
+      partial: d.meta?.stats?.partial || 0,
+      pending: d.meta?.stats?.pending || 0,
+      tests: d.meta?.stats?.with_tests || 0,
+      cover: d.meta?.stats?.coverage_pct || 0,
+      sprint: d.meta?.sprint?.number || '?',
+      goal: d.meta?.sprint?.goal || '',
+      days: d.meta?.sprint?.days_left != null ? d.meta.sprint.days_left : '?'
+    };
+    flows = (d.flows || []).map(f => ({
+      id: f.id, name: f.name || '', status: f.status || 'pending',
+      test_status: f.test_status || 'none', sprint_status: f.sprint_status || 'todo',
+      module: f.module || '', story: f.story || '', trigger: f.trigger || '',
+      steps: Array.isArray(f.steps) ? f.steps : []
+    }));
+    stories = (d.stories || []).map(s => ({
+      id: s.id, title: s.title || '', status: s.status || 'pending',
+      flow_ids: Array.isArray(s.flow_ids) ? s.flow_ids : [],
+      criteria: Array.isArray(s.acceptance_criteria)
+        ? s.acceptance_criteria.map(ac => typeof ac === 'object' ? ac.description || '' : ac)
+        : []
+    }));
+  } else {
+    // Modo legacy: regex
+    const content = project.raw;
+    ({ meta, flows, stories } = parseYamlForTui(content));
+  }
 
   const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
 
@@ -1129,7 +1245,7 @@ function cmdTui() {
       if (fileExists(promptsDir)) {
         files = fs.readdirSync(promptsDir).filter(f => f.endsWith('.md')).sort();
       }
-    } catch (_) {}
+    } catch (_) { }
     if (files.length === 0) {
       dim('  (no hay .flowdocs/prompts/*.md)');
       return [];
@@ -1236,22 +1352,494 @@ function cmdTui() {
   mainMenu();
 }
 
+// ─── Estructura modular ───────────────────────────────────────────────────────
+
+/** Detecta si el proyecto usa estructura modular (project.yaml) o legacy (flows.yaml). */
+function isModular(flowdocsDir) {
+  return fileExists(path.join(flowdocsDir, 'project.yaml'));
+}
+
+/** Parse minimalista de YAML simple (sin dependencias). Soporta listas, mapas anidados y escalares. */
+function parseSimpleYaml(text) {
+  // Usa JSON inline si exist  — algunos campos como steps, test_files, etc. son arrays inline
+  // Para archivos sencillos con indentación estándar, parsear manualmente.
+  // En producción usa jsyaml si está disponible; si no, fallback a regex.
+  try {
+    // Intentar cargar jsyaml del sistema (el viewer lo incluye via CDN)
+    const jsyaml = require('js-yaml');
+    return jsyaml.load(text);
+  } catch (_) { }
+  // Fallback: solo soporta formato "key: value" simple con listas inline
+  // Para la estructura modular los archivos son bastante simples
+  const result = {};
+  const lines = text.split('\n');
+  let currentKey = null;
+  let currentIndent = 0;
+  const stack = [{ obj: result, indent: -1 }];
+
+  for (const line of lines) {
+    if (line.trim() === '' || line.trim().startsWith('#')) continue;
+    const indent = line.search(/\S/);
+    const trimmed = line.trim();
+
+    // Lista inline: key: [val1, val2]
+    const inlineListMatch = trimmed.match(/^(\w[\w_-]*):\s*\[(.*)]\s*$/);
+    if (inlineListMatch) {
+      const key = inlineListMatch[1];
+      const vals = inlineListMatch[2].split(',').map(v => v.replace(/^[\s"']+|[\s"']+$/g, '')).filter(Boolean);
+      const parent = stack[stack.length - 1].obj;
+      if (parent) parent[key] = vals;
+      continue;
+    }
+
+    // key: value
+    const kvMatch = trimmed.match(/^(\w[\w_-]*):\s*(.+)$/);
+    if (kvMatch && !kvMatch[2].startsWith('{')) {
+      // Ajustar stack
+      while (stack.length > 1 && indent <= stack[stack.length - 1].indent) stack.pop();
+      const parent = stack[stack.length - 1].obj;
+      if (parent) {
+        let val = kvMatch[2].replace(/^["']|["']$/g, '').trim();
+        if (val === 'true') val = true;
+        else if (val === 'false') val = false;
+        else if (val === 'null' || val === '~') val = null;
+        else if (/^-?\d+$/.test(val)) val = parseInt(val, 10);
+        else if (/^-?\d+\.\d+$/.test(val)) val = parseFloat(val);
+        parent[kvMatch[1]] = val;
+      }
+      continue;
+    }
+
+    // key: (sin valor — comienza objeto anidado)
+    const objMatch = trimmed.match(/^(\w[\w_-]*):\s*$/);
+    if (objMatch) {
+      while (stack.length > 1 && indent <= stack[stack.length - 1].indent) stack.pop();
+      const parent = stack[stack.length - 1].obj;
+      const child = {};
+      if (parent) parent[objMatch[1]] = child;
+      stack.push({ obj: child, indent });
+      continue;
+    }
+
+    // - item (lista)
+    const listMatch = trimmed.match(/^-\s+(.+)$/);
+    if (listMatch) {
+      // Por ahora ignoramos listas complejas en el fallback
+      continue;
+    }
+  }
+  return result;
+}
+
+/** Lee un archivo YAML y devuelve el objeto parseado. Retorna null si falla. */
+function readYamlFile(filePath) {
+  try {
+    const text = fs.readFileSync(filePath, 'utf8');
+    return parseSimpleYaml(text);
+  } catch (_) {
+    return null;
+  }
+}
+
+/** Lee todos los archivos .yaml de un directorio y devuelve un array de objetos. */
+function readYamlDir(dirPath) {
+  if (!fileExists(dirPath)) return [];
+  try {
+    const files = fs.readdirSync(dirPath).filter(f => f.endsWith('.yaml') || f.endsWith('.yml')).sort();
+    return files.map(f => readYamlFile(path.join(dirPath, f))).filter(Boolean);
+  } catch (_) {
+    return [];
+  }
+}
+
+/**
+ * Ensambla los datos del proyecto desde la estructura modular.
+ * Lee project.yaml + carpetas stories/, flows/, sprints/, bugs/ y
+ * devuelve un objeto unificado compatible con el formato del viewer.
+ */
+function assembleModular(flowdocsDir) {
+  const projectData = readYamlFile(path.join(flowdocsDir, 'project.yaml'));
+  if (!projectData) return null;
+
+  const meta = projectData.meta || {};
+  const modules = projectData.modules || [];
+  const entities = projectData.entities || [];
+
+  // Leer sprints
+  const sprintsRaw = readYamlDir(path.join(flowdocsDir, 'sprints'));
+  const sprints = sprintsRaw.map(s => s.sprint || s).filter(s => s && s.number != null);
+
+  // Leer historias
+  const storiesRaw = readYamlDir(path.join(flowdocsDir, 'stories'));
+  const stories = storiesRaw.map(s => s.story || s).filter(s => s && s.id);
+
+  // Leer flujos
+  const flowsRaw = readYamlDir(path.join(flowdocsDir, 'flows'));
+  const flows = flowsRaw.map(f => f.flow || f).filter(f => f && f.id);
+
+  // Leer bugs
+  const bugsRaw = readYamlDir(path.join(flowdocsDir, 'bugs'));
+  const bugs = bugsRaw.map(b => b.bug || b).filter(b => b && b.id);
+
+  // Resolver sprint_status de flujos desde el sprint activo
+  const activeSprint = meta.active_sprint || (sprints.length ? Math.max(...sprints.map(s => s.number)) : 1);
+  const activeSprintData = sprints.find(s => s.number === activeSprint);
+  if (activeSprintData && activeSprintData.flows) {
+    for (const sf of activeSprintData.flows) {
+      const flow = flows.find(f => f.id === sf.id);
+      if (flow && sf.sprint_status) {
+        flow.sprint_status = sf.sprint_status;
+      }
+    }
+  }
+
+  // Construir stats
+  const total = flows.length;
+  const implemented = flows.filter(f => f.status === 'implemented').length;
+  const partial = flows.filter(f => f.status === 'partial').length;
+  const pending = total - implemented - partial;
+  const withTests = flows.filter(f => f.test_status === 'covered' || f.test_status === 'partial').length;
+  const coveragePct = total > 0 ? Math.round(withTests / total * 100) : 0;
+
+  // Sprint activo como objeto para atrás compatibilidad
+  const sprintObj = activeSprintData || sprints[sprints.length - 1] || { number: 1, goal: '', start: '', end: '', days_left: 0 };
+
+  return {
+    meta: {
+      ...meta,
+      active_sprint: activeSprint,
+      sprint: sprintObj,
+      sprints,
+      stats: { total, implemented, partial, pending, with_tests: withTests, coverage_pct: coveragePct }
+    },
+    modules,
+    entities,
+    stories,
+    flows,
+    bugs
+  };
+}
+
+/**
+ * Carga los datos del proyecto: detecta modular vs legacy y retorna
+ * un objeto unificado { meta, modules, entities, stories, flows, bugs }.
+ * También retorna { data, source: 'modular'|'legacy' }.
+ */
+function loadProjectData(cwd) {
+  const flowdocsDir = path.join(cwd, '.flowdocs');
+
+  // Modular: project.yaml + carpetas
+  if (isModular(flowdocsDir)) {
+    const data = assembleModular(flowdocsDir);
+    if (data) return { data, source: 'modular' };
+  }
+
+  // Legacy: flows.yaml
+  const yamlPath = path.join(flowdocsDir, 'flows.yaml');
+  if (fileExists(yamlPath)) {
+    const content = fs.readFileSync(yamlPath, 'utf8');
+    return { data: null, source: 'legacy', raw: content };
+  }
+
+  return { data: null, source: 'none' };
+}
+
+/** Genera manifest.yaml con los IDs de todos los archivos en las carpetas modulares. */
+function writeManifest(flowdocsDir) {
+  const dirs = ['sprints', 'stories', 'flows', 'bugs'];
+  const manifest = {};
+
+  for (const dir of dirs) {
+    const fullDir = path.join(flowdocsDir, dir);
+    if (!fileExists(fullDir)) {
+      manifest[dir] = [];
+      continue;
+    }
+    try {
+      manifest[dir] = fs.readdirSync(fullDir)
+        .filter(f => f.endsWith('.yaml') || f.endsWith('.yml'))
+        .sort()
+        .map(f => f.replace(/\.(yaml|yml)$/, ''));
+    } catch (_) {
+      manifest[dir] = [];
+    }
+  }
+
+  // Serializar como YAML simple (sin dependencias)
+  let out = '# FlowDocs manifest — generado automáticamente\n';
+  out += `# Última actualización: ${new Date().toISOString().split('T')[0]}\n\n`;
+  for (const [key, files] of Object.entries(manifest)) {
+    out += `${key}: [${files.map(f => `"${f}"`).join(', ')}]\n`;
+  }
+
+  writeFile(path.join(flowdocsDir, 'manifest.yaml'), out);
+  return manifest;
+}
+
+/** Serializa un objeto JavaScript como YAML simple (sin dependencias externas). */
+function serializeYaml(obj, indent = 0) {
+  const pad = '  '.repeat(indent);
+  let out = '';
+
+  if (Array.isArray(obj)) {
+    if (obj.length === 0) return '[]';
+    // Arrays de escalares simples: inline
+    if (obj.every(v => typeof v !== 'object' || v === null)) {
+      return '[' + obj.map(v => typeof v === 'string' ? `"${v.replace(/"/g, '\\"')}"` : String(v)).join(', ') + ']';
+    }
+    // Arrays de objetos: items con -
+    for (const item of obj) {
+      out += `${pad}- `;
+      if (typeof item === 'object' && item !== null) {
+        const entries = Object.entries(item);
+        if (entries.length === 0) { out += '{}\n'; continue; }
+        // Primera propiedad en la misma línea que -
+        const [k0, v0] = entries[0];
+        if (typeof v0 === 'object' && v0 !== null && !Array.isArray(v0)) {
+          out += `${k0}:\n`;
+          out += serializeYaml(v0, indent + 2);
+        } else {
+          const val = serializeValue(v0, indent + 1);
+          out += `${k0}: ${val}\n`;
+        }
+        // Resto de propiedades indentadas bajo el -
+        for (let i = 1; i < entries.length; i++) {
+          const [k, v] = entries[i];
+          if (typeof v === 'object' && v !== null && !Array.isArray(v)) {
+            out += `${pad}  ${k}:\n`;
+            out += serializeYaml(v, indent + 2);
+          } else {
+            out += `${pad}  ${k}: ${serializeValue(v, indent + 1)}\n`;
+          }
+        }
+      } else {
+        out += `${serializeValue(item, indent)}\n`;
+      }
+    }
+    return out;
+  }
+
+  if (typeof obj === 'object' && obj !== null) {
+    for (const [key, value] of Object.entries(obj)) {
+      if (value === undefined) continue;
+      if (typeof value === 'object' && value !== null && !Array.isArray(value) && Object.keys(value).length > 0) {
+        out += `${pad}${key}:\n`;
+        out += serializeYaml(value, indent + 1);
+      } else if (Array.isArray(value)) {
+        const arr = serializeValue(value, indent + 1);
+        if (arr.includes('\n')) {
+          out += `${pad}${key}:\n${arr}`;
+        } else {
+          out += `${pad}${key}: ${arr}\n`;
+        }
+      } else {
+        out += `${pad}${key}: ${serializeValue(value, indent)}\n`;
+      }
+    }
+    return out;
+  }
+
+  return `${pad}${serializeValue(obj, indent)}\n`;
+}
+
+function serializeValue(val, indent) {
+  if (val === null || val === undefined) return 'null';
+  if (typeof val === 'boolean') return val ? 'true' : 'false';
+  if (typeof val === 'number') return String(val);
+  if (typeof val === 'string') {
+    if (val === '') return '""';
+    // Multiline strings (diagramas, etc)
+    if (val.includes('\n')) {
+      const pad = '  '.repeat(indent + 1);
+      return '|\n' + val.split('\n').map(l => pad + l).join('\n');
+    }
+    // Strings que necesitan comillas
+    if (val.match(/[:#{}[\],&*?|>!%@`]/)) return `"${val.replace(/"/g, '\\"')}"`;
+    return `"${val}"`;
+  }
+  if (Array.isArray(val)) return serializeYaml(val, indent);
+  return String(val);
+}
+
+/** Migra flows.yaml monolítico a estructura modular. */
+function cmdMigrate() {
+  const cwd = process.cwd();
+  const flowdocsDir = path.join(cwd, '.flowdocs');
+  const yamlPath = path.join(flowdocsDir, 'flows.yaml');
+  const projectPath = path.join(flowdocsDir, 'project.yaml');
+
+  console.log('');
+  console.log(`${c.bold}${c.cyan}  FlowDocs${c.reset} — migrar a estructura modular`);
+  console.log('');
+
+  if (isModular(flowdocsDir)) {
+    warn('project.yaml ya existe — el proyecto ya usa estructura modular.');
+    console.log('');
+    process.exit(0);
+  }
+
+  if (!fileExists(yamlPath)) {
+    err('flows.yaml no encontrado. Ejecuta: flowdocs init');
+    console.log('');
+    process.exit(1);
+  }
+
+  // Parsear flows.yaml con el parseo existente (regex) para los datos que necesitamos
+  let raw = null;
+  const content = fs.readFileSync(yamlPath, 'utf8');
+  try {
+    const jsyaml = require('js-yaml');
+    raw = jsyaml.load(content);
+  } catch (_) {
+    // Fallback: intentar parseSimpleYaml
+    raw = parseSimpleYaml(content);
+  }
+
+  if (!raw) {
+    err('No se pudo parsear flows.yaml. Verifica que el archivo sea YAML válido.');
+    console.log('');
+    process.exit(1);
+  }
+
+  const meta = raw.meta || {};
+  const modules = raw.modules || [];
+  const entities = raw.entities || [];
+  const stories = raw.stories || [];
+  const flows = raw.flows || [];
+
+  // Crear carpetas
+  const dirs = ['sprints', 'stories', 'flows', 'bugs'];
+  for (const dir of dirs) {
+    ensureDir(path.join(flowdocsDir, dir));
+    ok(`carpeta ${dir}/`);
+  }
+
+  // 1. project.yaml — meta + modules + entities (sin stories ni flows)
+  const projectObj = {
+    meta: {
+      app: meta.app || 'Proyecto',
+      version: meta.version || '0.1.0',
+      description: meta.description || '',
+      updated_at: new Date().toISOString().split('T')[0],
+      active_sprint: meta.active_sprint || (meta.sprint ? meta.sprint.number : 1)
+    },
+    modules,
+    entities
+  };
+  writeFile(projectPath, serializeYaml(projectObj));
+  ok('project.yaml');
+
+  // 2. Sprint(s)
+  const sprintsList = meta.sprints || (meta.sprint ? [meta.sprint] : []);
+  if (sprintsList.length === 0) {
+    // Crear sprint 1 vacío
+    const sprint = { sprint: { number: 1, goal: meta.sprint?.goal || 'Sprint inicial', start: meta.sprint?.start || new Date().toISOString().split('T')[0], end: meta.sprint?.end || '', status: 'active', stories: stories.map(s => s.id), flows: flows.map(f => ({ id: f.id, sprint_status: f.sprint_status || 'todo' })), tasks: [] } };
+    writeFile(path.join(flowdocsDir, 'sprints', 'sprint-1.yaml'), serializeYaml(sprint));
+    ok('sprints/sprint-1.yaml');
+  } else {
+    for (const sp of sprintsList) {
+      const num = sp.number || 1;
+      // Buscar flujos y stories asignados a este sprint
+      const sprintStories = stories.filter(s => s.sprint === num || (!s.sprint && num === 1)).map(s => s.id);
+      const sprintFlows = flows.filter(f => {
+        const fStory = stories.find(s => (s.flow_ids || []).includes(f.id));
+        return fStory && (fStory.sprint === num || (!fStory.sprint && num === 1));
+      }).map(f => ({ id: f.id, sprint_status: f.sprint_status || 'todo' }));
+
+      // Extraer tareas de los flujos de este sprint
+      const tasks = [];
+      flows.forEach(f => {
+        if (!Array.isArray(f.tasks)) return;
+        const fStory = stories.find(s => (s.flow_ids || []).includes(f.id));
+        if (!fStory || (fStory.sprint !== num && (fStory.sprint || num !== 1))) return;
+        f.tasks.forEach(t => {
+          tasks.push({ id: t.id || `TASK-${tasks.length + 1}`, title: t.name || t.title || '', status: t.status || 'todo', story: f.story || '', flow: f.id, module: f.module || '' });
+        });
+      });
+
+      const sprintObj = { sprint: { number: num, goal: sp.goal || '', start: sp.start || '', end: sp.end || '', days_left: sp.days_left != null ? sp.days_left : 0, status: sp.status || (num === (meta.active_sprint || 1) ? 'active' : 'completed'), stories: sprintStories, flows: sprintFlows, tasks } };
+      writeFile(path.join(flowdocsDir, 'sprints', `sprint-${num}.yaml`), serializeYaml(sprintObj));
+      ok(`sprints/sprint-${num}.yaml`);
+    }
+  }
+
+  // 3. Stories
+  for (const s of stories) {
+    const storyObj = { story: { ...s } };
+    // Añadir created_sprint si tiene sprint
+    if (s.sprint && !s.created_sprint) {
+      storyObj.story.created_sprint = s.sprint;
+    }
+    // Agregar added_sprint a criterios que no lo tengan
+    if (Array.isArray(storyObj.story.acceptance_criteria)) {
+      storyObj.story.acceptance_criteria = storyObj.story.acceptance_criteria.map(ac => {
+        if (typeof ac === 'object' && ac !== null && !ac.added_sprint) {
+          return { ...ac, added_sprint: s.sprint || 1 };
+        }
+        return ac;
+      });
+    }
+    writeFile(path.join(flowdocsDir, 'stories', `${s.id}.yaml`), serializeYaml(storyObj));
+  }
+  if (stories.length) ok(`${stories.length} historias en stories/`);
+
+  // 4. Flows
+  for (const f of flows) {
+    // Remover tasks del flujo (ya se movieron al sprint)
+    const flowClean = { ...f };
+    delete flowClean.tasks;
+    delete flowClean.sprint_status; // sprint_status vive en el sprint
+    const flowObj = { flow: flowClean };
+    writeFile(path.join(flowdocsDir, 'flows', `${f.id}.yaml`), serializeYaml(flowObj));
+  }
+  if (flows.length) ok(`${flows.length} flujos en flows/`);
+
+  // 5. Bugs
+  const bugs = raw.bugs || [];
+  for (const b of bugs) {
+    const bugObj = { bug: { ...b } };
+    writeFile(path.join(flowdocsDir, 'bugs', `${b.id}.yaml`), serializeYaml(bugObj));
+  }
+  if (bugs.length) ok(`${bugs.length} bugs en bugs/`);
+
+  // 6. Generar manifest
+  writeManifest(flowdocsDir);
+  ok('manifest.yaml');
+
+  // Backup del flows.yaml original
+  const backupPath = path.join(flowdocsDir, 'flows.yaml.bak');
+  if (!fileExists(backupPath)) {
+    fs.copyFileSync(yamlPath, backupPath);
+    ok('flows.yaml.bak (backup del original)');
+  }
+
+  console.log('');
+  console.log(`${c.bold}  ¡Migración completa!${c.reset}`);
+  console.log('');
+  info('La estructura modular está lista en .flowdocs/');
+  info('flows.yaml original guardado como flows.yaml.bak');
+  dim('  El flows.yaml original sigue existiendo como fallback.');
+  dim('  Para usar la estructura modular, el sistema detecta project.yaml automáticamente.');
+  console.log('');
+}
+
 // ─── Entry point ──────────────────────────────────────────────────────────────
 
 const cmd = process.argv[2];
 
 (async () => {
   switch (cmd) {
-    case 'init':         await cmdInit();         break;
-    case 'update':       await cmdUpdate();      break;
+    case 'init': await cmdInit(); break;
+    case 'update': await cmdUpdate(); break;
     case 'install-swarm': await cmdInstallSwarm(); break;
-    case 'status':       cmdStatus();            break;
-    case 'open':         cmdOpen();              break;
-    case 'tui':          cmdTui();               break;
-    case 'plan-sprint':  cmdPlanSprint();        break;
-    case 'publish':      await cmdPublish();     break;
-    case 'usage':        cmdUsage();             break;
-    default:             cmdHelp();              break;
+    case 'status': cmdStatus(); break;
+    case 'open': cmdOpen(); break;
+    case 'tui': cmdTui(); break;
+    case 'plan-sprint': cmdPlanSprint(); break;
+    case 'publish': await cmdPublish(); break;
+    case 'usage': cmdUsage(); break;
+    case 'migrate': cmdMigrate(); break;
+    default: cmdHelp(); break;
   }
 })().catch(e => {
   console.error(`\n  ${c.red}Error:${c.reset} ${e.message}\n`);

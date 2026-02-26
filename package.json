@@ -8,11 +8,19 @@
   "scripts": {
     "start": "node bin/flowdocs.js"
   },
-  "keywords": ["flowdocs", "documentation", "ai", "cursor", "development"],
+  "keywords": [
+    "flowdocs",
+    "documentation",
+    "ai",
+    "cursor",
+    "development"
+  ],
   "author": "IUSOFT",
   "license": "MIT",
   "engines": {
     "node": ">=16.0.0"
   },
-  "dependencies": {}
+  "dependencies": {
+    "js-yaml": "^4.1.0"
+  }
 }

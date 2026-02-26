@@ -3,6 +3,13 @@
 
 ---
 
+## DETECCIÓN DE MODO
+
+- **Si existe `.flowdocs/project.yaml`** → Modo **modular**. Crea nuevos archivos en `flows/`, `stories/`. Actualiza `manifest.yaml`.
+- **Si NO existe** → Modo **legacy**. Todo se edita en `.flowdocs/flows.yaml`.
+
+---
+
 ## USO
 
 ```
@@ -24,11 +31,13 @@
 
 ## LO QUE DEBES HACER
 
-1. **Lee `.flowdocs/flows.yaml`** — entiende lo que ya está documentado del módulo
+1. **Lee** la documentación FlowDocs (modular: `project.yaml` + archivos individuales; legacy: `flows.yaml`) — entiende lo que ya está documentado
 2. **Lee el código del módulo** — controladores, servicios, modelos, componentes
-3. **Compara** — qué flujos existen en el código pero no en el YAML
-4. **Genera los flujos faltantes** en el mismo formato que los existentes
-5. **Actualiza el YAML** — agrega los flujos nuevos, actualiza los stats, asigna IDs continuando la secuencia existente
+3. **Compara** — qué flujos existen en el código pero no en la documentación
+4. **Genera los flujos faltantes:**
+   - **Modular:** crea `.flowdocs/flows/FLOW-XXX.yaml` y `.flowdocs/stories/US-XXX.yaml` si aplica. Actualiza `manifest.yaml`.
+   - **Legacy:** añade a `.flowdocs/flows.yaml`.
+5. Actualiza stats (legacy) o `updated_at` (modular), asigna IDs continuando la secuencia
 
 ---
 

@@ -1,5 +1,12 @@
 # FlowDocs — IMPLEMENT
-> Implementa un flujo de negocio específico usando `.flowdocs/flows.yaml` como fuente de verdad.
+> Implementa un flujo de negocio específico usando la documentación FlowDocs como fuente de verdad.
+
+---
+
+## DETECCIÓN DE MODO
+
+- **Si existe `.flowdocs/project.yaml`** → Modo **modular**. Lee flujos de `.flowdocs/flows/FLOW-XXX.yaml`, stories de `.flowdocs/stories/US-XXX.yaml`.
+- **Si NO existe** → Modo **legacy**. Todo está en `.flowdocs/flows.yaml`.
 
 ---
 
@@ -17,12 +24,15 @@
 
 ### Paso 1 — Lee el contexto completo
 
-1. Lee `.flowdocs/flows.yaml`
-2. Localiza el flujo solicitado por su ID
-3. Lee la **historia de usuario** (`story`) a la que pertenece y sus **`acceptance_criteria`** — son las condiciones que validan la implementación (formato simple: string o text/validated_by; o extendido: id, description, validated, flow_ids)
-4. Lee las entidades que usa (`entities`) y sus transiciones de estado
-5. Lee los flujos relacionados del mismo módulo — pueden compartir lógica
-6. Si hay tests existentes en `test_files`, léelos para entender el comportamiento esperado
+1. Lee el flujo solicitado por su ID:
+   - **Modular:** `.flowdocs/flows/FLOW-XXX.yaml`
+   - **Legacy:** busca en `.flowdocs/flows.yaml`
+2. Lee la **historia de usuario** (`story`) a la que pertenece y sus **`acceptance_criteria`**:
+   - **Modular:** `.flowdocs/stories/US-XXX.yaml`
+   - **Legacy:** sección `stories:` en `flows.yaml`
+3. Lee las entidades que usa (`entities`) y sus transiciones de estado
+4. Lee los flujos relacionados del mismo módulo — pueden compartir lógica
+5. Si hay tests existentes en `test_files`, léelos
 
 ### Paso 2 — Entiende qué construir
 
@@ -48,13 +58,21 @@ Respeta:
 
 Antes de dar por terminado, **comprueba cada `acceptance_criteria`** de la historia. Si falta alguno en el YAML, proponlo y sugiere al usuario actualizar con `@update.md`.
 
-### Paso 5 — Actualiza el YAML
+### Paso 5 — Actualiza la documentación
 
-Cuando termines, actualiza `.flowdocs/flows.yaml`:
-- `status`: `implemented` si completaste todo y los criterios de aceptación se cumplen, `partial` si falta algo
-- `sprint_status`: `review` — listo para revisión
-- Las tasks completadas: `status: done`
-- Si creaste archivos de test: (1) Agrega las rutas a `test_files` del flujo. (2) **Evidencia obligatoria**: guarda capturas de pantalla o vídeo de la ejecución de los tests en la estructura de **@evidence.md** (`.flowdocs/evidence/flows/<FLOW-ID>/` para el flujo; `.flowdocs/evidence/stories/<US-ID>/<AC-ID>.<ext>` por criterio si aplica). Añade al YAML `test_evidence` en el flujo y `evidence` en cada criterio con evidencia. (3) Deja claro qué es cobertura por flujo (`test_status`, `test_files`) y qué por criterio (`validated: true`, `flow_ids`). En formato simple asocia `validated_by`; en extendido `validated` + `flow_ids`. Usa @update.md si hace falta.
+Cuando termines, actualiza los archivos FlowDocs:
+
+**Modo modular:**
+- Edita `.flowdocs/flows/FLOW-XXX.yaml`: `status`, `test_status`, `test_files`, `test_evidence`
+- Edita `.flowdocs/sprints/sprint-N.yaml`: `sprint_status` del flujo, tasks completadas
+- Edita `.flowdocs/stories/US-XXX.yaml`: `validated` en criterios si aplica
+- Actualiza `updated_at` en `.flowdocs/project.yaml`
+
+**Modo legacy:**
+- Edita `.flowdocs/flows.yaml`: `status`, `sprint_status`, `test_status`, `test_files`, tasks
+- Actualiza `meta.updated_at` y `meta.stats`
+
+Si creaste archivos de test: guarda evidencia en `.flowdocs/evidence/flows/<FLOW-ID>/` (ver @evidence.md).
 
 ---
 
@@ -83,6 +101,6 @@ Cuando termines, actualiza `.flowdocs/flows.yaml`:
 
 ## SECUENCIA FINAL (orden y estructura)
 
-1. **Orden:** Implementa el código según los steps → valida contra acceptance_criteria → actualiza `.flowdocs/flows.yaml` (status, sprint_status, tasks, test_files; si aplica, validated_by o validated + flow_ids en criterios) → actualiza `meta.updated_at` y `meta.stats`.
-2. **Estructura del YAML:** No cambies la estructura existente; solo los campos de estado del flujo y de la story afectada. Incluye en la respuesta el YAML completo o las secciones modificadas.
-3. **Para el viewer:** El usuario recarga el viewer (Recargar o `flowdocs open`) para ver el nuevo estado del flujo y de los criterios.
+1. **Orden:** Implementa el código según los steps → valida contra acceptance_criteria → actualiza los archivos FlowDocs correspondientes → actualiza `updated_at`.
+2. **Estructura:** No cambies la estructura existente; solo los campos de estado del flujo y de la story afectada.
+3. **Para el viewer:** El usuario recarga el viewer (`flowdocs open` o botón Recargar) para ver el nuevo estado.

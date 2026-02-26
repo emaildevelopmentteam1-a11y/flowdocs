@@ -1,6 +1,13 @@
 # FlowDocs — Ejecutar tests y documentar evidencia
 
-> Para el flujo normal (implementar → documentar) usa **@document.md**, que hace todo en un solo paso. Este prompt (@run-tests.md) sirve cuando quieres solo ejecutar tests o solo documentar tests existentes sin pasar por implement.
+> Para el flujo normal (implementar → documentar) usa **@document.md**. Este prompt sirve cuando quieres solo ejecutar tests o documentar tests existentes.
+
+---
+
+## DETECCIÓN DE MODO
+
+- **Si existe `.flowdocs/project.yaml`** → Modo **modular**. Flujos en `.flowdocs/flows/`, stories en `.flowdocs/stories/`.
+- **Si NO existe** → Modo **legacy**. Todo en `.flowdocs/flows.yaml`.
 
 ---
 
@@ -39,25 +46,18 @@ No inventes otras carpetas ni nombres. Si no existe la carpeta, créala.
 
 ### Si el usuario pide ejecutar tests
 
-1. **Lee** `.flowdocs/flows.yaml` — identifica los flujos y stories indicados (o todos los que tengan `test_files`).
-2. **Ejecuta** los tests (npm test, pnpm test, etc.) y captura evidencia:
-   - Capturas de pantalla o grabación de vídeo de la ejecución.
-   - Guarda los archivos en `.flowdocs/evidence/flows/<FLOW-ID>/` para cada flujo ejecutado.
-   - Si un test valida criterios concretos, guarda también en `.flowdocs/evidence/stories/<US-ID>/<AC-ID>.<ext>`.
-3. **Actualiza** el YAML:
-   - En cada flujo: `test_evidence: ["evidence/flows/FLOW-XXX/archivo.png"]` (añadir o completar).
-   - En cada criterio con evidencia: `evidence: ["evidence/stories/US-XXX/AC-XXX.png"]`.
-   - Mantén `test_status`, `test_files`, `validated`, `validated_by` coherentes.
-4. Recalcula `meta.stats` y `meta.updated_at`. Usa @update.md si aplica.
+1. **Lee** la documentación FlowDocs (modular: archivos de flujos/stories individuales; legacy: `flows.yaml`).
+2. **Ejecuta** los tests y captura evidencia en `.flowdocs/evidence/flows/<FLOW-ID>/`.
+3. **Actualiza:**
+   - **Modular:** `.flowdocs/flows/FLOW-XXX.yaml` (`test_evidence`), `.flowdocs/stories/US-XXX.yaml` (criterios `evidence`), `.flowdocs/project.yaml` (`updated_at`).
+   - **Legacy:** `.flowdocs/flows.yaml` (flujos, criterios, `meta.stats`, `meta.updated_at`).
 
 ### Si el usuario pide documentar tests existentes
 
-1. **Lee** el código de tests existente (carpetas tipo `src/tests/`, `e2e/`, `spec/`, etc.) y `.flowdocs/flows.yaml`.
-2. **Mapea** cada archivo o bloque de test a:
-   - Un flujo (por nombre, steps o comentarios) → actualiza `test_files` del flujo y `test_status: covered` si aplica.
-   - Los criterios de aceptación que ese test valida → en formato simple `validated_by: "ruta/al/spec.ts"`; en extendido `validated: true` y `flow_ids`.
-3. **Evidencia**: si puedes ejecutar los tests, genera capturas/vídeo y guárdalas en la estructura de @evidence.md; luego añade `test_evidence` (flujo) y `evidence` (criterio) en el YAML. Si no puedes ejecutar, deja al menos `test_files` y `validated_by`/`validated` actualizados.
-4. **Actualiza** `meta.stats` (with_tests, coverage_pct) y `meta.updated_at`.
+1. **Lee** el código de tests existente y la documentación FlowDocs.
+2. **Mapea** cada archivo o bloque de test a flujos y criterios.
+3. **Evidencia**: genera capturas/vídeo si puedes; guárdalas según @evidence.md.
+4. **Actualiza:** archivos individuales (modular) o `flows.yaml` (legacy) con `test_files`, `test_status`, `validated`.
 
 ---
 

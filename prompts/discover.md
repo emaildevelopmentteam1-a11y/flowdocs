@@ -3,9 +3,26 @@
 
 ---
 
+## DETECCIÓN DE MODO (verificar antes de empezar)
+
+**Antes de iniciar**, verifica qué estructura usa el proyecto:
+
+1.  **Si existe `.flowdocs/project.yaml`** → Modo **modular**. Los datos se distribuyen en archivos individuales:
+    -   `.flowdocs/project.yaml` — meta + modules + entities
+    -   `.flowdocs/sprints/sprint-N.yaml` — un archivo por sprint (tasks, refs a stories/flows)
+    -   `.flowdocs/stories/US-XXX.yaml` — un archivo por historia (acceptance_criteria crece)
+    -   `.flowdocs/flows/FLOW-XXX.yaml` — un archivo por flujo
+    -   `.flowdocs/bugs/BUG-XXX.yaml` — un archivo por bug
+    -   `.flowdocs/manifest.yaml` — índice auto-generado
+2.  **Si NO existe `project.yaml`** → Modo **legacy**. Todo va en `.flowdocs/flows.yaml`.
+
+Este prompt genera la documentación en el modo que corresponda. Si es un proyecto nuevo sin `.flowdocs/`, usa modo legacy (`flows.yaml`) por defecto; el usuario puede migrar después con `flowdocs migrate`.
+
+---
+
 ## TU ROL (arquitecto de software + ejecución en IA)
 
-Eres un arquitecto de software. Tu trabajo es **leer** la aplicación de principio a fin, **anotar** lo que encuentras para no perderlo, y **documentar** en `.flowdocs/flows.yaml` qué hace el sistema para sus usuarios.
+Eres un arquitecto de software. Tu trabajo es **leer** la aplicación de principio a fin, **anotar** lo que encuentras para no perderlo, y **documentar** la estructura del sistema.
 
 **Cómo debe comportarse la IA:** No puedes “recordar” todo el proyecto en una sola pasada. Si lees todo en la cabeza y al final generas solo el YAML, perderás contexto y entregarás una parte. Por eso **obligatorio**: construir primero las notas (sección por sección) y el plan, escribirlos en archivos, y **solo después** generar el YAML desde esas notas. Las notas son tu memoria externa; el plan es el seguimiento removible para esta y las siguientes sesiones. Sin escribir los 3 archivos (notas, plan, YAML), la entrega no es válida.
 
@@ -103,7 +120,9 @@ Al terminar discover, actualiza el estado de cada área a "documentado" o indica
 
 ## GENERACIÓN DEL YAML
 
-Estructura exacta para `.flowdocs/flows.yaml`:
+### Modo legacy — estructura para `.flowdocs/flows.yaml`
+
+Si el proyecto no tiene `project.yaml`, genera un único `flows.yaml` con esta estructura:
 
 ```yaml
 meta:
@@ -207,6 +226,101 @@ flows:
 
 ---
 
+### Modo modular — archivos individuales
+
+Si el proyecto ya tiene `project.yaml` (o si el usuario lo pide), genera archivos individuales:
+
+**1. `.flowdocs/project.yaml`** — meta + modules + entities:
+```yaml
+meta:
+  app: "Nombre del sistema"
+  version: "1.0.0"
+  description: "Una línea"
+  updated_at: "YYYY-MM-DD"
+  active_sprint: 1
+modules:
+  - id: "snake_case"
+    name: "Nombre legible"
+    description: "2-4 líneas"
+    actors: ["actor1"]
+entities:
+  - id: "nombre_entidad"
+    name: "Nombre Legible"
+    states: ["estado1", "estado2"]
+    transitions: []
+```
+
+**2. `.flowdocs/stories/US-XXX.yaml`** — un archivo por historia:
+```yaml
+story:
+  id: "US-001"
+  title: "Como [rol] quiero [objetivo] para [beneficio]"
+  module: "id_modulo"
+  priority: "critical"
+  status: "pending"
+  created_sprint: 1
+  flow_ids: ["FLOW-001", "FLOW-002"]
+  acceptance_criteria:
+    - id: "AC-001"
+      description: "Criterio comprobable (Given/When/Then)"
+      validated: false
+      flow_ids: ["FLOW-001"]
+      added_sprint: 1
+```
+
+**3. `.flowdocs/flows/FLOW-XXX.yaml`** — un archivo por flujo:
+```yaml
+flow:
+  id: "FLOW-001"
+  name: "Nombre orientado al usuario"
+  type: "user_flow"
+  module: "id_modulo"
+  actor: "cajero"
+  priority: "critical"
+  status: "pending"
+  test_status: "none"
+  story: "US-001"
+  trigger: "Qué inicia este flujo"
+  steps: ["Paso 1", "Paso 2"]
+  preconditions: []
+  alternatives: []
+  errors: []
+  postconditions: []
+  diagram: ""
+  notes: ""
+```
+
+**4. `.flowdocs/sprints/sprint-N.yaml`** — un archivo por sprint:
+```yaml
+sprint:
+  number: 1
+  goal: "Objetivo del sprint"
+  start: "YYYY-MM-DD"
+  end: "YYYY-MM-DD"
+  status: "active"
+  stories: ["US-001", "US-002"]
+  flows:
+    - id: "FLOW-001"
+      sprint_status: "todo"
+  tasks:
+    - id: "TASK-001"
+      title: "Tarea dentro del sprint"
+      status: "todo"
+      story: "US-001"
+      flow: "FLOW-001"
+      module: "pos"
+```
+
+**5. `.flowdocs/manifest.yaml`** — se genera automáticamente, pero si lo creas manualmente:
+```yaml
+sprints: ["sprint-1"]
+stories: ["US-001", "US-002"]
+flows: ["FLOW-001", "FLOW-002"]
+bugs: []
+```
+
+---
+
 ## REGLAS DE CALIDAD
 
 - Cada ítem del **mapa** (discovery-notes sección 2) tiene su módulo en el YAML o está justificado en el plan (ej. agrupado por ruta).
@@ -218,13 +332,23 @@ flows:
 
 ## ENTREGA
 
-**Debes escribir exactamente estos 3 archivos en el workspace** (con write/edit). Describir el contenido en el chat no cuenta como entrega.
+**Debes escribir exactamente estos archivos en el workspace** (con write/edit). Describir el contenido en el chat no cuenta como entrega.
 
+### Modo legacy (flows.yaml):
 1. `.flowdocs/discovery-notes.md` — Notas completas (secciones 1–6).
 2. `.flowdocs/doc-plan.md` — Tabla por área + próximos pasos.
 3. `.flowdocs/flows.yaml` — YAML completo.
 
-**Orden de escritura recomendado:** primero discovery-notes.md, luego doc-plan.md, luego flows.yaml. Así el YAML se apoya en las notas ya persistidas.
+### Modo modular (project.yaml + carpetas):
+1. `.flowdocs/discovery-notes.md` — Notas completas (secciones 1–6).
+2. `.flowdocs/doc-plan.md` — Tabla por área + próximos pasos.
+3. `.flowdocs/project.yaml` — meta + modules + entities.
+4. `.flowdocs/stories/US-XXX.yaml` — Un archivo por historia.
+5. `.flowdocs/flows/FLOW-XXX.yaml` — Un archivo por flujo.
+6. `.flowdocs/sprints/sprint-1.yaml` — Sprint inicial.
+7. `.flowdocs/manifest.yaml` — Índice de archivos.
+
+**Orden de escritura recomendado:** primero discovery-notes.md, luego doc-plan.md, luego los YAMLs. Así se apoya en las notas.
 
 **Resumen en chat:** Qué anotaste en el mapa (áreas y nombres), qué quedó documentado y qué pendiente (según doc-plan). Si algo no pudo leerse, dilo y anótalo en Pendientes.
 
@@ -232,13 +356,14 @@ flows:
 
 ## CHECKLIST ANTES DE ENTREGAR (autoverificación)
 
-- [ ] Escribí los 3 archivos (notas, plan, flows.yaml). No solo los describí.
+- [ ] Escribí los archivos de notas, plan, y YAMLs. No solo los describí.
 - [ ] El mapa en las notas (sección 2) viene del archivo real del menú (Sidebar/Nav/routes).
-- [ ] Cada ítem del mapa tiene su módulo en `flows.yaml` con descripción de 2-4 líneas.
+- [ ] Cada ítem del mapa tiene su módulo con descripción de 2-4 líneas.
 - [ ] Cada **story** tiene `acceptance_criteria` con al menos 8 criterios comprobables.
-- [ ] **Cada entidad** de la sección 4 de las notas tiene su entrada en `entities:` del YAML (no solo una).
+- [ ] **Cada entidad** encontrada tiene su entrada en el YAML (no solo una).
 - [ ] Cada módulo tiene **varios flujos** documentados si el código tiene varias acciones/pantallas.
 - [ ] doc-plan.md tiene una fila por área y el estado final actualizado.
+- [ ] Si es modo modular: cada story/flow/sprint es un archivo independiente.
 
 Si falla alguno, completa antes de dar por terminado. No preguntes antes de empezar; sigue el orden: entrada → mapa → estructura por área → modelo → flujos → **escribir notas y plan** → YAML → cierre del plan.
 
@@ -246,6 +371,8 @@ Si falla alguno, completa antes de dar por terminado. No preguntes antes de empe
 
 ## SECUENCIA FINAL (orden y estructura)
 
-1. **Orden de escritura:** discovery-notes.md → doc-plan.md → flows.yaml. No generes el YAML sin haber escrito antes las notas y el plan.
-2. **Estructura del YAML:** `meta` (app, version, description, updated_at, sprint, stats) → `modules` → `entities` → `stories` (id, title, module, priority, flow_ids, acceptance_criteria) → `flows` (id, name, type, module, actor, steps, etc.). Recalcula `meta.stats` al final.
-3. **Para el viewer:** Tras escribir `flows.yaml`, el usuario debe abrir o recargar el viewer (`flowdocs open` o botón Recargar) para ver la documentación actualizada.
+1. **Orden de escritura:** discovery-notes.md → doc-plan.md → YAMLs. No generes los YAMLs sin haber escrito antes las notas y el plan.
+2. **Estructura:**
+   - **Legacy:** `meta` → `modules` → `entities` → `stories` → `flows` en un solo `flows.yaml`. Recalcula `meta.stats` al final.
+   - **Modular:** `project.yaml` (meta + modules + entities) → archivos en `stories/` → archivos en `flows/` → `sprints/sprint-N.yaml` → `manifest.yaml`. No necesitas recalcular stats manualmente; el CLI lo hace al ensamblar.
+3. **Para el viewer:** El usuario recarga el viewer (`flowdocs open` o botón Recargar) para ver la documentación actualizada.
