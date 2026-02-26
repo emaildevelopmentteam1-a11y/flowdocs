@@ -578,7 +578,7 @@ function cmdStatus() {
   console.log('');
 }
 
-const FLOWDOCS_PORT = 3847;
+const FLOWDOCS_PORT = 4848;
 const MIME = { '.html': 'text/html', '.yaml': 'text/yaml', '.yml': 'text/yaml', '.json': 'application/json', '.md': 'text/markdown', '.txt': 'text/plain' };
 
 function cmdOpen() {
@@ -1484,7 +1484,7 @@ function assembleModular(flowdocsDir) {
   // Resolver sprint_status de flujos desde el sprint activo
   const activeSprint = meta.active_sprint || (sprints.length ? Math.max(...sprints.map(s => s.number)) : 1);
   const activeSprintData = sprints.find(s => s.number === activeSprint);
-  if (activeSprintData && activeSprintData.flows) {
+  if (activeSprintData && Array.isArray(activeSprintData.flows)) {
     for (const sf of activeSprintData.flows) {
       const flow = flows.find(f => f.id === sf.id);
       if (flow && sf.sprint_status) {

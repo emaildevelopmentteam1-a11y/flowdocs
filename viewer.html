@@ -2003,6 +2003,8 @@
       const stats = meta.stats || MOCK_DATA.meta.stats || {};
       const sprintResolved = resolveActiveSprint(meta) || meta.sprint || MOCK_DATA.meta.sprint || {};
       const sprint = { number: sprintResolved.number ?? 1, goal: sprintResolved.goal ?? '', start: sprintResolved.start ?? '', end: sprintResolved.end ?? '', days_left: sprintResolved.days_left ?? 0 };
+      // Sprints: modular los trae en raw.sprints, legacy en raw.meta.sprints
+      const sprints = Array.isArray(raw.sprints) ? raw.sprints : (Array.isArray(meta.sprints) ? meta.sprints : MOCK_DATA.meta.sprints || []);
       return {
         meta: {
           app: meta.app ?? MOCK_DATA.meta.app,
@@ -2010,6 +2012,7 @@
           description: meta.description ?? MOCK_DATA.meta.description,
           updated_at: meta.updated_at ?? MOCK_DATA.meta.updated_at,
           sprint,
+          sprints,
           stats: { total: stats.total ?? 0, implemented: stats.implemented ?? 0, partial: stats.partial ?? 0, pending: stats.pending ?? 0, with_tests: stats.with_tests ?? 0, coverage_pct: stats.coverage_pct ?? 0 }
         },
         modules: Array.isArray(raw.modules) ? raw.modules : MOCK_DATA.modules,
