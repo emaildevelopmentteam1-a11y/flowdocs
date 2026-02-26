@@ -1366,7 +1366,7 @@ function parseSimpleYaml(text) {
   // En producción usa jsyaml si está disponible; si no, fallback a regex.
   try {
     // Intentar cargar jsyaml del sistema (el viewer lo incluye via CDN)
-    const jsyaml = require('js-yaml');
+    const jsyaml = require(require.resolve('js-yaml', { paths: [path.join(__dirname, '..'), __dirname] }));
     return jsyaml.load(text);
   } catch (_) { }
   // Fallback: solo soporta formato "key: value" simple con listas inline
@@ -1688,7 +1688,7 @@ function cmdMigrate() {
   let raw = null;
   const content = fs.readFileSync(yamlPath, 'utf8');
   try {
-    const jsyaml = require('js-yaml');
+    const jsyaml = require(require.resolve('js-yaml', { paths: [path.join(__dirname, '..'), __dirname] }));
     raw = jsyaml.load(content);
   } catch (_) {
     // Fallback: intentar parseSimpleYaml
