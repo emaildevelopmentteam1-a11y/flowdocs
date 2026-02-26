@@ -1595,16 +1595,15 @@
         </div>
 
         <!-- SPRINTS VIEW -->
-        <div id="view-sprints" class="view" style="padding:24px;">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
-            <div style="display:flex;align-items:center;gap:12px;">
-              <div style="font-size:12px;color:#475569;">Filtrar:</div>
-              <div id="sprints-filters" style="display:flex;gap:6px;flex-wrap:wrap;"></div>
-            </div>
-            <div id="sprints-counter" style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#334155;">
+        <div id="view-sprints" class="view" style="padding:32px 36px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;">
+            <div style="display:flex;align-items:center;gap:16px;">
+              <div id="sprints-filters" style="display:flex;gap:4px;"></div>
+              <div id="sprints-counter" style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#475569;">
+              </div>
             </div>
           </div>
-          <div id="sprints-timeline" style="position:relative;"></div>
+          <div id="sprints-timeline"></div>
         </div>
 
       </main>
@@ -2852,7 +2851,7 @@
     }
 
     // ============================================================
-    // SPRINTS — mission-control, dense, memorable
+    // SPRINTS — Linear-inspired, clean, spacious
     // ============================================================
     let sprintViewFilter = 'all';
     let expandedSprints = new Set();
@@ -2871,171 +2870,369 @@
       if (sprintViewFilter === 'active') filtered = allSprints.filter(s => s.number === activeNum);
       if (sprintViewFilter === 'completed') filtered = allSprints.filter(s => s.status === 'completed');
 
+      // Filtros pill-shaped
       const filtersEl = document.getElementById('sprints-filters');
       if (filtersEl) {
         const cc = allSprints.filter(s => s.status === 'completed').length;
+        const ac = allSprints.filter(s => s.number === activeNum).length;
         filtersEl.innerHTML = [
-          { v: 'all', l: `Todos · ${allSprints.length}` },
-          { v: 'active', l: 'Activo' },
-          { v: 'completed', l: `Cerrados · ${cc}` }
-        ].map(b => `<button class="filter-btn ${sprintViewFilter === b.v ? 'active' : ''}" onclick="setSprintViewFilter('${b.v}')">${b.l}</button>`).join('');
+          { v: 'all', l: 'Todos', c: allSprints.length },
+          { v: 'active', l: 'Activos', c: ac },
+          { v: 'completed', l: 'Completados', c: cc }
+        ].map(b => {
+          const isActive = sprintViewFilter === b.v;
+          const bg = isActive ? '#6366f1' : 'transparent';
+          const color = isActive ? '#fff' : '#64748b';
+          const border = isActive ? '1px solid #6366f1' : '1px solid #1e293b';
+          return `<button onclick="setSprintViewFilter('${b.v}')" style="font-family:Sora,sans-serif;font-size:12px;font-weight:500;padding:6px 14px;border-radius:20px;background:${bg};color:${color};border:${border};cursor:pointer;transition:all .15s;line-height:1;">${b.l} <span style="opacity:.6;font-size:11px;margin-left:2px;">${b.c}</span></button>`;
+        }).join('');
       }
+
       const counterEl = document.getElementById('sprints-counter');
-      if (counterEl) counterEl.textContent = filtered.length + ' sprint' + (filtered.length !== 1 ? 's' : '');
+      if (counterEl) counterEl.textContent = '';
 
       const container = document.getElementById('sprints-timeline');
       if (!container) return;
+
       if (!filtered.length) {
-        container.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:80px 24px;"><svg width="48" height="48" fill="none" stroke="#1e293b" stroke-width="1.5" viewBox="0 0 24 24" style="margin-bottom:16px;"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg><div style="font-family:Sora,sans-serif;font-size:14px;color:#334155;">Sin sprints en este filtro</div></div>';
+        container.innerHTML = `<div style="text-align:center;padding:80px 24px;">
+          <div style="font-size:36px;margin-bottom:12px;opacity:.15;">⚡</div>
+          <div style="font-family:Sora,sans-serif;font-size:14px;color:#475569;">No hay sprints con este filtro</div>
+        </div>`;
         return;
       }
 
-      // Inject styles once
-      if (!document.getElementById('sp2css')) {
-        const s = document.createElement('style'); s.id = 'sp2css';
-        s.textContent = `
-          @keyframes spUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
-          @keyframes spPulse{0%,100%{box-shadow:0 0 0 0 rgba(59,130,246,.5)}50%{box-shadow:0 0 0 8px rgba(59,130,246,0)}}
-          .s2c{position:relative;margin-left:40px;border-radius:8px;background:#0b0b14;border:1px solid #ffffff06;border-left:3px solid #1e293b;transition:all .2s;animation:spUp .45s ease both}
-          .s2c:hover{border-color:#ffffff10;background:#0d0d18}
-          .s2c[data-st=a]{border-left-color:#3b82f6;background:linear-gradient(135deg,#0a1628,#0c1a30)}
-          .s2c[data-st=a]:hover{border-color:#3b82f625}
-          .s2c[data-st=c]{border-left-color:#22c55e}
-          .s2c[data-st=c]:hover{border-color:#22c55e18}
-          .s2d{position:absolute;left:-46px;top:22px;width:14px;height:14px;border-radius:50%;border:3px solid #080810;z-index:2}
-          .s2d[data-p=t]{animation:spPulse 2s ease-in-out infinite}
-          .s2l{position:absolute;left:-33px;top:0;bottom:0;width:2px;background:linear-gradient(180deg,#1e293b55,transparent)}
-          .s2h{padding:18px 22px;cursor:pointer;display:flex;gap:18px;align-items:flex-start;user-select:none}
-          .s2n{font-family:'JetBrains Mono',monospace;font-weight:900;font-size:38px;line-height:1;min-width:54px;text-align:center;transition:all .15s}
-          .s2h:hover .s2n{filter:brightness(1.4)}
-          .s2g{font-family:Sora,sans-serif;font-size:15px;font-weight:600;color:#e2e8f0;margin-bottom:3px}
-          .s2dt{font-family:'JetBrains Mono',monospace;font-size:10px;color:#334155;letter-spacing:.8px;margin-bottom:10px}
-          .s2m{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
-          .s2tg{font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:700;padding:3px 9px;border-radius:3px;letter-spacing:1.2px;text-transform:uppercase}
-          .s2bw{width:140px;height:6px;background:#0f172a;border-radius:3px;overflow:hidden;border:1px solid #ffffff06}
-          .s2bf{height:100%;border-radius:3px;transition:width .5s cubic-bezier(.4,0,.2,1)}
-          .s2mt{font-family:'JetBrains Mono',monospace;font-size:11px;color:#334155}
-          .s2mt b{font-weight:700}
-          .s2ar{font-size:9px;color:#1e293b;margin-left:auto;transition:transform .2s}
-          .s2bd{padding:4px 22px 22px}
-          .s2sg{display:grid;grid-template-columns:repeat(auto-fit,minmax(80px,1fr));gap:6px;margin:12px 0;padding:14px;background:#080810;border-radius:6px;border:1px solid #ffffff04}
-          .s2sv{font-family:'JetBrains Mono',monospace;font-size:20px;font-weight:800;line-height:1.2;text-align:center}
-          .s2sl{font-family:Sora,sans-serif;font-size:8px;color:#1e293b;text-transform:uppercase;letter-spacing:1px;text-align:center}
-          .s2st{font-family:Sora,sans-serif;font-size:9px;font-weight:700;color:#1e293b;text-transform:uppercase;letter-spacing:1.5px;margin:16px 0 8px;padding-bottom:5px;border-bottom:1px solid #ffffff04}
-          .s2sr{display:grid;grid-template-columns:58px 1fr 38px 50px;align-items:center;gap:8px;padding:7px 10px;border-radius:6px;font-size:12px;cursor:pointer;transition:background .12s}
-          .s2sr:hover{background:#ffffff06}
-          .s2si{font-family:'JetBrains Mono',monospace;font-weight:700;color:#818cf8}
-          .s2tt{color:#94a3b8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-          .s2fs{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px}
-          .s2fc{display:inline-flex;align-items:center;gap:4px;font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:500;padding:3px 8px;border-radius:4px;cursor:pointer;background:#ffffff03;border:1px solid #ffffff06;transition:all .15s;color:#475569}
-          .s2fc:hover{background:#ffffff0a;border-color:#ffffff14;color:#94a3b8;transform:translateY(-1px)}
-          .s2fd{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+      // CSS inyectado una sola vez — clases legibles
+      if (!document.getElementById('sprint-styles')) {
+        const style = document.createElement('style');
+        style.id = 'sprint-styles';
+        style.textContent = `
+          .sprint-card {
+            background: #111827;
+            border: 1px solid #1e293b;
+            border-radius: 12px;
+            transition: border-color .2s, background .2s;
+            overflow: hidden;
+          }
+          .sprint-card:hover {
+            border-color: #334155;
+            background: #151d2e;
+          }
+          .sprint-card[data-status="active"] {
+            border-color: #3b82f640;
+            background: #0f1d32;
+          }
+          .sprint-card[data-status="active"]:hover {
+            border-color: #3b82f660;
+          }
+          .sprint-card[data-status="completed"] {
+            border-color: #22c55e20;
+          }
+          .sprint-card[data-status="completed"]:hover {
+            border-color: #22c55e40;
+          }
+          .sprint-header {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            padding: 20px 24px;
+            cursor: pointer;
+            user-select: none;
+          }
+          .sprint-number {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 32px;
+            font-weight: 800;
+            line-height: 1;
+            min-width: 48px;
+            text-align: center;
+          }
+          .sprint-info {
+            flex: 1;
+            min-width: 0;
+          }
+          .sprint-title {
+            font-family: Sora, sans-serif;
+            font-size: 15px;
+            font-weight: 600;
+            color: #e2e8f0;
+            margin-bottom: 6px;
+            line-height: 1.3;
+          }
+          .sprint-dates {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            color: #475569;
+            letter-spacing: .3px;
+          }
+          .sprint-right {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            flex-shrink: 0;
+          }
+          .sprint-badge {
+            font-family: Sora, sans-serif;
+            font-size: 10px;
+            font-weight: 600;
+            padding: 4px 10px;
+            border-radius: 20px;
+            letter-spacing: .5px;
+            text-transform: uppercase;
+            line-height: 1;
+          }
+          .sprint-progress-wrap {
+            width: 120px;
+            height: 4px;
+            background: #1e293b;
+            border-radius: 2px;
+            overflow: hidden;
+          }
+          .sprint-progress-fill {
+            height: 100%;
+            border-radius: 2px;
+            transition: width .4s cubic-bezier(.4,0,.2,1);
+          }
+          .sprint-pct {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            font-weight: 700;
+            min-width: 36px;
+            text-align: right;
+          }
+          .sprint-expand-icon {
+            font-size: 10px;
+            color: #334155;
+            transition: transform .2s;
+          }
+          .sprint-body {
+            padding: 0 24px 24px;
+            border-top: 1px solid #1e293b30;
+          }
+          .sprint-stats-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 1px;
+            background: #1e293b30;
+            border-radius: 8px;
+            overflow: hidden;
+            margin: 16px 0;
+          }
+          .sprint-stat-cell {
+            background: #0d1117;
+            padding: 14px 12px;
+            text-align: center;
+          }
+          .sprint-stat-value {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 22px;
+            font-weight: 800;
+            line-height: 1;
+            margin-bottom: 4px;
+          }
+          .sprint-stat-label {
+            font-family: Sora, sans-serif;
+            font-size: 9px;
+            color: #475569;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+          }
+          .sprint-section-title {
+            font-family: Sora, sans-serif;
+            font-size: 11px;
+            font-weight: 600;
+            color: #475569;
+            text-transform: uppercase;
+            letter-spacing: .8px;
+            margin: 20px 0 10px;
+          }
+          .sprint-story-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 12px;
+            border-radius: 8px;
+            transition: background .12s;
+            cursor: pointer;
+          }
+          .sprint-story-row:hover {
+            background: #ffffff06;
+          }
+          .sprint-story-id {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            font-weight: 700;
+            color: #818cf8;
+            min-width: 58px;
+          }
+          .sprint-story-title {
+            font-family: Sora, sans-serif;
+            font-size: 13px;
+            color: #94a3b8;
+            flex: 1;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+          }
+          .sprint-story-progress {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+          }
+          .sprint-story-bar {
+            width: 48px;
+            height: 3px;
+            background: #1e293b;
+            border-radius: 2px;
+            overflow: hidden;
+          }
+          .sprint-story-fill {
+            height: 100%;
+            border-radius: 2px;
+          }
+          .sprint-story-count {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            min-width: 32px;
+            text-align: right;
+          }
+          .sprint-flows-section {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: 8px;
+          }
+          .sprint-flow-tag {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            padding: 4px 10px;
+            border-radius: 6px;
+            background: #0d1117;
+            border: 1px solid #1e293b;
+            color: #64748b;
+            cursor: pointer;
+            transition: all .15s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+          }
+          .sprint-flow-tag:hover {
+            border-color: #334155;
+            color: #94a3b8;
+            background: #151d2e;
+          }
+          .sprint-flow-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+          }
         `;
-        document.head.appendChild(s);
+        document.head.appendChild(style);
       }
 
-      container.innerHTML = `<div style="position:relative;padding:4px 0 4px 12px;">
+      container.innerHTML = `<div style="display:flex;flex-direction:column;gap:10px;">
         ${filtered.map((sp, idx) => {
         const n = sp.number || 0;
-        const isA = n === activeNum;
-        const isC = sp.status === 'completed';
-        const isO = expandedSprints.has(n);
-        const st = isA ? 'a' : isC ? 'c' : 'p';
-        const spF = sp.flows || [];
-        const dn = spF.filter(f => f.sprint_status === 'done').length;
-        const wp = spF.filter(f => f.sprint_status === 'in_progress').length;
-        const td = spF.filter(f => !f.sprint_status || f.sprint_status === 'todo').length;
-        const tF = spF.length;
-        const pc = tF ? Math.round(dn / tF * 100) : 0;
-        const sIds = sp.stories || [];
-        const last = idx === filtered.length - 1;
+        const isActive = n === activeNum;
+        const isCompleted = sp.status === 'completed';
+        const isExpanded = expandedSprints.has(n);
+        const status = isActive ? 'active' : isCompleted ? 'completed' : 'planned';
 
-        const col = isA ? '#3b82f6' : isC ? '#22c55e' : '#334155';
-        const tagS = isA ? 'background:#3b82f618;color:#60a5fa' : isC ? 'background:#22c55e12;color:#4ade80' : 'background:#ffffff08;color:#475569';
-        const tagL = isA ? '● ACTIVO' : isC ? '✓ CERRADO' : '○ PLANEADO';
-        const barG = isA ? 'linear-gradient(90deg,#3b82f6,#60a5fa)' : isC ? 'linear-gradient(90deg,#22c55e,#4ade80)' : '#475569';
-        const glow = isA ? 'text-shadow:0 0 28px #3b82f650,0 0 8px #3b82f630;' : '';
+        const flows = sp.flows || [];
+        const done = flows.filter(f => f.sprint_status === 'done').length;
+        const wip = flows.filter(f => f.sprint_status === 'in_progress').length;
+        const todo = flows.filter(f => !f.sprint_status || f.sprint_status === 'todo').length;
+        const total = flows.length;
+        const pct = total ? Math.round(done / total * 100) : 0;
+        const stories = sp.stories || [];
 
+        // Colores por estado
+        const numColor = isActive ? '#3b82f6' : isCompleted ? '#22c55e' : '#334155';
+        const badgeStyle = isActive
+          ? 'background:#3b82f618;color:#60a5fa;'
+          : isCompleted
+            ? 'background:#22c55e14;color:#4ade80;'
+            : 'background:#ffffff06;color:#475569;';
+        const badgeText = isActive ? '● Activo' : isCompleted ? '✓ Completado' : '○ Planeado';
+        const barColor = isActive ? '#3b82f6' : isCompleted ? '#22c55e' : '#334155';
+
+        // Cuerpo expandido
         let body = '';
-        if (isO) {
-          body += `<div class="s2sg">
-              <div><div class="s2sv" style="color:${col}">${tF}</div><div class="s2sl">flujos</div></div>
-              <div><div class="s2sv" style="color:#22c55e">${dn}</div><div class="s2sl">done</div></div>
-              <div><div class="s2sv" style="color:#f59e0b">${wp}</div><div class="s2sl">wip</div></div>
-              <div><div class="s2sv" style="color:#64748b">${td}</div><div class="s2sl">todo</div></div>
-              <div><div class="s2sv" style="color:#818cf8">${sIds.length}</div><div class="s2sl">historias</div></div>
+        if (isExpanded) {
+          // Grid de stats
+          body += `<div class="sprint-stats-grid">
+              <div class="sprint-stat-cell"><div class="sprint-stat-value" style="color:${numColor}">${total}</div><div class="sprint-stat-label">Flujos</div></div>
+              <div class="sprint-stat-cell"><div class="sprint-stat-value" style="color:#22c55e">${done}</div><div class="sprint-stat-label">Done</div></div>
+              <div class="sprint-stat-cell"><div class="sprint-stat-value" style="color:#f59e0b">${wip}</div><div class="sprint-stat-label">WIP</div></div>
+              <div class="sprint-stat-cell"><div class="sprint-stat-value" style="color:#64748b">${todo}</div><div class="sprint-stat-label">Todo</div></div>
+              <div class="sprint-stat-cell"><div class="sprint-stat-value" style="color:#818cf8">${stories.length}</div><div class="sprint-stat-label">Historias</div></div>
             </div>`;
 
-          if (sIds.length) {
-            body += '<div class="s2st">Historias de Usuario</div>';
-            sIds.forEach(sid => {
-              const st2 = data.stories.find(s => s.id === sid);
-              if (!st2) { body += `<div class="s2sr" style="color:#1e293b">${sid}</div>`; return; }
-              const sf = (st2.flow_ids || []).map(fid => data.flows.find(f => f.id === fid)).filter(Boolean);
-              const sd = sf.filter(f => f.status === 'implemented').length;
-              const sl = sf.length;
-              const sp2 = sl ? Math.round(sd / sl * 100) : 0;
-              const pc2 = sp2 === 100 ? '#22c55e' : sp2 > 0 ? '#3b82f6' : '#1e293b';
-              body += `<div class="s2sr" onclick="openStoryPanel('${sid}')">
-                  <span class="s2si">${sid}</span>
-                  <span class="s2tt">${st2.title || ''}</span>
-                  <span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:${pc2};text-align:right">${sd}/${sl}</span>
-                  <div style="height:3px;background:#0f172a;border-radius:2px;overflow:hidden"><div style="height:100%;width:${sp2}%;background:${pc2};border-radius:2px;transition:width .4s"></div></div>
+          // Historias
+          if (stories.length) {
+            body += '<div class="sprint-section-title">Historias de Usuario</div>';
+            stories.forEach(sid => {
+              const story = data.stories.find(s => s.id === sid);
+              if (!story) { body += `<div class="sprint-story-row" style="color:#334155">${sid}</div>`; return; }
+              const sFlows = (story.flow_ids || []).map(fid => data.flows.find(f => f.id === fid)).filter(Boolean);
+              const sDone = sFlows.filter(f => f.status === 'implemented').length;
+              const sTotal = sFlows.length;
+              const sPct = sTotal ? Math.round(sDone / sTotal * 100) : 0;
+              const sColor = sPct === 100 ? '#22c55e' : sPct > 0 ? '#3b82f6' : '#1e293b';
+              body += `<div class="sprint-story-row" onclick="openStoryPanel('${sid}')">
+                  <span class="sprint-story-id">${sid}</span>
+                  <span class="sprint-story-title">${story.title || ''}</span>
+                  <div class="sprint-story-progress">
+                    <span class="sprint-story-count" style="color:${sColor}">${sDone}/${sTotal}</span>
+                    <div class="sprint-story-bar"><div class="sprint-story-fill" style="width:${sPct}%;background:${sColor}"></div></div>
+                  </div>
                 </div>`;
             });
           }
 
-          if (spF.length) {
-            const fg = [
-              { l: 'Done', i: spF.filter(f => f.sprint_status === 'done'), c: '#22c55e' },
-              { l: 'En Progreso', i: spF.filter(f => f.sprint_status === 'in_progress'), c: '#f59e0b' },
-              { l: 'Pendientes', i: spF.filter(f => !f.sprint_status || f.sprint_status === 'todo'), c: '#475569' }
-            ].filter(g => g.i.length);
-            body += '<div class="s2st">Flujos por Estado</div>';
-            fg.forEach(g => {
-              body += `<div style="margin-bottom:4px"><span style="font-family:'JetBrains Mono',monospace;font-size:9px;color:${g.c};font-weight:700;letter-spacing:1px;text-transform:uppercase">${g.l} · ${g.i.length}</span></div><div class="s2fs">`;
-              g.i.forEach(sf => {
-                const fl = data.flows.find(f => f.id === sf.id);
-                body += `<span class="s2fc" onclick="event.stopPropagation();openPanel('${sf.id}')" title="${fl ? (fl.title || fl.name || sf.id) : sf.id}"><span class="s2fd" style="background:${g.c}"></span>${sf.id}</span>`;
+          // Flujos por estado
+          if (flows.length) {
+            const groups = [
+              { label: 'Done', items: flows.filter(f => f.sprint_status === 'done'), color: '#22c55e' },
+              { label: 'En Progreso', items: flows.filter(f => f.sprint_status === 'in_progress'), color: '#f59e0b' },
+              { label: 'Pendientes', items: flows.filter(f => !f.sprint_status || f.sprint_status === 'todo'), color: '#64748b' }
+            ].filter(g => g.items.length);
+
+            body += '<div class="sprint-section-title">Flujos</div>';
+            groups.forEach(g => {
+              body += `<div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:${g.color};font-weight:600;margin:12px 0 6px;letter-spacing:.5px;">${g.label.toUpperCase()} · ${g.items.length}</div>`;
+              body += '<div class="sprint-flows-section">';
+              g.items.forEach(sf => {
+                const flow = data.flows.find(f => f.id === sf.id);
+                const title = flow ? (flow.title || flow.name || sf.id) : sf.id;
+                body += `<span class="sprint-flow-tag" onclick="event.stopPropagation();openPanel('${sf.id}')" title="${title}"><span class="sprint-flow-dot" style="background:${g.color}"></span>${sf.id}</span>`;
               });
               body += '</div>';
             });
           }
         }
 
-        return `<div style="position:relative;margin-bottom:${last ? '0' : '14'}px;animation-delay:${idx * 60}ms">
-            ${!last ? '<div class="s2l"></div>' : ''}
-            <div class="s2d" style="background:${col};${isA ? 'box-shadow:0 0 12px ' + col + '50' : ''}" data-p="${isA}"></div>
-            <div class="s2c" data-st="${st}" style="animation-delay:${idx * 80}ms">
-              <div class="s2h" onclick="toggleSprintExpand(${n})">
-                <div class="s2n" style="color:${col};${glow}">${n}</div>
-                <div style="flex:1;min-width:0">
-                  <div class="s2g">${sp.goal || 'Sprint ' + n}</div>
-                  <div class="s2dt">${sp.start || '—'} → ${sp.end || '—'}${sp.days_left ? ' · ' + sp.days_left + 'd restantes' : ''}</div>
-                  <div class="s2m">
-                    <span class="s2tg" style="${tagS}">${tagL}</span>
-                    ${tF ? `<div class="s2bw"><div class="s2bf" style="width:${pc}%;background:${barG}"></div></div>
-                      <span class="s2mt"><b style="color:${col}">${pc}%</b></span>
-                      <span class="s2mt"><b style="color:#22c55e">${dn}</b>·<b style="color:#f59e0b">${wp}</b>·<b style="color:#475569">${td}</b></span>
-                      <span class="s2mt">${sIds.length} HU</span>`
-            : '<span class="s2mt" style="color:#1e293b">Sin flujos</span>'}
-                    <span class="s2ar" style="transform:rotate(${isO ? '90' : '0'}deg)">▶</span>
-                  </div>
-                </div>
+        return `<div class="sprint-card" data-status="${status}">
+            <div class="sprint-header" onclick="toggleSprintExpand(${n})">
+              <div class="sprint-number" style="color:${numColor}">${n}</div>
+              <div class="sprint-info">
+                <div class="sprint-title">${sp.goal || 'Sprint ' + n}</div>
+                <div class="sprint-dates">${sp.start || '—'} → ${sp.end || '—'}${sp.days_left ? '  ·  ' + sp.days_left + 'd restantes' : ''}</div>
               </div>
-              ${isO ? `<div class="s2bd">${body}</div>` : ''}
+              <div class="sprint-right">
+                <span class="sprint-badge" style="${badgeStyle}">${badgeText}</span>
+                ${total ? `
+                  <div class="sprint-progress-wrap"><div class="sprint-progress-fill" style="width:${pct}%;background:${barColor}"></div></div>
+                  <span class="sprint-pct" style="color:${barColor}">${pct}%</span>
+                ` : ''}
+                <span class="sprint-expand-icon" style="transform:rotate(${isExpanded ? '90' : '0'}deg)">▶</span>
+              </div>
             </div>
+            ${isExpanded ? `<div class="sprint-body">${body}</div>` : ''}
           </div>`;
       }).join('')}
       </div>`;
     }
-
-
-
-
-
-
-
 
 
     function renderBugs() {
