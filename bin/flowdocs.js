@@ -1365,8 +1365,9 @@ function parseSimpleYaml(text) {
   // Para archivos sencillos con indentación estándar, parsear manualmente.
   // En producción usa jsyaml si está disponible; si no, fallback a regex.
   try {
-    // Intentar cargar jsyaml del sistema (el viewer lo incluye via CDN)
-    const jsyaml = require(require.resolve('js-yaml', { paths: [path.join(__dirname, '..'), __dirname] }));
+    // Intentar cargar jsyaml: busca en el CLI local, global y en el proyecto
+    const searchPaths = [path.join(__dirname, '..'), __dirname, path.join(process.cwd(), '.flowdocs'), process.cwd()];
+    const jsyaml = require(require.resolve('js-yaml', { paths: searchPaths }));
     return jsyaml.load(text);
   } catch (_) { }
   // Fallback: solo soporta formato "key: value" simple con listas inline
@@ -1435,6 +1436,13 @@ function parseSimpleYaml(text) {
 function readYamlFile(filePath) {
   try {
     const text = fs.readFileSync(filePath, 'utf8');
+    // Intentar js-yaml primero (parsea arrays de objetos correctamente)
+    try {
+      const searchPaths = [path.join(__dirname, '..'), __dirname, path.join(process.cwd(), '.flowdocs'), process.cwd()];
+      const jsyaml = require(require.resolve('js-yaml', { paths: searchPaths }));
+      return jsyaml.load(text);
+    } catch (_) { }
+    // Fallback a parser regex (solo soporta YAML simple)
     return parseSimpleYaml(text);
   } catch (_) {
     return null;
@@ -1688,7 +1696,8 @@ function cmdMigrate() {
   let raw = null;
   const content = fs.readFileSync(yamlPath, 'utf8');
   try {
-    const jsyaml = require(require.resolve('js-yaml', { paths: [path.join(__dirname, '..'), __dirname] }));
+    const searchPaths = [path.join(__dirname, '..'), __dirname, path.join(process.cwd(), '.flowdocs'), process.cwd()];
+    const jsyaml = require(require.resolve('js-yaml', { paths: searchPaths }));
     raw = jsyaml.load(content);
   } catch (_) {
     // Fallback: intentar parseSimpleYaml
