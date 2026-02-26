@@ -1453,6 +1453,19 @@
             <div id="partial-list" style="display:flex;flex-direction:column;gap:8px;"></div>
           </div>
 
+          <!-- Sprint History -->
+          <div class="card" style="padding:20px; margin-top:16px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+              <div>
+                <div style="font-size:13px;font-weight:600;color:#e2e8f0;">Historial de Sprints</div>
+                <div style="font-size:11px;color:#475569;">Timeline del proyecto</div>
+              </div>
+              <span id="sprint-history-count"
+                style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#475569;"></span>
+            </div>
+            <div id="sprint-history-list" style="display:flex;flex-direction:column;gap:10px;"></div>
+          </div>
+
         </div>
 
         <!-- BACKLOG VIEW -->
@@ -2112,20 +2125,36 @@
       if (activeView === 'board') renderBoard();
     }
 
-    /** Rellena un contenedor con botones de filtro por sprint (Todos, Backlog, Sprint 1, Sprint 2, ...) */
+    /** Dropdown escalable para filtrar por sprint */
     function renderSprintSelector(containerId) {
       const el = document.getElementById(containerId);
       if (!el) return;
-      const sprints = data.meta.sprints || [];
-      const isActive = (v) => (v === 'all' && selectedSprintFilter === 'all') || (v === 'backlog' && selectedSprintFilter === 'backlog') || (typeof v === 'number' && Number(selectedSprintFilter) === v);
+      const sprints = (data.meta.sprints || []).slice().sort((a, b) => (b.number || 0) - (a.number || 0));
+      const activeSprint = data.meta.sprint ? data.meta.sprint.number : null;
+
       let html = `<span style="font-size:11px;color:#475569;margin-right:6px;">SPRINT</span>`;
-      html += `<button class="filter-btn ${isActive('all') ? 'active' : ''}" onclick="setSelectedSprintFilter('all')">Todos</button>`;
-      html += `<button class="filter-btn ${isActive('backlog') ? 'active' : ''}" onclick="setSelectedSprintFilter('backlog')">Backlog</button>`;
+      html += `<select onchange="setSelectedSprintFilter(this.value)" style="background:#0f172a;color:#e2e8f0;border:1px solid #334155;border-radius:6px;padding:5px 10px;font-size:12px;font-family:'JetBrains Mono',monospace;cursor:pointer;outline:none;">`;
+      html += `<option value="all" ${selectedSprintFilter === 'all' ? 'selected' : ''}>Todos los sprints</option>`;
+      html += `<option value="backlog" ${selectedSprintFilter === 'backlog' ? 'selected' : ''}>Backlog</option>`;
       sprints.forEach(s => {
         const n = (s && typeof s === 'object' && s.number != null) ? s.number : (typeof s === 'number' ? s : null);
         if (n == null) return;
-        html += `<button class="filter-btn ${isActive(n) ? 'active' : ''}" onclick="setSelectedSprintFilter(${Number(n)})">Sprint ${n}</button>`;
+        const isActive = n === activeSprint;
+        const label = `Sprint ${n}${isActive ? ' ●' : ''}${s.status === 'completed' ? ' ✓' : ''}`;
+        html += `<option value="${n}" ${Number(selectedSprintFilter) === n ? 'selected' : ''}>${label}</option>`;
       });
+      html += `</select>`;
+
+      // Info del sprint seleccionado
+      if (selectedSprintFilter !== 'all' && selectedSprintFilter !== 'backlog') {
+        const sp = sprints.find(s => s.number === Number(selectedSprintFilter));
+        if (sp) {
+          const statusColor = sp.status === 'completed' ? '#22c55e' : (sp.number === activeSprint ? '#3b82f6' : '#475569');
+          const statusLabel = sp.status === 'completed' ? '✓ Completado' : (sp.number === activeSprint ? '● Activo' : 'Planificado');
+          html += `<span style="font-size:11px;color:${statusColor};margin-left:10px;">${statusLabel}</span>`;
+          if (sp.goal) html += `<span style="font-size:11px;color:#64748b;margin-left:8px;">— ${sp.goal}</span>`;
+        }
+      }
       el.innerHTML = html;
     }
 
@@ -2386,6 +2415,54 @@
       } else {
         bugsSection.style.display = 'none';
         bl.innerHTML = '';
+      }
+
+      // Sprint History
+      const allSprints = (data.meta.sprints || []).slice().sort((a, b) => (b.number || 0) - (a.number || 0));
+      const shCount = document.getElementById('sprint-history-count');
+      const shList = document.getElementById('sprint-history-list');
+      if (shCount) shCount.textContent = `${allSprints.length} sprints`;
+      if (shList) {
+        if (!allSprints.length) {
+          shList.innerHTML = '<div style="font-size:12px;color:#475569;">Sin sprints definidos</div>';
+        } else {
+          shList.innerHTML = allSprints.map(sp => {
+            const n = sp.number || 0;
+            const isActive = n === (data.meta.sprint ? data.meta.sprint.number : null);
+            const spFlows = (sp.flows || []);
+            const done = spFlows.filter(f => f.sprint_status === 'done').length;
+            const total = spFlows.length;
+            const pct = total ? Math.round(done / total * 100) : 0;
+            const statusColor = sp.status === 'completed' ? '#22c55e' : isActive ? '#3b82f6' : '#475569';
+            const statusLabel = sp.status === 'completed' ? '✓ Completado' : isActive ? '● Activo' : '○ Planificado';
+            const borderColor = isActive ? '#3b82f630' : sp.status === 'completed' ? '#22c55e20' : '#ffffff08';
+            const bgColor = isActive ? '#1e3a5f10' : '#0f0f17';
+
+            return `<div onclick="setSelectedSprintFilter(${n});showView('backlog')" style="display:flex;align-items:stretch;gap:16px;padding:14px 16px;background:${bgColor};border:1px solid ${borderColor};border-radius:10px;cursor:pointer;transition:border-color .2s;" onmouseover="this.style.borderColor='#334155'" onmouseout="this.style.borderColor='${borderColor}'">
+              <div style="display:flex;flex-direction:column;align-items:center;min-width:44px;">
+                <div style="font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:${statusColor};">${n}</div>
+                <div style="font-size:9px;color:#475569;text-transform:uppercase;">sprint</div>
+              </div>
+              <div style="width:1px;background:#ffffff0a;flex-shrink:0;"></div>
+              <div style="flex:1;min-width:0;">
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+                  <span style="font-size:13px;font-weight:500;color:#e2e8f0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${sp.goal || 'Sin objetivo'}</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:10px;font-size:11px;color:#475569;">
+                  ${sp.start ? `<span>${sp.start}</span>` : ''}
+                  ${sp.start && sp.end ? '<span>→</span>' : ''}
+                  ${sp.end ? `<span>${sp.end}</span>` : ''}
+                  <span style="color:${statusColor};">${statusLabel}</span>
+                </div>
+                ${total > 0 ? `<div style="display:flex;align-items:center;gap:8px;margin-top:6px;">
+                  <div style="flex:1;height:4px;background:#1e293b;border-radius:2px;overflow:hidden;"><div style="height:100%;background:${statusColor};width:${pct}%;border-radius:2px;transition:width .3s;"></div></div>
+                  <span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:${statusColor};">${done}/${total}</span>
+                </div>` : ''}
+                ${(sp.stories || []).length ? `<div style="font-size:10px;color:#334155;margin-top:4px;">${(sp.stories || []).length} historias</div>` : ''}
+              </div>
+            </div>`;
+          }).join('');
+        }
       }
     }
 
