@@ -1312,6 +1312,12 @@
           </svg>
           Entidades
         </div>
+        <div class="nav-item" id="nav-sprints" onclick="showView('sprints')">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
+          </svg>
+          Sprints
+        </div>
         <div class="nav-item" id="nav-bugs" onclick="showView('bugs')">
           <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
             <path
@@ -1586,6 +1592,19 @@
             <div id="bugs-filters" style="display:flex;gap:6px;flex-wrap:wrap;"></div>
           </div>
           <div id="bugs-grid" style="display:flex;flex-direction:column;gap:12px;"></div>
+        </div>
+
+        <!-- SPRINTS VIEW -->
+        <div id="view-sprints" class="view" style="padding:24px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+            <div style="display:flex;align-items:center;gap:12px;">
+              <div style="font-size:12px;color:#475569;">Filtrar:</div>
+              <div id="sprints-filters" style="display:flex;gap:6px;flex-wrap:wrap;"></div>
+            </div>
+            <div id="sprints-counter" style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#334155;">
+            </div>
+          </div>
+          <div id="sprints-timeline" style="position:relative;"></div>
         </div>
 
       </main>
@@ -2294,12 +2313,13 @@
       document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
       document.getElementById('view-' + name).classList.add('active');
       document.getElementById('nav-' + name).classList.add('active');
-      const titles = { dashboard: 'Dashboard', backlog: 'Backlog', board: 'Tablero Sprint', list: 'Flujos', entities: 'Entidades', bugs: 'Bugs' };
+      const titles = { dashboard: 'Dashboard', backlog: 'Backlog', board: 'Tablero Sprint', list: 'Flujos', entities: 'Entidades', sprints: 'Sprints', bugs: 'Bugs' };
       document.getElementById('view-title').textContent = titles[name] || name;
       if (name === 'backlog') renderBacklog();
       if (name === 'board') renderBoard();
       if (name === 'list') renderList();
       if (name === 'entities') renderEntities();
+      if (name === 'sprints') renderSprints();
       if (name === 'bugs') renderBugs();
     }
 
@@ -2829,6 +2849,185 @@
     function setBugFilter(f) {
       bugFilter = f;
       renderBugs();
+    }
+
+    // ============================================================
+    // SPRINTS VIEW — timeline industrial, denso, todo visible
+    // ============================================================
+    let sprintViewFilter = 'all'; // all | active | completed
+    let expandedSprints = new Set();
+
+    function setSprintViewFilter(f) {
+      sprintViewFilter = f;
+      renderSprints();
+    }
+    function toggleSprintExpand(n) {
+      if (expandedSprints.has(n)) expandedSprints.delete(n);
+      else expandedSprints.add(n);
+      renderSprints();
+    }
+
+    function renderSprints() {
+      const allSprints = (data.meta.sprints || []).slice().sort((a, b) => (b.number || 0) - (a.number || 0));
+      const activeSprint = data.meta.sprint ? data.meta.sprint.number : null;
+
+      // Filtro
+      let filtered = allSprints;
+      if (sprintViewFilter === 'active') filtered = allSprints.filter(s => s.number === activeSprint);
+      if (sprintViewFilter === 'completed') filtered = allSprints.filter(s => s.status === 'completed');
+
+      // Botones filtro
+      const filtersEl = document.getElementById('sprints-filters');
+      if (filtersEl) {
+        const btns = [
+          { v: 'all', label: `Todos (${allSprints.length})` },
+          { v: 'active', label: 'Activo' },
+          { v: 'completed', label: `Completados (${allSprints.filter(s => s.status === 'completed').length})` }
+        ];
+        filtersEl.innerHTML = btns.map(b =>
+          `<button class="filter-btn ${sprintViewFilter === b.v ? 'active' : ''}" onclick="setSprintViewFilter('${b.v}')">${b.label}</button>`
+        ).join('');
+      }
+
+      // Counter
+      const counterEl = document.getElementById('sprints-counter');
+      if (counterEl) counterEl.textContent = `${filtered.length} de ${allSprints.length} sprints`;
+
+      // Timeline
+      const container = document.getElementById('sprints-timeline');
+      if (!container) return;
+
+      if (!filtered.length) {
+        container.innerHTML = '<div style="text-align:center;padding:48px;color:#334155;font-size:13px;">Sin sprints en este filtro</div>';
+        return;
+      }
+
+      container.innerHTML = `
+        <style>
+          .sp-card { position:relative; margin-left:28px; padding:0; border:1px solid #ffffff08; border-radius:10px; background:#0c0c14; transition:border-color .2s, box-shadow .2s; }
+          .sp-card:hover { border-color:#1e293b; box-shadow:0 0 24px #0005; }
+          .sp-card.sp-active { border-color:#3b82f630; background:#0d1b2e; }
+          .sp-card.sp-completed { border-color:#22c55e18; }
+          .sp-dot { position:absolute; left:-34px; top:20px; width:12px; height:12px; border-radius:50%; border:2px solid #0a0a0f; z-index:2; }
+          .sp-line { position:absolute; left:-22px; top:0; bottom:0; width:2px; background:linear-gradient(180deg, #1e293b 0%, #0f172a 100%); }
+          .sp-header { padding:16px 20px; cursor:pointer; display:flex; align-items:flex-start; gap:16px; }
+          .sp-header:hover .sp-num { color:#e2e8f0; }
+          .sp-num { font-family:'JetBrains Mono',monospace; font-size:28px; font-weight:800; line-height:1; min-width:48px; transition:color .15s; }
+          .sp-meta { flex:1; min-width:0; }
+          .sp-goal { font-size:14px; font-weight:600; color:#e2e8f0; margin-bottom:4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+          .sp-dates { font-family:'JetBrains Mono',monospace; font-size:10px; color:#475569; letter-spacing:.5px; }
+          .sp-stats-row { display:flex; align-items:center; gap:16px; margin-top:8px; }
+          .sp-stat { font-family:'JetBrains Mono',monospace; font-size:11px; }
+          .sp-stat em { font-style:normal; color:#e2e8f0; font-weight:600; }
+          .sp-progress-bar { flex:1; max-width:200px; height:5px; background:#1e293b; border-radius:3px; overflow:hidden; }
+          .sp-badge { display:inline-flex; align-items:center; gap:4px; font-size:10px; font-weight:600; padding:3px 8px; border-radius:4px; text-transform:uppercase; letter-spacing:.8px; }
+          .sp-body { padding:0 20px 20px; border-top:1px solid #ffffff06; margin-top:0; }
+          .sp-section-title { font-size:10px; font-weight:700; color:#334155; text-transform:uppercase; letter-spacing:1px; margin:16px 0 8px; }
+          .sp-story-row { display:flex; align-items:center; gap:8px; padding:6px 10px; border-radius:6px; font-size:12px; cursor:pointer; transition:background .15s; }
+          .sp-story-row:hover { background:#ffffff08; }
+          .sp-flow-chip { display:inline-flex; align-items:center; gap:3px; font-family:'JetBrains Mono',monospace; font-size:10px; padding:2px 7px; border-radius:4px; margin:2px; cursor:pointer; transition:background .15s; border:1px solid #ffffff0a; }
+          .sp-flow-chip:hover { background:#ffffff12; }
+          .sp-flow-chip .dot { width:6px; height:6px; border-radius:50%; flex-shrink:0; }
+          .sp-expand-icon { font-size:10px; color:#334155; margin-left:auto; transition:transform .2s; }
+        </style>
+        <div style="position:relative; padding:8px 0 8px 6px;">
+          ${filtered.map((sp, idx) => {
+        const n = sp.number || 0;
+        const isActive = n === activeSprint;
+        const isCompleted = sp.status === 'completed';
+        const isExpanded = expandedSprints.has(n);
+
+        // Stats
+        const spFlows = sp.flows || [];
+        const done = spFlows.filter(f => f.sprint_status === 'done').length;
+        const inProgress = spFlows.filter(f => f.sprint_status === 'in_progress').length;
+        const todo = spFlows.filter(f => f.sprint_status === 'todo' || !f.sprint_status).length;
+        const totalF = spFlows.length;
+        const pct = totalF ? Math.round(done / totalF * 100) : 0;
+        const storyIds = sp.stories || [];
+
+        // Colors
+        const dotColor = isActive ? '#3b82f6' : isCompleted ? '#22c55e' : '#334155';
+        const numColor = isActive ? '#3b82f6' : isCompleted ? '#22c55e' : '#475569';
+        const badgeBg = isActive ? '#3b82f620' : isCompleted ? '#22c55e15' : '#ffffff08';
+        const badgeColor = isActive ? '#60a5fa' : isCompleted ? '#4ade80' : '#475569';
+        const badgeLabel = isActive ? '● ACTIVO' : isCompleted ? '✓ COMPLETADO' : '○ PLANIFICADO';
+        const progressColor = isActive ? '#3b82f6' : isCompleted ? '#22c55e' : '#475569';
+        const cardClass = isActive ? 'sp-card sp-active' : isCompleted ? 'sp-card sp-completed' : 'sp-card';
+        const isLast = idx === filtered.length - 1;
+
+        // Stories detail
+        let storiesHtml = '';
+        if (isExpanded && storyIds.length) {
+          const storyRows = storyIds.map(sid => {
+            const story = data.stories.find(s => s.id === sid);
+            if (!story) return `<div class="sp-story-row" style="color:#334155;">${sid} (no encontrada)</div>`;
+            const sFlows = (story.flow_ids || []).map(fid => data.flows.find(f => f.id === fid)).filter(Boolean);
+            const sDone = sFlows.filter(f => f.status === 'implemented').length;
+            const sTotal = sFlows.length;
+            const sPct = sTotal ? Math.round(sDone / sTotal * 100) : 0;
+            return `<div class="sp-story-row" onclick="openStoryPanel('${sid}')">
+                  <span style="font-family:'JetBrains Mono',monospace;font-weight:700;color:#6366f1;min-width:56px;">${sid}</span>
+                  <span style="color:#cbd5e1;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${story.title || ''}</span>
+                  <span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:${sPct === 100 ? '#22c55e' : '#475569'};">${sDone}/${sTotal}</span>
+                  <div style="width:48px;height:3px;background:#1e293b;border-radius:2px;overflow:hidden;"><div style="height:100%;width:${sPct}%;background:${sPct === 100 ? '#22c55e' : '#3b82f6'};border-radius:2px;"></div></div>
+                </div>`;
+          }).join('');
+          storiesHtml = `<div class="sp-section-title">Historias (${storyIds.length})</div>${storyRows}`;
+        }
+
+        // Flows by status
+        let flowsHtml = '';
+        if (isExpanded && spFlows.length) {
+          const flowGroups = [
+            { label: 'Done', items: spFlows.filter(f => f.sprint_status === 'done'), color: '#22c55e' },
+            { label: 'En progreso', items: spFlows.filter(f => f.sprint_status === 'in_progress'), color: '#f59e0b' },
+            { label: 'Pendientes', items: spFlows.filter(f => f.sprint_status === 'todo' || !f.sprint_status), color: '#475569' }
+          ];
+          flowsHtml = `<div class="sp-section-title">Flujos (${spFlows.length})</div><div style="display:flex;flex-wrap:wrap;gap:4px;">`;
+          flowGroups.forEach(g => {
+            g.items.forEach(sf => {
+              const flow = data.flows.find(f => f.id === sf.id);
+              const title = flow ? (flow.title || flow.name || sf.id) : sf.id;
+              flowsHtml += `<span class="sp-flow-chip" onclick="event.stopPropagation();openPanel('${sf.id}')" title="${title}">
+                    <span class="dot" style="background:${g.color};"></span>${sf.id}
+                  </span>`;
+            });
+          });
+          flowsHtml += '</div>';
+        }
+
+        return `
+              <div style="position:relative; margin-bottom:${isLast ? '0' : '16'}px;">
+                ${!isLast ? '<div class="sp-line"></div>' : ''}
+                <div class="sp-dot" style="background:${dotColor};"></div>
+                <div class="${cardClass}">
+                  <div class="sp-header" onclick="toggleSprintExpand(${n})">
+                    <div class="sp-num" style="color:${numColor};">${n}</div>
+                    <div class="sp-meta">
+                      <div class="sp-goal">${sp.goal || 'Sin objetivo definido'}</div>
+                      <div class="sp-dates">${sp.start || '—'} → ${sp.end || '—'}</div>
+                      <div class="sp-stats-row">
+                        <span class="sp-badge" style="background:${badgeBg};color:${badgeColor};">${badgeLabel}</span>
+                        ${totalF > 0 ? `
+                          <div class="sp-progress-bar"><div style="height:100%;width:${pct}%;background:${progressColor};border-radius:3px;"></div></div>
+                          <span class="sp-stat" style="color:${progressColor};"><em>${pct}%</em></span>
+                          <span class="sp-stat" style="color:#475569;"><em style="color:#22c55e">${done}</em> done</span>
+                          ${inProgress ? `<span class="sp-stat" style="color:#475569;"><em style="color:#f59e0b">${inProgress}</em> wip</span>` : ''}
+                          ${todo ? `<span class="sp-stat" style="color:#475569;"><em style="color:#64748b">${todo}</em> todo</span>` : ''}
+                        ` : '<span class="sp-stat" style="color:#334155;">Sin flujos</span>'}
+                        ${storyIds.length ? `<span class="sp-stat" style="color:#334155;">${storyIds.length} HU</span>` : ''}
+                        <span class="sp-expand-icon" style="transform:rotate(${isExpanded ? '90' : '0'}deg);">▶</span>
+                      </div>
+                    </div>
+                  </div>
+                  ${isExpanded ? `<div class="sp-body">${storiesHtml}${flowsHtml}</div>` : ''}
+                </div>
+              </div>
+            `;
+      }).join('')}
+        </div>
+      `;
     }
 
     function renderBugs() {
