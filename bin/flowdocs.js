@@ -611,6 +611,37 @@ function cmdOpen() {
       return;
     }
 
+    // API: /api/hash — devuelve hash rápido de mtimes para detectar cambios
+    if (urlPath === '/api/hash') {
+      res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' });
+      try {
+        let hashSum = 0;
+        const dirs = ['sprints', 'stories', 'flows', 'bugs'];
+        // mtime de project.yaml
+        const projPath = path.join(flowdocsDirResolved, 'project.yaml');
+        if (fileExists(projPath)) hashSum += fs.statSync(projPath).mtimeMs;
+        // mtime de cada archivo en las carpetas
+        for (const d of dirs) {
+          const dirPath = path.join(flowdocsDirResolved, d);
+          if (fs.existsSync(dirPath) && fs.statSync(dirPath).isDirectory()) {
+            const files = fs.readdirSync(dirPath).filter(f => f.endsWith('.yaml') || f.endsWith('.yml'));
+            for (const f of files) {
+              hashSum += fs.statSync(path.join(dirPath, f)).mtimeMs;
+            }
+            // También contar número de archivos para detectar creaciones/eliminaciones
+            hashSum += files.length * 1000000;
+          }
+        }
+        // También legacy flows.yaml
+        const legacyPath = path.join(flowdocsDirResolved, 'flows.yaml');
+        if (fileExists(legacyPath)) hashSum += fs.statSync(legacyPath).mtimeMs;
+        res.end(JSON.stringify({ hash: String(hashSum) }));
+      } catch (e) {
+        res.end(JSON.stringify({ hash: '0' }));
+      }
+      return;
+    }
+
     const subPath = (urlPath === '/' ? '/viewer.html' : urlPath).replace(/^\/+/, '');
     let filePath = path.resolve(flowdocsDirResolved, subPath);
     // Seguridad: no salir del directorio .flowdocs

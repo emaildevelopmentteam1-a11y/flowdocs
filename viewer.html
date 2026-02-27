@@ -3853,6 +3853,7 @@ Sigue @evidence.md para la estructura de carpetas. Un solo paso: tests (crear o 
       }
       updateDataSourceHint();
       renderDashboard();
+      startPolling();
     });
 
     function updateDataSourceHint() {
@@ -3883,11 +3884,59 @@ Sigue @evidence.md para la estructura de carpetas. Un solo paso: tests (crear o 
       dataSource = (data.flows !== MOCK_DATA.flows || data.entities !== MOCK_DATA.entities) ? 'yaml' : 'mock';
       selectedSprintFilter = (data.meta.active_sprint != null) ? data.meta.active_sprint : 'all';
       updateDataSourceHint();
+      refreshAllViews();
+    }
+
+    function refreshAllViews() {
       renderDashboard();
       if (activeView === 'backlog') renderBacklog();
       if (activeView === 'board') renderBoard();
       if (activeView === 'list') renderList();
       if (activeView === 'entities') renderEntities();
+      if (activeView === 'sprints') renderSprints();
+      if (activeView === 'bugs') renderBugs();
+    }
+
+    // ── Auto-refresh: polling cada 2s para detectar cambios en YAMLs ──
+    let _lastHash = null;
+    let _pollTimer = null;
+
+    async function pollForChanges() {
+      if (window.location.protocol === 'file:') return;
+      try {
+        const res = await fetch('/api/hash', { cache: 'no-store' });
+        if (!res.ok) return;
+        const { hash } = await res.json();
+        if (_lastHash !== null && hash !== _lastHash) {
+          // Datos cambiaron — recargar silenciosamente
+          console.info('FlowDocs: cambios detectados, recargando...');
+          const newData = await loadFlowDocs();
+          data = newData;
+          dataSource = 'yaml';
+          updateDataSourceHint();
+          refreshAllViews();
+          // Flash sutil en el header para indicar actualización
+          const header = document.querySelector('.sidebar-header');
+          if (header) {
+            header.style.transition = 'background .3s';
+            header.style.background = '#6366f118';
+            setTimeout(() => { header.style.background = ''; }, 600);
+          }
+        }
+        _lastHash = hash;
+      } catch (_) {
+        // Server no disponible — seguir intentando
+      }
+    }
+
+    function startPolling() {
+      if (_pollTimer) return;
+      pollForChanges(); // Primera consulta para obtener hash inicial
+      _pollTimer = setInterval(pollForChanges, 2000);
+    }
+
+    function stopPolling() {
+      if (_pollTimer) { clearInterval(_pollTimer); _pollTimer = null; }
     }
   </script>
 </body>
