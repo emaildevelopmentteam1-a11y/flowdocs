@@ -341,13 +341,11 @@
       border: 1px solid #1a1f2e;
       border-radius: 12px;
       overflow: hidden;
-      cursor: pointer;
-      transition: border-color .2s, transform .15s;
+      transition: border-color .2s;
     }
 
     .story-card:hover {
       border-color: #6366f140;
-      transform: translateY(-1px);
     }
 
     .story-card-header {
@@ -355,6 +353,33 @@
       align-items: center;
       gap: 10px;
       padding: 14px 16px 12px;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .story-card-header:hover {
+      background: #ffffff04;
+    }
+
+    .story-chevron {
+      font-size: 9px;
+      color: #334155;
+      transition: transform .2s;
+      flex-shrink: 0;
+    }
+
+    .story-card.expanded .story-chevron {
+      transform: rotate(90deg);
+    }
+
+    .story-collapsible {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height .25s ease;
+    }
+
+    .story-card.expanded .story-collapsible {
+      max-height: 2000px;
     }
 
     .story-card-id {
@@ -396,6 +421,7 @@
       display: flex;
       flex-direction: column;
       gap: 0;
+      border-top: 1px solid #1e293b20;
     }
 
     .story-criterion {
@@ -2540,8 +2566,8 @@
           : '<div style="font-size:11px;color:#475569;padding:8px 0;">Sin criterios. Añádelos con @update.md.</div>';
 
         html += `
-    <div class="story-card" data-story-id="${safeId}" title="Ver detalles y prompt">
-      <div class="story-card-header">
+    <div class="story-card" data-story-id="${safeId}">
+      <div class="story-card-header" onclick="toggleStoryCard(this)">
         <span class="story-priority story-priority-${(s.priority || 'medium')}">${(s.priority || 'medium')}</span>
         <div style="flex:1;min-width:0;">
           <div style="display:flex;align-items:center;gap:6px;margin-bottom:3px;">
@@ -2551,12 +2577,15 @@
           <div class="story-card-title">${s.title || s.id}</div>
         </div>
         <span class="story-ac-badge" style="color:${acColor};background:${acColor}18;border:1px solid ${acColor}30;">${criteriaBadge}</span>
+        <span class="story-chevron">▶</span>
       </div>
-      ${coverageHint ? `<div style="padding:0 16px 8px;font-size:10px;">${coverageHint}</div>` : ''}
       <div class="story-progress-bar">
         <div class="story-progress-fill" style="width:${pct}%;background:${barColor};"></div>
       </div>
-      <div class="story-criteria-list">${criteriaHtml}</div>
+      <div class="story-collapsible">
+        ${coverageHint ? `<div style="padding:8px 16px 4px;font-size:10px;">${coverageHint}</div>` : ''}
+        <div class="story-criteria-list">${criteriaHtml}</div>
+      </div>
     </div>`;
       });
 
@@ -3411,6 +3440,11 @@ Sigue @evidence.md para la estructura de carpetas. Un solo paso: tests (crear o 
     }
     function closeSpecModal() { document.getElementById('overlay-spec').classList.remove('open'); }
     function closeLegendModal() { document.getElementById('overlay-legend').classList.remove('open'); }
+
+    function toggleStoryCard(headerEl) {
+      const card = headerEl.closest('.story-card');
+      if (card) card.classList.toggle('expanded');
+    }
 
     function openStoryPanel(storyId) {
       const s = data.stories.find(x => x.id === storyId);
