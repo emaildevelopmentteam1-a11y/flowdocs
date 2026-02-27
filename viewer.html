@@ -2442,7 +2442,7 @@
       }
 
       // Bugs abiertos
-      const openBugs = (data.bugs || []).filter(b => b.status === 'open' || b.status === 'in_progress');
+      const openBugs = (data.bugs || []).filter(b => b.status === 'open' || b.status === 'in_progress' || b.status === 'reopened');
       document.getElementById('stat-bugs').textContent = openBugs.length;
       const bugsSection = document.getElementById('dashboard-bugs-section');
       const bl = document.getElementById('dashboard-bugs-list');
@@ -3293,6 +3293,17 @@
     }
 
 
+    /** Formatea un timestamp ISO 8601 a formato legible */
+    function formatBugTimestamp(ts) {
+      if (!ts) return '—';
+      try {
+        const d = new Date(ts);
+        if (isNaN(d)) return ts;
+        const pad = n => String(n).padStart(2, '0');
+        return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+      } catch { return ts; }
+    }
+
     function renderBugs() {
       const bugs = data.bugs || [];
 
@@ -3301,10 +3312,11 @@
       const filters = [
         { label: 'Todos', value: 'all' },
         { label: 'Abiertos', value: 'open' },
+        { label: '\u{1F504} Reabiertos', value: 'reopened' },
         { label: 'Resueltos', value: 'resolved' },
-        { label: '🔴 Críticos', value: 'critical' },
-        { label: '🟠 High', value: 'high' },
-        { label: '🟡 Medium', value: 'medium' },
+        { label: '\u{1F534} Cr\u00edticos', value: 'critical' },
+        { label: '\u{1F7E0} High', value: 'high' },
+        { label: '\u{1F7E1} Medium', value: 'medium' },
       ];
       filtersEl.innerHTML = filters.map(f =>
         `<button class="filter-btn ${bugFilter === f.value ? 'active' : ''}" onclick="setBugFilter('${f.value}')">${f.label}</button>`
@@ -3312,13 +3324,14 @@
 
       // Filtrar
       let filtered = bugs;
-      if (bugFilter === 'open') filtered = bugs.filter(b => b.status === 'open' || b.status === 'in_progress');
+      if (bugFilter === 'open') filtered = bugs.filter(b => b.status === 'open' || b.status === 'in_progress' || b.status === 'reopened');
+      else if (bugFilter === 'reopened') filtered = bugs.filter(b => b.status === 'reopened');
       else if (bugFilter === 'resolved') filtered = bugs.filter(b => b.status === 'resolved' || b.status === 'closed');
       else if (['critical', 'high', 'medium', 'low'].includes(bugFilter)) filtered = bugs.filter(b => b.severity === bugFilter);
 
       const grid = document.getElementById('bugs-grid');
       if (!filtered.length) {
-        grid.innerHTML = `<div style="color:#475569;font-size:13px;padding:32px;text-align:center;">${bugs.length === 0 ? 'No hay bugs reportados' : 'Ningún bug coincide con el filtro'}</div>`;
+        grid.innerHTML = '<div style="color:#475569;font-size:13px;padding:32px;text-align:center;">' + (bugs.length === 0 ? 'No hay bugs reportados' : 'Ning\u00fan bug coincide con el filtro') + '</div>';
         return;
       }
 
@@ -3330,13 +3343,13 @@
           low: { bg: '#6b728018', color: '#9ca3af', border: '#6b728030', label: 'LOW' }
         };
         const s = map[sev] || map.low;
-        return `<span style="font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:600;padding:2px 7px;border-radius:4px;background:${s.bg};color:${s.color};border:1px solid ${s.border};letter-spacing:.05em;">${s.label}</span>`;
+        return '<span style="font-family:\'JetBrains Mono\',monospace;font-size:9px;font-weight:600;padding:2px 7px;border-radius:4px;background:' + s.bg + ';color:' + s.color + ';border:1px solid ' + s.border + ';letter-spacing:.05em;">' + s.label + '</span>';
       };
 
       const statusDot = (st) => {
-        const map = { open: '#ef4444', in_progress: '#f59e0b', resolved: '#22c55e', closed: '#475569' };
-        const c = map[st] || '#475569';
-        return `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${c};box-shadow:0 0 6px ${c}60;"></span>`;
+        const map = { open: '#ef4444', in_progress: '#f59e0b', resolved: '#22c55e', closed: '#475569', reopened: '#f97316' };
+        const cc = map[st] || '#475569';
+        return '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:' + cc + ';box-shadow:0 0 6px ' + cc + '60;"></span>';
       };
 
       grid.innerHTML = filtered.map(b => {
@@ -3346,20 +3359,31 @@
         if (b.module) refs.push(renderRefChip('module', b.module));
         (b.related_flows || []).forEach(rf => refs.push(renderRefChip('flow', rf)));
 
-        return `<div class="card" style="padding:16px;cursor:pointer;" onclick="openBugPanel('${b.id.replace(/'/g, "\\'")}')">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-            <div style="display:flex;align-items:center;gap:8px;">
-              <span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#ef4444;">🐛 ${b.id}</span>
-              ${severityBadge(b.severity)}
-            </div>
-            <div style="display:flex;align-items:center;gap:6px;">
-              ${statusDot(b.status)}
-              <span style="font-size:11px;color:#64748b;text-transform:capitalize;">${(b.status || '').replace('_', ' ')}</span>
-            </div>
-          </div>
-          <div style="font-size:13px;color:#e2e8f0;font-weight:500;margin-bottom:8px;">${b.title || ''}</div>
-          ${refs.length ? `<div style="display:flex;flex-wrap:wrap;gap:4px;">${refs.join('')}</div>` : ''}
-        </div>`;
+        const desc = b.description ? (b.description.length > 120 ? b.description.substring(0, 120).trim() + '\u2026' : b.description) : '';
+        const reopenBadge = (b.reopen_count && b.reopen_count > 0)
+          ? '<span style="font-family:\'JetBrains Mono\',monospace;font-size:9px;font-weight:600;padding:2px 7px;border-radius:4px;background:#f9731618;color:#fb923c;border:1px solid #f9731630;">\u{1F504} \u00d7' + b.reopen_count + '</span>'
+          : '';
+        const createdLabel = b.created_at ? '<span style="font-size:10px;color:#475569;font-family:\'JetBrains Mono\',monospace;">' + formatBugTimestamp(b.created_at) + '</span>' : '';
+
+        const safeId = b.id.replace(/'/g, "\\'");
+        let html = '<div class="card" style="padding:16px;cursor:pointer;" onclick="openBugPanel(\'' + safeId + '\')">';
+        html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">';
+        html += '<div style="display:flex;align-items:center;gap:8px;">';
+        html += '<span style="font-family:\'JetBrains Mono\',monospace;font-size:11px;color:#ef4444;">\u{1F41B} ' + b.id + '</span>';
+        html += severityBadge(b.severity);
+        html += reopenBadge;
+        html += '</div>';
+        html += '<div style="display:flex;align-items:center;gap:6px;">';
+        html += statusDot(b.status);
+        html += '<span style="font-size:11px;color:#64748b;text-transform:capitalize;">' + (b.status || '').replace('_', ' ') + '</span>';
+        html += '</div></div>';
+        html += '<div style="font-size:13px;color:#e2e8f0;font-weight:500;margin-bottom:4px;">' + (b.title || '') + '</div>';
+        if (desc) html += '<div style="font-size:11px;color:#94a3b8;margin-bottom:8px;line-height:1.4;">' + desc + '</div>';
+        html += '<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:4px;">';
+        html += refs.length ? '<div style="display:flex;flex-wrap:wrap;gap:4px;">' + refs.join('') + '</div>' : '<div></div>';
+        html += createdLabel;
+        html += '</div></div>';
+        return html;
       }).join('');
     }
 
@@ -3376,32 +3400,104 @@
       if (bug.flow) refs.push(renderRefChip('flow', bug.flow));
       if (bug.module) refs.push(renderRefChip('module', bug.module));
       (bug.related_flows || []).forEach(rf => refs.push(renderRefChip('flow', rf)));
+      (bug.related_bugs || []).forEach(rb => refs.push(renderRefChip('bug', rb)));
+
+      const sectionLabel = (label) => '<div style="font-size:10px;color:#475569;text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px;">' + label + '</div>';
 
       const stepsHtml = (bug.steps_to_reproduce || []).map((s, i) =>
-        `<div style="display:flex;gap:8px;margin-bottom:4px;"><span style="color:#475569;font-size:11px;min-width:16px;">${i + 1}.</span><span style="font-size:12px;color:#cbd5e1;">${s}</span></div>`
+        '<div style="display:flex;gap:8px;margin-bottom:4px;"><span style="color:#475569;font-size:11px;min-width:16px;">' + (i + 1) + '.</span><span style="font-size:12px;color:#cbd5e1;">' + s + '</span></div>'
       ).join('');
 
-      const content = `
-        <div style="margin-bottom:16px;">
-          <div style="font-size:16px;font-weight:600;color:#e2e8f0;margin-bottom:8px;">🐛 ${bug.title || ''}</div>
-          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;">${refs.join('')}</div>
-        </div>
+      // Reaperturas badge
+      const reopenBadge = (bug.reopen_count && bug.reopen_count > 0)
+        ? '<span style="font-family:\'JetBrains Mono\',monospace;font-size:10px;font-weight:600;padding:3px 10px;border-radius:4px;background:#f9731618;color:#fb923c;border:1px solid #f9731630;">\u{1F504} Reabierto ' + bug.reopen_count + ' vez' + (bug.reopen_count > 1 ? 'es' : '') + '</span>'
+        : '';
 
-        ${bug.severity ? `<div style="margin-bottom:12px;"><div style="font-size:10px;color:#475569;text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px;">Severidad</div><span style="font-size:12px;color:#e2e8f0;text-transform:capitalize;">${bug.severity}</span></div>` : ''}
+      // Status con color
+      const statusColors = { open: '#ef4444', in_progress: '#f59e0b', resolved: '#22c55e', closed: '#475569', reopened: '#f97316' };
+      const stColor = statusColors[bug.status] || '#475569';
+      const statusLabel = (bug.status || '').replace('_', ' ');
 
-        ${bug.status ? `<div style="margin-bottom:12px;"><div style="font-size:10px;color:#475569;text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px;">Estado</div><span style="font-size:12px;color:#e2e8f0;text-transform:capitalize;">${(bug.status || '').replace('_', ' ')}</span></div>` : ''}
+      // Timeline de historial
+      let historyHtml = '';
+      if (bug.history && bug.history.length) {
+        const actionIcons = { created: '\u{1F4DD}', reopened: '\u{1F504}', resolved: '\u2705', closed: '\u{1F512}', in_progress: '\u{1F6A7}', assigned: '\u{1F464}' };
+        const actionColors = { created: '#6366f1', reopened: '#f97316', resolved: '#22c55e', closed: '#475569', in_progress: '#f59e0b', assigned: '#3b82f6' };
+        historyHtml = '<div style="margin-top:16px;margin-bottom:12px;">' + sectionLabel('Historial') + '<div style="border-left:2px solid #1e293b;margin-left:8px;padding-left:16px;display:flex;flex-direction:column;gap:12px;margin-top:8px;">';
+        bug.history.forEach(ev => {
+          const icon = actionIcons[ev.action] || '\u25CF';
+          const color = actionColors[ev.action] || '#64748b';
+          historyHtml += '<div style="position:relative;">';
+          historyHtml += '<div style="position:absolute;left:-25px;top:2px;width:16px;height:16px;border-radius:50%;background:#0f0f17;border:2px solid ' + color + ';display:flex;align-items:center;justify-content:center;font-size:9px;">' + icon + '</div>';
+          historyHtml += '<div style="font-size:10px;color:#475569;font-family:\'JetBrains Mono\',monospace;margin-bottom:2px;">' + formatBugTimestamp(ev.date) + '</div>';
+          historyHtml += '<div style="font-size:12px;color:#e2e8f0;font-weight:500;text-transform:capitalize;margin-bottom:2px;">' + (ev.action || '').replace('_', ' ') + '</div>';
+          if (ev.detail) historyHtml += '<div style="font-size:11px;color:#94a3b8;line-height:1.4;">' + ev.detail + '</div>';
+          if (ev.new_characteristics) historyHtml += '<div style="font-size:11px;color:#fb923c;line-height:1.4;margin-top:4px;background:#f9731610;border:1px solid #f9731620;border-radius:6px;padding:6px 8px;">Nuevas caracter\u00edsticas: ' + ev.new_characteristics + '</div>';
+          historyHtml += '</div>';
+        });
+        historyHtml += '</div></div>';
+      }
 
-        ${stepsHtml ? `<div style="margin-bottom:12px;"><div style="font-size:10px;color:#475569;text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px;">Pasos para reproducir</div>${stepsHtml}</div>` : ''}
+      // Attachments
+      let attachHtml = '';
+      if (bug.attachments && bug.attachments.length) {
+        attachHtml = '<div style="margin-top:12px;">' + sectionLabel('Adjuntos');
+        bug.attachments.forEach(a => {
+          attachHtml += '<div style="font-size:11px;color:#818cf8;font-family:\'JetBrains Mono\',monospace;padding:4px 0;">\u{1F4CE} ' + a + '</div>';
+        });
+        attachHtml += '</div>';
+      }
 
-        ${bug.expected ? `<div style="margin-bottom:12px;"><div style="font-size:10px;color:#475569;text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px;">Esperado</div><div style="font-size:12px;color:#22c55e;background:#22c55e10;border:1px solid #22c55e20;border-radius:6px;padding:8px 10px;">${bug.expected}</div></div>` : ''}
+      let content = '';
 
-        ${bug.actual ? `<div style="margin-bottom:12px;"><div style="font-size:10px;color:#475569;text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px;">Resultado actual</div><div style="font-size:12px;color:#ef4444;background:#ef444410;border:1px solid #ef444420;border-radius:6px;padding:8px 10px;">${bug.actual}</div></div>` : ''}
+      // Header
+      content += '<div style="margin-bottom:16px;">';
+      content += '<div style="font-size:16px;font-weight:600;color:#e2e8f0;margin-bottom:8px;">\u{1F41B} ' + (bug.title || '') + '</div>';
+      content += '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;">' + refs.join('') + '</div>';
+      if (reopenBadge) content += '<div style="margin-top:4px;">' + reopenBadge + '</div>';
+      content += '</div>';
 
-        ${bug.sprint_found ? `<div style="margin-bottom:8px;"><span style="font-size:11px;color:#475569;">Encontrado en Sprint ${bug.sprint_found}</span></div>` : ''}
-        ${bug.sprint_fixed ? `<div style="margin-bottom:8px;"><span style="font-size:11px;color:#22c55e;">Corregido en Sprint ${bug.sprint_fixed}</span></div>` : ''}
-        ${bug.fix_flow ? `<div style="margin-bottom:8px;"><span style="font-size:11px;color:#475569;">Fix: </span>${renderRefChip('flow', bug.fix_flow)}</div>` : ''}
-        ${bug.notes ? `<div style="margin-top:12px;"><div style="font-size:10px;color:#475569;text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px;">Notas</div><div style="font-size:12px;color:#94a3b8;">${bug.notes}</div></div>` : ''}
-      `;
+      // Metadata grid: severidad, estado, categoría, ambiente
+      content += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">';
+      if (bug.severity) content += '<div>' + sectionLabel('Severidad') + '<span style="font-size:12px;color:#e2e8f0;text-transform:capitalize;">' + bug.severity + '</span></div>';
+      if (bug.status) content += '<div>' + sectionLabel('Estado') + '<span style="font-size:12px;color:' + stColor + ';text-transform:capitalize;font-weight:600;">' + statusLabel + '</span></div>';
+      if (bug.category) content += '<div>' + sectionLabel('Categor\u00eda') + '<span style="font-size:12px;color:#e2e8f0;text-transform:capitalize;">' + bug.category + '</span></div>';
+      if (bug.environment) content += '<div>' + sectionLabel('Ambiente') + '<span style="font-size:12px;color:#e2e8f0;">' + bug.environment + '</span></div>';
+      if (bug.reported_by) content += '<div>' + sectionLabel('Reportado por') + '<span style="font-size:12px;color:#e2e8f0;">' + bug.reported_by + '</span></div>';
+      content += '</div>';
+
+      // Timestamps
+      content += '<div style="display:flex;flex-wrap:wrap;gap:16px;margin-bottom:16px;padding:10px 12px;background:#0d111780;border:1px solid #1e293b;border-radius:8px;">';
+      if (bug.created_at) content += '<div><div style="font-size:9px;color:#475569;text-transform:uppercase;letter-spacing:.08em;">Creado</div><div style="font-size:11px;color:#818cf8;font-family:\'JetBrains Mono\',monospace;">' + formatBugTimestamp(bug.created_at) + '</div></div>';
+      if (bug.resolved_at) content += '<div><div style="font-size:9px;color:#475569;text-transform:uppercase;letter-spacing:.08em;">Resuelto</div><div style="font-size:11px;color:#22c55e;font-family:\'JetBrains Mono\',monospace;">' + formatBugTimestamp(bug.resolved_at) + '</div></div>';
+      if (bug.closed_at) content += '<div><div style="font-size:9px;color:#475569;text-transform:uppercase;letter-spacing:.08em;">Cerrado</div><div style="font-size:11px;color:#64748b;font-family:\'JetBrains Mono\',monospace;">' + formatBugTimestamp(bug.closed_at) + '</div></div>';
+      content += '</div>';
+
+      // Descripción
+      if (bug.description) {
+        content += '<div style="margin-bottom:12px;">' + sectionLabel('Descripci\u00f3n') + '<div style="font-size:12px;color:#cbd5e1;line-height:1.6;white-space:pre-wrap;">' + bug.description + '</div></div>';
+      }
+
+      // Steps
+      if (stepsHtml) content += '<div style="margin-bottom:12px;">' + sectionLabel('Pasos para reproducir') + stepsHtml + '</div>';
+
+      // Expected/actual
+      if (bug.expected) content += '<div style="margin-bottom:12px;">' + sectionLabel('Esperado') + '<div style="font-size:12px;color:#22c55e;background:#22c55e10;border:1px solid #22c55e20;border-radius:6px;padding:8px 10px;">' + bug.expected + '</div></div>';
+      if (bug.actual) content += '<div style="margin-bottom:12px;">' + sectionLabel('Resultado actual') + '<div style="font-size:12px;color:#ef4444;background:#ef444410;border:1px solid #ef444420;border-radius:6px;padding:8px 10px;">' + bug.actual + '</div></div>';
+
+      // Sprint info
+      if (bug.sprint_found) content += '<div style="margin-bottom:8px;"><span style="font-size:11px;color:#475569;">Encontrado en Sprint ' + bug.sprint_found + '</span></div>';
+      if (bug.sprint_fixed) content += '<div style="margin-bottom:8px;"><span style="font-size:11px;color:#22c55e;">Corregido en Sprint ' + bug.sprint_fixed + '</span></div>';
+      if (bug.fix_flow) content += '<div style="margin-bottom:8px;"><span style="font-size:11px;color:#475569;">Fix: </span>' + renderRefChip('flow', bug.fix_flow) + '</div>';
+
+      // Notes
+      if (bug.notes) content += '<div style="margin-top:12px;">' + sectionLabel('Notas') + '<div style="font-size:12px;color:#94a3b8;">' + bug.notes + '</div></div>';
+
+      // Historial timeline
+      content += historyHtml;
+
+      // Adjuntos
+      content += attachHtml;
 
       document.getElementById('panel-content').innerHTML = content;
       document.getElementById('detail-panel').classList.add('open');
@@ -3416,33 +3512,33 @@
       const flowIds = s.flow_ids || [];
       const flowIdsStr = flowIds.join(' ');
       const criteria = (s.acceptance_criteria || []).length
-        ? (s.acceptance_criteria || []).map(c => `- ${normCriterion(c, null).text}`).join('\n')
+        ? (s.acceptance_criteria || []).map(c => `- ${normCriterion(c, null).text} `).join('\n')
         : '- (Añade criterios con @update.md)';
-      const implementLine = flowIds.length ? `@implement.md ${flowIdsStr}` : '@implement.md FLOW-XXX';
+      const implementLine = flowIds.length ? `@implement.md ${flowIdsStr} ` : '@implement.md FLOW-XXX';
       return `${implementLine}
 
-Tu tarea es solo implementar la historia siguiente (las pruebas e2e se piden en un paso posterior).
+Tu tarea es solo implementar la historia siguiente(las pruebas e2e se piden en un paso posterior).
 
-Historia: ${s.id} — ${s.title || ''}
-Módulo: ${moduleName(s.module)}
+      Historia: ${s.id} — ${s.title || ''}
+    Módulo: ${moduleName(s.module)}
 Flujos a implementar: ${flowIds.length ? flowIds.join(', ') : '—'}
 
-Usa .flowdocs/flows.yaml como referencia. Tu implementación debe cumplir estos criterios de aceptación (la validación con e2e y el marcado ✓ en el viewer se hará después):
+    Usa.flowdocs / flows.yaml como referencia.Tu implementación debe cumplir estos criterios de aceptación(la validación con e2e y el marcado ✓ en el viewer se hará después):
 
 ${criteria}
 
-Al terminar, comprueba que tu implementación cumple cada criterio. Si falta algún criterio en el YAML, proponlo y sugiere actualizar con @update.md.
+Al terminar, comprueba que tu implementación cumple cada criterio.Si falta algún criterio en el YAML, proponlo y sugiere actualizar con @update.md.
 
-Al terminar, ejecuta un solo prompt para la documentación: el bloque "2. Generar documentación" (o @document.md). No uses varios prompts; ese uno cubre tests, evidencia y actualización del YAML.`;
+Al terminar, ejecuta un solo prompt para la documentación: el bloque "2. Generar documentación"(o @document.md).No uses varios prompts; ese uno cubre tests, evidencia y actualización del YAML.`;
     }
 
     /** Prompt único para generar documentación (tests + evidencia + YAML) después de implementar. Se extrae y usa como segundo paso. */
     function buildStoryDocPrompt(s) {
       const flowIds = s.flow_ids || [];
       const flowIdsStr = flowIds.length ? flowIds.join(', ') : '—';
-      return `@document.md — para la historia ${s.id} (${s.title || ''}). Flujos: ${flowIdsStr}.
+      return `@document.md — para la historia ${s.id} (${s.title || ''}).Flujos: ${flowIdsStr}.
 
-Sigue @evidence.md para la estructura de carpetas. Un solo paso: tests (crear o documentar existentes), evidencia (capturas/vídeo en .flowdocs/evidence/), y actualización del YAML (test_files, test_evidence, validated, evidence, meta.stats).`;
+Sigue @evidence.md para la estructura de carpetas.Un solo paso: tests(crear o documentar existentes), evidencia(capturas / vídeo en.flowdocs / evidence /), y actualización del YAML(test_files, test_evidence, validated, evidence, meta.stats).`;
     }
 
     function openSpecModalFromBtn(btn) {
@@ -3503,13 +3599,13 @@ Sigue @evidence.md para la estructura de carpetas. Un solo paso: tests (crear o 
         const specs = getSpecsForCriterion(c, storyFlows);
         const ev = (typeof c === 'object' && c && Array.isArray(c.evidence)) ? c.evidence : [];
         const chipClass = (f) => 'chip-sprint ' + sprintClass(f.sprint_status);
-        const chips = flows.map(f => `<span class="${chipClass(f)}" data-flow-id="${f.id}" onclick="event.stopPropagation();openPanel('${f.id}')">${f.id}</span>`).join('');
+        const chips = flows.map(f => `< span class="${chipClass(f)}" data - flow - id="${f.id}" onclick = "event.stopPropagation();openPanel('${f.id}')" > ${f.id}</span > `).join('');
         const shieldCls = specs.length ? 'shield-btn' : 'shield-btn no-spec';
         const specsJson = JSON.stringify(specs).replace(/"/g, '&quot;');
         const evidenceJson = JSON.stringify(ev).replace(/"/g, '&quot;');
         const descEsc = String(text).replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
         const descAttr = String(text).replace(/"/g, '&quot;');
-        criteriaRowsHtml += `<div class="flow-row"><div class="status-dot" style="background:${dot.bg};box-shadow:${dot.glow};"></div><span class="ac-id">${acId}</span><span class="ac-desc" title="${descAttr}">${descEsc}</span><button type="button" class="${shieldCls}" data-ac-id="${acId}" data-desc="${descAttr}" data-specs="${specsJson}" data-evidence="${evidenceJson}" onclick="openSpecModalFromBtn(this)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3l8 3.5v5c0 4.5-3.5 8.5-8 9.5-4.5-1-8-5-8-9.5v-5L12 3z"/><path d="M9 12l2 2 4-4"/></svg></button>${chips}</div>`;
+        criteriaRowsHtml += `< div class="flow-row" ><div class="status-dot" style="background:${dot.bg};box-shadow:${dot.glow};"></div><span class="ac-id">${acId}</span><span class="ac-desc" title="${descAttr}">${descEsc}</span><button type="button" class="${shieldCls}" data-ac-id="${acId}" data-desc="${descAttr}" data-specs="${specsJson}" data-evidence="${evidenceJson}" onclick="openSpecModalFromBtn(this)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3l8 3.5v5c0 4.5-3.5 8.5-8 9.5-4.5-1-8-5-8-9.5v-5L12 3z"/><path d="M9 12l2 2 4-4"/></svg></button>${chips}</div > `;
       });
 
       let flowsRowsHtml = '';
@@ -3521,8 +3617,8 @@ Sigue @evidence.md para la estructura de carpetas. Un solo paso: tests (crear o 
         const sbClass = 'sprint-badge ' + stCls;
         const sbLabel = st === 'in_progress' || st === 'doing' ? 'en curso' : st === 'todo' ? 'todo' : st;
         const testBadge = (f.test_status === 'covered' || f.test_status === 'partial') && (f.test_files || []).length ? '<span style="font-size:10px;font-family:\'JetBrains Mono\',monospace;color:#10b981;background:#10b98112;border:1px solid #10b98125;padding:2px 6px;border-radius:4px;">✓ tests</span>' : '';
-        const pts = f.story_points != null ? `<span style="font-size:10px;font-family:'JetBrains Mono',monospace;color:#334155;">${f.story_points}pts</span>` : '';
-        flowsRowsHtml += `<div class="flow-row clickable" onclick="openPanel('${f.id}')"><div class="status-dot" style="background:${dotColor};box-shadow:${glow};"></div><span class="flow-id">${f.id}</span><span class="flow-name-text">${String(f.name || '').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</span><span class="${sbClass}">${sbLabel}</span>${testBadge}${pts}</div>`;
+        const pts = f.story_points != null ? `< span style = "font-size:10px;font-family:'JetBrains Mono',monospace;color:#334155;" > ${f.story_points}pts</span > ` : '';
+        flowsRowsHtml += `< div class="flow-row clickable" onclick = "openPanel('${f.id}')" ><div class="status-dot" style="background:${dotColor};box-shadow:${glow};"></div><span class="flow-id">${f.id}</span><span class="flow-name-text">${String(f.name || '').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</span><span class="${sbClass}">${sbLabel}</span>${testBadge}${pts}</div > `;
       });
 
       const specFilesMap = {};
@@ -3530,13 +3626,13 @@ Sigue @evidence.md para la estructura de carpetas. Un solo paso: tests (crear o 
         getSpecsForCriterion(c, storyFlows).forEach(spec => { specFilesMap[spec] = (specFilesMap[spec] || 0) + 1; });
       });
       const specFilesEntries = Object.entries(specFilesMap);
-      const specListHtml = specFilesEntries.length ? specFilesEntries.map(([path, count]) => `<div class="spec-list-item"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3l8 3.5v5c0 4.5-3.5 8.5-8 9.5-4.5-1-8-5-8-9.5v-5L12 3z"/><path d="M9 12l2 2 4-4"/></svg>${path}<span style="margin-left:auto;color:#334155;">${count} criterios</span></div>`).join('') : '';
+      const specListHtml = specFilesEntries.length ? specFilesEntries.map(([path, count]) => `< div class="spec-list-item" > <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3l8 3.5v5c0 4.5-3.5 8.5-8 9.5-4.5-1-8-5-8-9.5v-5L12 3z" /><path d="M9 12l2 2 4-4" /></svg>${path} <span style="margin-left:auto;color:#334155;">${count} criterios</span></div > `).join('') : '';
 
       const moduleDisplayName = (data.modules.find(m => m.id === s.module) || {}).name || moduleName(s.module);
       const wrapper = document.getElementById('panel-wrapper');
       wrapper.classList.add('story-panel-active');
       wrapper.innerHTML = `
-    <div class="detail-panel">
+      < div class="detail-panel" >
   <!-- HEADER -->
   <div class="story-panel-header">
       <div class="header-actions">
