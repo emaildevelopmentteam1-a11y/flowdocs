@@ -353,19 +353,23 @@
       align-items: center;
       gap: 10px;
       padding: 14px 16px 12px;
-      cursor: pointer;
       user-select: none;
-    }
-
-    .story-card-header:hover {
-      background: #ffffff04;
     }
 
     .story-chevron {
       font-size: 9px;
       color: #334155;
-      transition: transform .2s;
+      transition: transform .2s, color .15s, background .15s;
       flex-shrink: 0;
+      cursor: pointer;
+      padding: 8px;
+      border-radius: 6px;
+      line-height: 1;
+    }
+
+    .story-chevron:hover {
+      color: #94a3b8;
+      background: #ffffff0a;
     }
 
     .story-card.expanded .story-chevron {
@@ -2567,9 +2571,10 @@
 
         html += `
     <div class="story-card" data-story-id="${safeId}">
-      <div class="story-card-header" onclick="toggleStoryCard(this)">
+      <div class="story-card-header">
+        <span class="story-chevron" onclick="event.stopPropagation();toggleStoryCard(this)" title="Expandir/Colapsar">▶</span>
         <span class="story-priority story-priority-${(s.priority || 'medium')}">${(s.priority || 'medium')}</span>
-        <div style="flex:1;min-width:0;">
+        <div style="flex:1;min-width:0;cursor:pointer;" onclick="openStoryPanel('${safeId}')">
           <div style="display:flex;align-items:center;gap:6px;margin-bottom:3px;">
             <span class="story-card-id">${s.id}</span>
             <span class="story-module">· ${moduleName(s.module)}</span>
@@ -2577,7 +2582,6 @@
           <div class="story-card-title">${s.title || s.id}</div>
         </div>
         <span class="story-ac-badge" style="color:${acColor};background:${acColor}18;border:1px solid ${acColor}30;">${criteriaBadge}</span>
-        <span class="story-chevron">▶</span>
       </div>
       <div class="story-progress-bar">
         <div class="story-progress-fill" style="width:${pct}%;background:${barColor};"></div>
