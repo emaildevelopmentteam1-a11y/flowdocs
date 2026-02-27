@@ -425,6 +425,115 @@ async function cmdInstallSwarm() {
   console.log('');
 }
 
+function cmdPull() {
+  const cwd = process.cwd();
+  const flowdocsDir = path.join(cwd, '.flowdocs');
+
+  console.log('');
+  console.log(`${c.bold}${c.cyan}  FlowDocs${c.reset} — sincronizar desde node_modules`);
+  console.log('');
+
+  if (!fileExists(flowdocsDir)) {
+    err('.flowdocs/ no encontrado — ejecuta "flowdocs init" primero');
+    console.log('');
+    process.exit(1);
+  }
+
+  // Buscar flowdocs en node_modules
+  const nmSource = path.join(cwd, 'node_modules', 'flowdocs');
+  if (!fileExists(nmSource) || !fileExists(path.join(nmSource, 'viewer.html'))) {
+    err('No se encontró flowdocs en node_modules/');
+    info('Asegúrate de tener "flowdocs": "file:../flowdocs" en package.json y ejecutar npm install');
+    console.log('');
+    process.exit(1);
+  }
+
+  info(`Origen: ${c.bold}${nmSource}${c.reset}`);
+  let count = 0;
+
+  // 1. Copiar viewer.html
+  const viewerSrc = path.join(nmSource, 'viewer.html');
+  if (fileExists(viewerSrc)) {
+    fs.copyFileSync(viewerSrc, path.join(flowdocsDir, 'viewer.html'));
+    ok('viewer.html');
+    count++;
+  }
+
+  // 2. Copiar prompts
+  const promptsSrc = path.join(nmSource, 'prompts');
+  const promptsDest = path.join(flowdocsDir, 'prompts');
+  if (fileExists(promptsSrc)) {
+    ensureDir(promptsDest);
+    const files = fs.readdirSync(promptsSrc).filter(f => f.endsWith('.md'));
+    for (const f of files) {
+      fs.copyFileSync(path.join(promptsSrc, f), path.join(promptsDest, f));
+      count++;
+    }
+    ok(`${files.length} prompts`);
+  }
+
+  // 3. Copiar workflows (.agent/workflows/)
+  const wfSrc = path.join(nmSource, '.agent', 'workflows');
+  const wfDest = path.join(cwd, '.agent', 'workflows');
+  if (fileExists(wfSrc)) {
+    ensureDir(wfDest);
+    const files = fs.readdirSync(wfSrc).filter(f => f.endsWith('.md'));
+    for (const f of files) {
+      fs.copyFileSync(path.join(wfSrc, f), path.join(wfDest, f));
+      count++;
+    }
+    ok(`${files.length} workflows`);
+  }
+
+  // 4. Copiar skills (.agent/skills/)
+  const skillsSrc = path.join(nmSource, '.agent', 'skills');
+  const skillsDest = path.join(cwd, '.agent', 'skills');
+  if (fileExists(skillsSrc)) {
+    ensureDir(skillsDest);
+    const entries = fs.readdirSync(skillsSrc, { withFileTypes: true });
+    for (const ent of entries) {
+      if (ent.isDirectory()) {
+        const srcDir = path.join(skillsSrc, ent.name);
+        const destDir = path.join(skillsDest, ent.name);
+        ensureDir(destDir);
+        // Copiar recursivamente archivos del skill
+        const skillFiles = fs.readdirSync(srcDir);
+        for (const sf of skillFiles) {
+          const sfPath = path.join(srcDir, sf);
+          if (fs.statSync(sfPath).isFile()) {
+            fs.copyFileSync(sfPath, path.join(destDir, sf));
+            count++;
+          }
+        }
+      }
+    }
+    ok(`skills sincronizados`);
+  }
+
+  // 5. Copiar .cursorrules si existe
+  const rulesSrc = path.join(nmSource, '.cursorrules');
+  if (fileExists(rulesSrc)) {
+    fs.copyFileSync(rulesSrc, path.join(flowdocsDir, '.cursorrules'));
+    ok('.cursorrules');
+    count++;
+  }
+
+  // 6. Copiar bin/flowdocs.js
+  const binSrc = path.join(nmSource, 'bin', 'flowdocs.js');
+  const binDest = path.join(flowdocsDir, 'bin', 'flowdocs.js');
+  if (fileExists(binSrc)) {
+    ensureDir(path.dirname(binDest));
+    fs.copyFileSync(binSrc, binDest);
+    ok('bin/flowdocs.js');
+    count++;
+  }
+
+  console.log('');
+  ok(`${c.bold}${count} archivos${c.reset} sincronizados desde node_modules/flowdocs`);
+  warn('flows.yaml, bugs/ y datos del proyecto NO fueron modificados');
+  console.log('');
+}
+
 async function cmdPublish() {
   const cwd = process.cwd();
   console.log('');
@@ -555,7 +664,7 @@ function cmdStatus() {
     // Bugs abiertos
     let openBugs = 0;
     if (project.source === 'modular' && project.data) {
-      openBugs = (project.data.bugs || []).filter(b => b.status === 'open' || b.status === 'in_progress').length;
+      openBugs = (project.data.bugs || []).filter(b => b.status === 'open' || b.status === 'in_progress' || b.status === 'reopened').length;
     }
     if (openBugs > 0) {
       console.log(`  ${c.red}${openBugs}${c.reset} bugs abiertos`);
@@ -1920,6 +2029,7 @@ const cmd = process.argv[2];
     case 'publish': await cmdPublish(); break;
     case 'usage': cmdUsage(); break;
     case 'migrate': cmdMigrate(); break;
+    case 'pull': cmdPull(); break;
     default: cmdHelp(); break;
   }
 })().catch(e => {
