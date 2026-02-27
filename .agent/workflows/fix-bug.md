@@ -8,14 +8,24 @@ description: Corregir un bug existente — implementar fix + resolver/reabrir + 
 
 ## Precondiciones
 
-Antes de iniciar, verifica:
+Antes de iniciar, verifica y prepara:
 
+### Verificaciones previas
 1. **El bug existe** — Debe haber un `BUG-XXX.yaml` en `.flowdocs/bugs/`
 2. **El bug está abierto** — `status` debe ser `open`, `reopened` o `in_progress`
-3. **Tienes acceso al código** — El proyecto donde vive el bug debe estar disponible
-4. **Leíste el schema** — Lee `prompts/bugs.md` para conocer la estructura YAML
+3. **Leíste el schema** — Lee `prompts/bugs.md` para conocer la estructura YAML
 
 > Si el bug no tiene YAML, primero usa `/report-bug` para registrarlo.
+
+### Preparar el ambiente para replicar
+
+1. **Levantar el servidor de desarrollo** — Ejecutar el comando de dev del proyecto (`npm run dev`, `rails s`, etc.)
+2. **Verificar la URL** — Identificar en qué ruta/página ocurre el bug según `steps_to_reproduce` y `module`
+3. **Datos de prueba** — Si el bug requiere datos específicos (un producto, un usuario, una venta), asegurar que existan en la base de datos de desarrollo. Si no existen, crearlos con seeds o desde la UI
+4. **Estado inicial** — Llevar la aplicación al estado previo necesario (ej: tener items en carrito, estar logueado con cierto rol, tener una caja abierta)
+5. **Ambiente correcto** — Si el bug especifica `environment` (producción, staging, local), replicar en el ambiente indicado o en uno que simule las mismas condiciones
+
+> **IMPORTANTE:** No empezar a escribir código sin antes haber replicado el bug manualmente con el navegador. Si no puedes replicarlo, el fix podría ser incorrecto.
 
 ---
 
