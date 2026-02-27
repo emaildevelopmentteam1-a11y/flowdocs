@@ -930,7 +930,7 @@ function cmdPlanSprint() {
     process.exit(1);
   }
 
-  let activeSprint, goal, app, flows;
+  let activeSprint, goal, app, flows, openBugs = [];
 
   if (project.source === 'modular' && project.data) {
     // Modo modular
@@ -944,6 +944,17 @@ function cmdPlanSprint() {
       status: f.status || 'pending', sprint_status: f.sprint_status || 'todo',
       trigger: f.trigger || '', steps: Array.isArray(f.steps) ? f.steps.slice(0, 12) : []
     }));
+    // Bugs abiertos vinculados al sprint activo
+    const sprintData = d.meta?.sprint;
+    const sprintBugIds = new Set((sprintData?.bugs || []).map(b => b.id || b));
+    openBugs = (d.bugs || []).filter(b =>
+      (b.status === 'open' || b.status === 'in_progress') &&
+      (sprintBugIds.size === 0 || sprintBugIds.has(b.id))
+    ).map(b => ({
+      id: b.id, title: b.title || b.description || '', severity: b.severity || 'medium',
+      status: b.status || 'open', flow_id: b.flow_id || '', story_id: b.story_id || '',
+      sprint_status: b.sprint_status || 'todo'
+    }));
   } else {
     // Modo legacy
     const content = project.raw;
@@ -953,11 +964,12 @@ function cmdPlanSprint() {
   console.log('');
   console.log(`  ${c.bold}${c.cyan}FlowDocs — Plan de sprint para swarm${c.reset}`);
   console.log(`  ${c.bold}${app}${c.reset}  Sprint ${activeSprint} — ${c.dim}${goal}${c.reset}`);
+  if (openBugs.length) console.log(`  ${c.red}${openBugs.length} bugs abiertos${c.reset}`);
   console.log('');
 
-  if (flows.length === 0) {
-    warn('No hay flujos pendientes o parciales en flows.yaml.');
-    info('Actualiza status/sprint_status en los flujos o añade flujos al sprint.');
+  if (flows.length === 0 && openBugs.length === 0) {
+    warn('No hay flujos pendientes ni bugs abiertos.');
+    info('Actualiza status/sprint_status en los flujos o añade bugs al sprint.');
     console.log('');
     process.exit(0);
   }
@@ -999,6 +1011,21 @@ function cmdPlanSprint() {
       trigger: f.trigger || null,
       steps: f.steps
     });
+  }
+
+  // Bugs abiertos
+  if (openBugs.length) {
+    taskLines.push('## Bugs por resolver');
+    taskLines.push('');
+    for (const b of openBugs) {
+      const prompt = `@implement.md ${b.flow_id || b.id}`;
+      taskLines.push(`- [ ] **${b.id}** — ${b.title}`);
+      taskLines.push(`  - Severidad: ${b.severity} · Estado: ${b.status}`);
+      if (b.flow_id) taskLines.push(`  - Flujo: ${b.flow_id}`);
+      if (b.story_id) taskLines.push(`  - Historia: ${b.story_id}`);
+      taskLines.push(`  - Prompt: \`${prompt}\``);
+      taskLines.push('');
+    }
   }
 
   taskLines.push('---');
@@ -1497,6 +1524,20 @@ function assembleModular(flowdocsDir) {
       const flow = flows.find(f => f.id === sf.id);
       if (flow && sf.sprint_status) {
         flow.sprint_status = sf.sprint_status;
+      }
+    }
+  }
+
+  // Resolver sprint_status de bugs desde los sprints
+  for (const sp of sprints) {
+    if (Array.isArray(sp.bugs)) {
+      for (const sb of sp.bugs) {
+        const bugId = sb.id || sb;
+        const bug = bugs.find(b => b.id === bugId);
+        if (bug) {
+          if (sb.sprint_status) bug.sprint_status = sb.sprint_status;
+          bug.sprint = sp.number;
+        }
       }
     }
   }

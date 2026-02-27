@@ -3243,6 +3243,31 @@
               body += '</div>';
             });
           }
+
+          // Bugs vinculados al sprint
+          const sprintBugs = (sp.bugs || []).map(sb => {
+            const bugId = sb.id || sb;
+            const bug = (data.bugs || []).find(b => b.id === bugId);
+            return bug ? { ...bug, sprint_status: sb.sprint_status || bug.status || 'open' } : { id: bugId, sprint_status: sb.sprint_status || 'open', title: bugId, severity: 'medium' };
+          });
+          if (sprintBugs.length) {
+            const sevColors = { critical: '#ef4444', high: '#f97316', medium: '#f59e0b', low: '#64748b' };
+            const statusLabels = { open: 'Abierto', in_progress: 'En progreso', resolved: 'Resuelto', closed: 'Cerrado' };
+            body += '<div class="sprint-section-title">Bugs · ' + sprintBugs.length + '</div>';
+            body += '<div style="display:flex;flex-direction:column;gap:6px;margin-top:8px;">';
+            sprintBugs.forEach(bug => {
+              const sevColor = sevColors[bug.severity] || '#f59e0b';
+              const stLabel = statusLabels[bug.sprint_status] || bug.sprint_status;
+              const isOpenBug = bug.sprint_status === 'open' || bug.sprint_status === 'in_progress';
+              body += `<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:8px;background:#0d1117;border:1px solid ${isOpenBug ? sevColor + '30' : '#1e293b'};">
+                  <span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:${sevColor};font-weight:700;min-width:58px;">${bug.id}</span>
+                  <span style="font-family:Sora,sans-serif;font-size:12px;color:#94a3b8;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${bug.title || ''}</span>
+                  <span style="font-size:9px;padding:3px 8px;border-radius:12px;background:${sevColor}18;color:${sevColor};font-weight:600;text-transform:uppercase;letter-spacing:.5px;">${bug.severity}</span>
+                  <span style="font-size:9px;padding:3px 8px;border-radius:12px;background:${isOpenBug ? '#ffffff08' : '#22c55e18'};color:${isOpenBug ? '#94a3b8' : '#4ade80'};font-weight:500;">${stLabel}</span>
+                </div>`;
+            });
+            body += '</div>';
+          }
         }
 
         return `<div class="sprint-card" data-status="${status}">
